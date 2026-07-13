@@ -36,6 +36,10 @@ model User {
   roleId       String
   role         Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
+  // Reverse relations for Safari Operations
+  schedulesAsGuide   SafariSchedule[] @relation("GuideSchedules")
+  schedulesAsDriver  SafariSchedule[] @relation("DriverSchedules")
+
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -162,6 +166,7 @@ model Booking {
   notes         String?
 
   roomBookings  RoomBooking[]
+  safariBookings SafariBooking[]
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -180,4 +185,99 @@ model RoomBooking {
 
   @@id([bookingId, roomId])
   @@index([roomId])
+}
+
+// ----------------------------------------------------------------------
+// PHASE 3: SAFARI MANAGEMENT SYSTEM
+// ----------------------------------------------------------------------
+
+enum VehicleStatus {
+  AVAILABLE
+  ON_SAFARI
+  MAINTENANCE
+  RETIRED
+}
+
+model Vehicle {
+  id           String        @id @default(cuid())
+  plateNumber  String        @unique
+  make         String
+  model        String
+  capacity     Int
+  status       VehicleStatus @default(AVAILABLE)
+  
+  schedules    SafariSchedule[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model SafariRoute {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  durationMin Int       // Duration in minutes
+  difficulty  String?   // e.g., "Easy", "Moderate", "Hard"
+
+  schedules   SafariSchedule[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SafariSchedule {
+  id            String    @id @default(cuid())
+  startTime     DateTime
+  endTime       DateTime
+  
+  vehicleId     String
+  vehicle       Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  
+  routeId       String
+  route         SafariRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  
+  guideId       String
+  guide         User      @relation("GuideSchedules", fields: [guideId], references: [id], onDelete: Restrict)
+  
+  driverId      String
+  driver        User      @relation("DriverSchedules", fields: [driverId], references: [id], onDelete: Restrict)
+
+  bookings      SafariBooking[]
+  wildlifeLogs  WildlifeLog[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([startTime])
+  @@index([vehicleId])
+  @@index([guideId])
+  @@index([driverId])
+}
+
+model SafariBooking {
+  scheduleId    String
+  bookingId     String
+  guestCount    Int
+
+  schedule      SafariSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  booking       Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleId, bookingId])
+}
+
+model WildlifeLog {
+  id            String    @id @default(cuid())
+  speciesName   String
+  count         Int       @default(1)
+  notes         String?
+  latitude      Float?
+  longitude     Float?
+  
+  scheduleId    String
+  schedule      SafariSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  
+  observedAt    DateTime  @default(now())
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
