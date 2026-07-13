@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoleName {
+  SUPER_ADMIN
+  OWNER
+  GENERAL_MANAGER
+  RECEPTIONIST
+  RESERVATION_OFFICER
+  HOUSEKEEPING
+  SAFARI_COORDINATOR
+  GUIDE
+  DRIVER
+  RESTAURANT_MANAGER
+  CASHIER
+  ACCOUNTANT
+  MARKETING
+  MAINTENANCE
+  GUEST
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  isActive     Boolean   @default(true)
+  
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([email])
+  @@index([roleId])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        RoleName         @unique
+  description String?
+  
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  action      String           // e.g., "CREATE", "READ", "UPDATE", "DELETE", "MANAGE"
+  resource    String           // e.g., "BOOKING", "USER", "SAFARI", "ROOM"
+  description String?
+  
+  roles       RolePermission[]
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([action, resource])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  assignedAt   DateTime   @default(now())
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+// ----------------------------------------------------------------------
+// PHASE 2: ROOM MANAGEMENT & BOOKING ENGINE
+// ----------------------------------------------------------------------
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+model RoomType {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Luxury Safari Tent"
+  description String?
+  basePrice   Float    // Base price per night
+  capacity    Int      // Max occupancy
+  amenities   String[] // Array of amenities
+
+  rooms       Room[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Room {
+  id          String     @id @default(cuid())
+  roomNumber  String     @unique
+  status      RoomStatus @default(AVAILABLE)
+  
+  roomTypeId  String
+  roomType    RoomType   @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+
+  bookings    RoomBooking[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([roomTypeId])
+  @@index([status])
+}
+
+model Guest {
+  id          String    @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String    @unique
+  phone       String?
+  passportNo  String?
+  nationality String?
+  loyaltyPoints Int     @default(0)
+  vipStatus   Boolean   @default(false)
+
+  bookings    Booking[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  guestId       String
+  guest         Guest         @relation(fields: [guestId], references: [id], onDelete: Restrict)
+  
+  checkInDate   DateTime
+  checkOutDate  DateTime
+  status        BookingStatus @default(PENDING)
+  totalAmount   Float
+  notes         String?
+
+  roomBookings  RoomBooking[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([guestId])
+  @@index([checkInDate])
+  @@index([status])
+}
+
+model RoomBooking {
+  bookingId String
+  roomId    String
+
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  room      Room    @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
+  @@id([bookingId, roomId])
+  @@index([roomId])
+}
