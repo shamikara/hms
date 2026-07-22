@@ -65,13 +65,13 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-8 border border-stone-200 dark:border-stone-800">
+    <div className="w-full max-w-4xl mx-auto bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-4 sm:p-8 border border-stone-200 dark:border-stone-800">
       
       {/* Stepper */}
-      <div className="flex justify-between items-center mb-12 relative">
+      <div className="flex justify-between items-center mb-8 sm:mb-12 relative">
         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-stone-200 dark:bg-stone-800 -z-10 -translate-y-1/2" />
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-colors duration-300 ${step >= i ? 'bg-emerald-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-500'}`}>
+          <div key={i} className={`w-8 h-8 sm:w-10 sm:h-10 text-xs sm:text-base rounded-full flex items-center justify-center font-medium transition-colors duration-300 ${step >= i ? 'bg-emerald-600 text-white' : 'bg-stone-200 dark:bg-stone-800 text-stone-500'}`}>
             {i}
           </div>
         ))}
@@ -167,7 +167,7 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
           <div>
             <h3 className="text-2xl font-serif mb-6 text-stone-900 dark:text-stone-100">Guest Details</h3>
             <div className="space-y-6 mb-8">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-stone-500 mb-2">First Name</label>
                   <input 

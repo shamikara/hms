@@ -49,12 +49,12 @@ export function TopHeader({
           <Menu className="h-4 w-4" />
         </button>
 
-        <div className="flex items-center space-x-2 text-xs">
-          <span className="font-semibold text-stone-500 dark:text-stone-400">
+        <div className="flex items-center space-x-2 text-xs truncate">
+          <span className="hidden sm:inline font-semibold text-stone-500 dark:text-stone-400">
             HMS Enterprise
           </span>
-          <ChevronRight className="h-3.5 w-3.5 text-stone-400" />
-          <h1 className="font-semibold text-stone-900 dark:text-stone-100">
+          <ChevronRight className="hidden sm:inline h-3.5 w-3.5 text-stone-400" />
+          <h1 className="font-semibold text-stone-900 dark:text-stone-100 truncate">
             {currentPageTitle}
           </h1>
         </div>

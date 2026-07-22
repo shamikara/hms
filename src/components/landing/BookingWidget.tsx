@@ -28,16 +28,16 @@ export function BookingWidget() {
   return (
     <div 
       ref={containerRef}
-      className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-full shadow-2xl max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-4 mt-12 opacity-0"
+      className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 sm:p-5 rounded-2xl md:rounded-full shadow-2xl max-w-4xl w-full mx-auto flex flex-col md:flex-row items-center gap-4 mt-6 sm:mt-12 opacity-0"
     >
-      <div className="flex-1 flex flex-col md:flex-row gap-4 w-full px-4">
+      <div className="flex-1 flex flex-col md:flex-row gap-4 w-full px-2 sm:px-4">
         <div className="flex flex-col flex-1">
           <label className="text-[10px] uppercase tracking-widest text-emerald-300 font-medium ml-1">Check In</label>
           <input 
             type="date" 
             value={checkIn}
             onChange={(e) => setCheckIn(e.target.value)}
-            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1 w-full text-sm placeholder:text-white/50"
+            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1.5 w-full text-sm placeholder:text-white/50"
           />
         </div>
         <div className="flex flex-col flex-1">
@@ -46,7 +46,7 @@ export function BookingWidget() {
             type="date" 
             value={checkOut}
             onChange={(e) => setCheckOut(e.target.value)}
-            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1 w-full text-sm placeholder:text-white/50"
+            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1.5 w-full text-sm placeholder:text-white/50"
           />
         </div>
         <div className="flex flex-col flex-1">
@@ -54,7 +54,7 @@ export function BookingWidget() {
           <select 
             value={guests}
             onChange={(e) => setGuests(e.target.value)}
-            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1 w-full text-sm appearance-none cursor-pointer"
+            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1.5 w-full text-sm appearance-none cursor-pointer"
           >
             <option value="1" className="bg-stone-900">1 Adult</option>
             <option value="2" className="bg-stone-900">2 Adults</option>
@@ -63,7 +63,7 @@ export function BookingWidget() {
           </select>
         </div>
       </div>
-      <Link href="/book">
+      <Link href="/book" className="w-full md:w-auto">
         <button className="bg-emerald-700 hover:bg-emerald-600 text-white px-8 py-3 rounded-full text-sm font-medium tracking-wide transition-all w-full md:w-auto shadow-lg shrink-0">
           Check Availability
         </button>

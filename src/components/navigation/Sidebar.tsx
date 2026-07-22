@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isCollapsed: boolean;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
   onToggleCollapse: () => void;
   onOpenCommandPalette: () => void;
   userRole?: string;
@@ -34,6 +36,8 @@ interface SidebarProps {
 
 export function Sidebar({
   isCollapsed,
+  isMobileOpen = false,
+  onCloseMobile,
   onToggleCollapse,
   onOpenCommandPalette,
   userRole = "SUPER_ADMIN",
@@ -56,10 +60,14 @@ export function Sidebar({
     <TooltipProvider delayDuration={100}>
       <motion.aside
         initial={false}
-        animate={{ width: isCollapsed ? 64 : 240 }}
+        animate={{
+          width: isCollapsed ? 64 : 240,
+        }}
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed left-0 top-0 bottom-0 z-30 flex flex-col bg-stone-950 text-stone-300 border-r border-stone-850 select-none shadow-xl"
-        style={{ borderColor: "var(--sidebar-border)" }}
+        className={cn(
+          "fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-stone-950 text-stone-300 border-r border-stone-800 select-none shadow-xl transition-transform md:translate-x-0 duration-200 ease-in-out",
+          isMobileOpen ? "translate-x-0 w-[260px]" : "-translate-x-full md:translate-x-0"
+        )}
       >
         {/* Top Property Header */}
         <div className="flex h-14 items-center justify-between px-3 border-b border-stone-800/80">
@@ -126,6 +134,7 @@ export function Sidebar({
                           <TooltipTrigger asChild>
                             <Link
                               href={item.href}
+                              onClick={onCloseMobile}
                               className={cn(
                                 "flex h-9 w-full items-center justify-center rounded-md text-xs font-medium transition-all relative",
                                 isActive
@@ -155,6 +164,7 @@ export function Sidebar({
                       <Link
                         key={item.href}
                         href={item.href}
+                        onClick={onCloseMobile}
                         className={cn(
                           "group flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
                           isActive
