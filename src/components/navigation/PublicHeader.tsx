@@ -35,7 +35,7 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
     >
       <ScrollReveal direction="down" delay={0.1} width="w-auto">
         <Link href="/" className="text-xl sm:text-2xl font-serif tracking-widest uppercase text-white drop-shadow-md">
-          Udawalawe Resort
+          Lily Resort Udawalawe
         </Link>
       </ScrollReveal>
 

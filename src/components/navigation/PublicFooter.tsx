@@ -8,7 +8,7 @@ export function PublicFooter() {
         {/* Brand Column */}
         <div className="space-y-4">
           <Link href="/" className="text-xl font-serif tracking-widest uppercase text-white block">
-            Udawalawe Resort
+            Lily Resort Udawalawe
           </Link>
           <p className="text-xs leading-relaxed text-stone-400">
             A 5-star sanctuary nestled on the boundary of Udawalawe National Park. Experience Sri Lanka's wildlife with unmatched luxury, zero-footprint eco-architecture, and personalized service.
@@ -55,7 +55,7 @@ export function PublicFooter() {
             </li>
             <li className="flex items-center space-x-2.5">
               <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>reservations@udawalaweresort.com</span>
+              <span>reservations@lilyresortudawalawe.com</span>
             </li>
           </ul>
         </div>
@@ -76,7 +76,7 @@ export function PublicFooter() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 pt-8 border-t border-stone-850 flex flex-col sm:flex-row justify-between items-center text-[11px] text-stone-400 space-y-4 sm:space-y-0">
-        <p>&copy; {new Date().getFullYear()} Udawalawe Safari Resort & Spa. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Lily Resort Udawalawe. All rights reserved.</p>
         <div className="flex space-x-6">
           <Link href="#" className="hover:text-stone-300 transition-colors">Privacy Policy</Link>
           <Link href="#" className="hover:text-stone-300 transition-colors">Terms of Service</Link>

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Udawalawe Safari Resort",
-  description: "Experience luxury in the heart of nature.",
+  title: "Lily Resort Udawalawe | 5-Star Luxury Safari Lodge",
+  description: "Experience 5-star untamed luxury, eco-villas, and private elephant safaris at Lily Resort Udawalawe, Sri Lanka.",
 };
 
 export default function RootLayout({

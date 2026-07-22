@@ -7,24 +7,24 @@ import { useRef } from "react";
 const rooms = [
   {
     id: 1,
-    title: "Luxury Safari Tent",
-    description: "Immersive wilderness experience with 5-star amenities bordering the jungle.",
-    price: "$450 / night",
-    image: "/accommodation-udawalawe.png",
+    title: "Presidential Villa",
+    description: "Ultimate luxury with a private infinity plunge pool overlooking the reserve canopy.",
+    price: "$1,200 / night",
+    image: "/lily-presidential-villa.png",
   },
   {
     id: 2,
-    title: "Presidential Villa",
-    description: "Ultimate luxury with a private infinity plunge pool overlooking the savannah.",
-    price: "$1,200 / night",
-    image: "/villa-pool.png",
+    title: "Luxury Safari Pavilion",
+    description: "Immersive wilderness experience with 5-star amenities bordering the jungle sanctuary.",
+    price: "$450 / night",
+    image: "/lily-resort-hero.png",
   },
   {
     id: 3,
-    title: "Family Forest Suite",
-    description: "Spacious multi-room suite perfect for families seeking a comfortable jungle retreat.",
+    title: "Family Wilderness Suite",
+    description: "Spacious multi-room suite with private campfire lounge perfect for family retreats.",
     price: "$850 / night",
-    image: "/accommodation-udawalawe.png", 
+    image: "/lily-presidential-villa.png", 
   }
 ];
 
