@@ -6,278 +6,558 @@ datasource db {
   provider = "postgresql"
 }
 
-enum RoleName {
-  SUPER_ADMIN
-  OWNER
-  GENERAL_MANAGER
-  RECEPTIONIST
-  RESERVATION_OFFICER
-  HOUSEKEEPING
-  SAFARI_COORDINATOR
-  GUIDE
-  DRIVER
-  RESTAURANT_MANAGER
-  CASHIER
-  ACCOUNTANT
-  MARKETING
-  MAINTENANCE
-  GUEST
+// ============================================================================
+// 1. ORGANIZATIONAL HIERARCHY
+// ============================================================================
+
+/// The top-level corporate entity owning all global properties.
+model Organization {
+  id    String @id @default(cuid())
+  name  String /// E.g., "Mantis Collection"
+  taxId String @unique /// Corporate tax identification number
+
+  properties Property[] @relation("OrgProperties")
+  employees  Employee[] @relation("OrgEmployees")
+  settings   Setting[]  @relation("OrgSettings")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag. Nullable because active orgs are not deleted.
+  deletedAt DateTime?
 }
 
-model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  phone        String?
-  isActive     Boolean   @default(true)
-  
-  roleId       String
-  role         Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+/// A specific hotel or lodge under an Organization.
+model Property {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation("OrgProperties", fields: [organizationId], references: [id], onDelete: Restrict)
 
-  // Reverse relations for Safari Operations
-  schedulesAsGuide   SafariSchedule[] @relation("GuideSchedules")
-  schedulesAsDriver  SafariSchedule[] @relation("DriverSchedules")
+  name         String /// E.g., "Serengeti River Lodge"
+  timezone     String /// IANA timezone (e.g., "Africa/Nairobi"). String to avoid enum migrations.
+  baseCurrency String /// 3-letter ISO code (e.g., "USD"). String to avoid enum migrations.
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  buildings    Building[]           @relation("PropertyBuildings")
+  assignments  PropertyAssignment[] @relation("PropertyAssignments")
+  settings     Setting[]            @relation("PropertySettings")
+  roomTypes    RoomType[]           @relation("PropertyRoomTypes")
+  vehicles     Vehicle[]            @relation("PropertyVehicles")
+  routes       SafariRoute[]        @relation("PropertyRoutes")
+  reservations Reservation[]        @relation("PropertyReservations")
 
-  @@index([email])
-  @@index([roleId])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag. Nullable because active properties are not deleted.
+  deletedAt DateTime?
+
+  @@index([organizationId])
 }
 
-model Role {
-  id          String           @id @default(cuid())
-  name        RoleName         @unique
-  description String?
-  
-  users       User[]
-  permissions RolePermission[]
+/// A physical structure or zone within a Property.
+model Building {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyBuildings", fields: [propertyId], references: [id], onDelete: Restrict)
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  name String /// E.g., "North Wing"
+
+  floors Floor[] @relation("BuildingFloors")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag. Nullable because active buildings are not deleted.
+  deletedAt DateTime?
+
+  @@index([propertyId])
 }
 
-model Permission {
-  id          String           @id @default(cuid())
-  action      String           // e.g., "CREATE", "READ", "UPDATE", "DELETE", "MANAGE"
-  resource    String           // e.g., "BOOKING", "USER", "SAFARI", "ROOM"
-  description String?
-  
-  roles       RolePermission[]
+/// A level within a Building.
+model Floor {
+  id         String   @id @default(cuid())
+  buildingId String
+  building   Building @relation("BuildingFloors", fields: [buildingId], references: [id], onDelete: Restrict)
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  level Int /// Floor number
 
-  @@unique([action, resource])
+  rooms Room[] @relation("FloorRooms")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag. Nullable because active floors are not deleted.
+  deletedAt DateTime?
+
+  @@index([buildingId])
 }
 
-model RolePermission {
-  roleId       String
-  permissionId String
+/// Defines category and capabilities of a Room.
+model RoomType {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyRoomTypes", fields: [propertyId], references: [id], onDelete: Restrict)
 
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  name     String
+  capacity Int /// Max occupancy allowed
 
-  assignedAt   DateTime   @default(now())
+  rooms Room[] @relation("RoomTypeClassification")
 
-  @@id([roleId, permissionId])
-  @@index([roleId])
-  @@index([permissionId])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag.
+  deletedAt DateTime?
+
+  @@index([propertyId])
 }
-
-// ----------------------------------------------------------------------
-// PHASE 2: ROOM MANAGEMENT & BOOKING ENGINE
-// ----------------------------------------------------------------------
 
 enum RoomStatus {
   AVAILABLE
-  OCCUPIED
   MAINTENANCE
-  CLEANING
+  OUT_OF_ORDER
 }
 
-enum BookingStatus {
-  PENDING
+/// The physical rentable unit.
+model Room {
+  id         String   @id @default(cuid())
+  floorId    String
+  floor      Floor    @relation("FloorRooms", fields: [floorId], references: [id], onDelete: Restrict)
+  roomTypeId String
+  roomType   RoomType @relation("RoomTypeClassification", fields: [roomTypeId], references: [id], onDelete: Restrict)
+
+  roomNumber String
+  status     RoomStatus @default(AVAILABLE)
+
+  assignments RoomAssignment[] @relation("RoomStays")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag.
+  deletedAt DateTime?
+
+  @@unique([floorId, roomNumber]) /// A room number must be unique per floor
+  @@index([floorId])
+  @@index([roomTypeId])
+}
+
+// ============================================================================
+// 2. IDENTITY & ACCESS CONTROL
+// ============================================================================
+
+/// Core authentication identity. Completely decoupled from domain actors.
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  /// Nullable because OAuth users do not have a password hash.
+  passwordHash String?
+  isActive     Boolean @default(true) /// Global kill-switch
+
+  employee     Employee?     @relation("UserEmployee")
+  guestProfile GuestProfile? @relation("UserGuestProfile")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete for GDPR compliance or account closure.
+  deletedAt DateTime?
+}
+
+/// A worker profile belonging to an Organization.
+model Employee {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  user           User         @relation("UserEmployee", fields: [userId], references: [id], onDelete: Restrict)
+  organizationId String
+  organization   Organization @relation("OrgEmployees", fields: [organizationId], references: [id], onDelete: Restrict)
+
+  employeeId String /// Corporate HR identifier
+  firstName  String
+  lastName   String
+
+  assignments    PropertyAssignment[] @relation("EmployeeAssignments")
+  schedulesGuide SafariSchedule[]     @relation("GuideSchedules")
+  schedulesDrive SafariSchedule[]     @relation("DriverSchedules")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag for terminated employees.
+  deletedAt DateTime?
+
+  @@unique([organizationId, employeeId])
+  @@index([organizationId])
+}
+
+/// Maps an Employee to a specific Property (Multi-tenant RBAC foundation).
+model PropertyAssignment {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation("EmployeeAssignments", fields: [employeeId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation("PropertyAssignments", fields: [propertyId], references: [id], onDelete: Cascade)
+
+  roles RoleAssignment[] @relation("AssignmentRoles")
+
+  createdAt DateTime @default(now())
+
+  @@unique([employeeId, propertyId])
+  @@index([propertyId])
+}
+
+/// Global Roles defined by the Organization.
+model Role {
+  id   String @id @default(cuid())
+  name String @unique /// E.g., "GENERAL_MANAGER", "RECEPTIONIST"
+
+  assignments RoleAssignment[] @relation("RoleAssignments")
+
+  createdAt DateTime @default(now())
+}
+
+/// Assigns a Role to a PropertyAssignment.
+model RoleAssignment {
+  assignmentId       String
+  propertyAssignment PropertyAssignment @relation("AssignmentRoles", fields: [assignmentId], references: [id], onDelete: Cascade)
+  roleId             String
+  role               Role               @relation("RoleAssignments", fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([assignmentId, roleId])
+  @@index([roleId])
+}
+
+/// Global CRM record for a guest across all properties.
+model GuestProfile {
+  id     String  @id @default(cuid())
+  /// Nullable because a guest might be booked by phone without an online account.
+  userId String? @unique
+  user   User?   @relation("UserGuestProfile", fields: [userId], references: [id], onDelete: SetNull)
+
+  firstName     String
+  lastName      String
+  email         String @unique
+  loyaltyPoints Int    @default(0)
+
+  reservations Reservation[] @relation("GuestReservations")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag.
+  deletedAt DateTime?
+}
+
+// ============================================================================
+// 3. HOSPITALITY DOMAIN
+// ============================================================================
+
+enum ReservationStatus {
+  DRAFT
   CONFIRMED
+  CANCELLED
+  NO_SHOW
+}
+
+/// The future intent to book. Handles quotes and dates.
+model Reservation {
+  id         String       @id @default(cuid())
+  propertyId String
+  property   Property     @relation("PropertyReservations", fields: [propertyId], references: [id], onDelete: Restrict)
+  guestId    String
+  guest      GuestProfile @relation("GuestReservations", fields: [guestId], references: [id], onDelete: Restrict)
+
+  checkInDate  DateTime /// Requires property timezone mapping in Service
+  checkOutDate DateTime
+  status       ReservationStatus @default(DRAFT)
+
+  stays    Stay[]    @relation("ReservationStays")
+  invoices Invoice[] @relation("ReservationInvoices")
+
+  version Int @default(1) /// Optimistic locking
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId, status, checkInDate])
+  @@index([guestId])
+}
+
+enum StayStatus {
+  PRE_ARRIVAL
   CHECKED_IN
   CHECKED_OUT
-  CANCELLED
 }
 
-model RoomType {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "Luxury Safari Tent"
-  description String?
-  basePrice   Float    // Base price per night
-  capacity    Int      // Max occupancy
-  amenities   String[] // Array of amenities
+/// The physical realization of a Reservation.
+model Stay {
+  id            String      @id @default(cuid())
+  reservationId String
+  reservation   Reservation @relation("ReservationStays", fields: [reservationId], references: [id], onDelete: Restrict)
 
-  rooms       Room[]
+  status        StayStatus @default(PRE_ARRIVAL)
+  /// Nullable because it is set only upon actual check-in.
+  actualArrival DateTime?
+  /// Nullable because it is set only upon actual check-out.
+  actualDepart  DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  roomAssignments RoomAssignment[] @relation("StayRooms")
+  invoices        Invoice[]        @relation("StayInvoices")
+  safariBookings  SafariBooking[]  @relation("StaySafaris")
 
-model Room {
-  id          String     @id @default(cuid())
-  roomNumber  String     @unique
-  status      RoomStatus @default(AVAILABLE)
-  
-  roomTypeId  String
-  roomType    RoomType   @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+  version Int @default(1) /// Optimistic locking
 
-  bookings    RoomBooking[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  @@index([roomTypeId])
+  @@index([reservationId])
   @@index([status])
 }
 
-model Guest {
-  id          String    @id @default(cuid())
-  firstName   String
-  lastName    String
-  email       String    @unique
-  phone       String?
-  passportNo  String?
-  nationality String?
-  loyaltyPoints Int     @default(0)
-  vipStatus   Boolean   @default(false)
+/// Maps a Stay to specific Rooms over a specific date range (supports mid-stay room moves).
+model RoomAssignment {
+  id     String @id @default(cuid())
+  stayId String
+  stay   Stay   @relation("StayRooms", fields: [stayId], references: [id], onDelete: Cascade)
+  roomId String
+  room   Room   @relation("RoomStays", fields: [roomId], references: [id], onDelete: Restrict)
 
-  bookings    Booking[]
+  startDate DateTime
+  endDate   DateTime
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Booking {
-  id            String        @id @default(cuid())
-  guestId       String
-  guest         Guest         @relation(fields: [guestId], references: [id], onDelete: Restrict)
-  
-  checkInDate   DateTime
-  checkOutDate  DateTime
-  status        BookingStatus @default(PENDING)
-  totalAmount   Float
-  notes         String?
-
-  roomBookings  RoomBooking[]
-  safariBookings SafariBooking[]
-
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  @@index([guestId])
-  @@index([checkInDate])
-  @@index([status])
-}
-
-model RoomBooking {
-  bookingId String
-  roomId    String
-
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  room      Room    @relation(fields: [roomId], references: [id], onDelete: Restrict)
-
-  @@id([bookingId, roomId])
+  @@index([stayId])
   @@index([roomId])
 }
 
-// ----------------------------------------------------------------------
-// PHASE 3: SAFARI MANAGEMENT SYSTEM
-// ----------------------------------------------------------------------
+// ============================================================================
+// 4. FINANCIAL DOMAIN
+// ============================================================================
+
+enum InvoiceStatus {
+  OPEN
+  CLOSED
+  VOIDED
+}
+
+/// The running ledger of charges for a Reservation or Stay.
+model Invoice {
+  id            String       @id @default(cuid())
+  /// Nullable because an invoice might be generated for a reservation before check-in.
+  reservationId String?
+  reservation   Reservation? @relation("ReservationInvoices", fields: [reservationId], references: [id], onDelete: Restrict)
+  /// Nullable because an invoice might only belong to a pre-arrival reservation.
+  stayId        String?
+  stay          Stay?        @relation("StayInvoices", fields: [stayId], references: [id], onDelete: Restrict)
+
+  status InvoiceStatus @default(OPEN)
+
+  lineItems LineItem[] @relation("InvoiceLineItems")
+  payments  Payment[]  @relation("InvoicePayments")
+
+  version Int @default(1) /// Optimistic locking
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reservationId])
+  @@index([stayId])
+}
+
+enum LineItemCategory {
+  ROOM_RATE
+  F_AND_B
+  SAFARI
+  SPA
+  OTHER
+}
+
+/// Immutable record of a specific charge.
+model LineItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation("InvoiceLineItems", fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  category    LineItemCategory
+  description String
+
+  /// All monetary fields use Decimal(19,4) to prevent floating-point precision loss.
+  subtotal Decimal @db.Decimal(19, 4)
+  tax      Decimal @db.Decimal(19, 4)
+  discount Decimal @db.Decimal(19, 4)
+  total    Decimal @db.Decimal(19, 4)
+
+  currencyCode String /// Strict ISO string
+
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId, currencyCode])
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  CASH
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  CLEARED
+  FAILED
+  REFUNDED
+}
+
+/// Immutable record of a transaction against an Invoice.
+model Payment {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation("InvoicePayments", fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  amount       Decimal       @db.Decimal(19, 4)
+  currencyCode String
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+
+  /// Nullable. Records external payment gateway reference if applicable.
+  gatewayRef String?
+
+  version Int @default(1) /// Optimistic locking
+
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+  @@index([status])
+}
+
+// ============================================================================
+// 5. SAFARI OPERATIONS
+// ============================================================================
 
 enum VehicleStatus {
   AVAILABLE
-  ON_SAFARI
   MAINTENANCE
   RETIRED
 }
 
 model Vehicle {
-  id           String        @id @default(cuid())
-  plateNumber  String        @unique
-  make         String
-  model        String
-  capacity     Int
-  status       VehicleStatus @default(AVAILABLE)
-  
-  schedules    SafariSchedule[]
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyVehicles", fields: [propertyId], references: [id], onDelete: Restrict)
 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  plateNumber String
+  capacity    Int
+  status      VehicleStatus @default(AVAILABLE)
+
+  schedules SafariSchedule[] @relation("VehicleSchedules")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag.
+  deletedAt DateTime?
+
+  @@unique([propertyId, plateNumber]) /// Plate must be unique per property
+  @@index([propertyId])
 }
 
 model SafariRoute {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  description String?
-  durationMin Int       // Duration in minutes
-  difficulty  String?   // e.g., "Easy", "Moderate", "Hard"
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyRoutes", fields: [propertyId], references: [id], onDelete: Restrict)
 
-  schedules   SafariSchedule[]
+  name        String
+  durationMin Int
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  schedules SafariSchedule[] @relation("RouteSchedules")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([propertyId])
 }
 
+/// A specific scheduled game drive.
 model SafariSchedule {
-  id            String    @id @default(cuid())
-  startTime     DateTime
-  endTime       DateTime
-  
-  vehicleId     String
-  vehicle       Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  
-  routeId       String
-  route         SafariRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
-  
-  guideId       String
-  guide         User      @relation("GuideSchedules", fields: [guideId], references: [id], onDelete: Restrict)
-  
-  driverId      String
-  driver        User      @relation("DriverSchedules", fields: [driverId], references: [id], onDelete: Restrict)
+  id        String      @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle     @relation("VehicleSchedules", fields: [vehicleId], references: [id], onDelete: Restrict)
+  routeId   String
+  route     SafariRoute @relation("RouteSchedules", fields: [routeId], references: [id], onDelete: Restrict)
 
-  bookings      SafariBooking[]
-  wildlifeLogs  WildlifeLog[]
+  guideId  String
+  guide    Employee @relation("GuideSchedules", fields: [guideId], references: [id], onDelete: Restrict)
+  driverId String
+  driver   Employee @relation("DriverSchedules", fields: [driverId], references: [id], onDelete: Restrict)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  startTime DateTime
+  endTime   DateTime
 
-  @@index([startTime])
+  bookings SafariBooking[] @relation("ScheduleBookings")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([vehicleId])
   @@index([guideId])
   @@index([driverId])
+  @@index([startTime, endTime])
 }
 
+/// Links a Guest Stay to a SafariSchedule.
 model SafariBooking {
-  scheduleId    String
-  bookingId     String
-  guestCount    Int
+  id         String         @id @default(cuid())
+  scheduleId String
+  schedule   SafariSchedule @relation("ScheduleBookings", fields: [scheduleId], references: [id], onDelete: Restrict)
+  stayId     String
+  stay       Stay           @relation("StaySafaris", fields: [stayId], references: [id], onDelete: Restrict)
 
-  schedule      SafariSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  booking       Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  guestCount Int
 
-  @@id([scheduleId, bookingId])
+  createdAt DateTime @default(now())
+
+  @@index([scheduleId])
+  @@index([stayId])
 }
 
-model WildlifeLog {
-  id            String    @id @default(cuid())
-  speciesName   String
-  count         Int       @default(1)
-  notes         String?
-  latitude      Float?
-  longitude     Float?
-  
-  scheduleId    String
-  schedule      SafariSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  
-  observedAt    DateTime  @default(now())
+// ============================================================================
+// 6. COMPLIANCE & CORE PLATFORM
+// ============================================================================
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+/// Immutable record of critical entity changes.
+model AuditLog {
+  id         String @id @default(cuid())
+  /// Stores string ID to avoid cascades and retain history even if user is hard-deleted.
+  userId     String
+  action     String /// E.g., "UPDATE", "CANCEL"
+  entityType String /// E.g., "Reservation", "Payment"
+  entityId   String /// The ID of the mutated record
+
+  /// Nullable. Snapshot before mutation (null for CREATE).
+  oldValues Json?
+  /// Nullable. Snapshot after mutation (null for DELETE).
+  newValues Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+enum SettingLevel {
+  ORGANIZATION
+  PROPERTY
+}
+
+/// Key-value configuration store for multi-tenant settings.
+model Setting {
+  id    String       @id @default(cuid())
+  level SettingLevel
+
+  /// Nullable. Set if level is ORGANIZATION.
+  organizationId String?
+  organization   Organization? @relation("OrgSettings", fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Nullable. Set if level is PROPERTY.
+  propertyId String?
+  property   Property? @relation("PropertySettings", fields: [propertyId], references: [id], onDelete: Cascade)
+
+  key   String
+  value Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, key])
+  @@unique([propertyId, key])
+  @@index([level])
 }

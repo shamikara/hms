@@ -16,7 +16,7 @@ export async function loginAction(data: LoginFormValues) {
     return { success: true, user };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues?.[0]?.message || error.message };
     }
     if (error instanceof Error) {
       return { success: false, error: error.message };

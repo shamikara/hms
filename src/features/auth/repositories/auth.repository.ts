@@ -5,14 +5,12 @@ export const AuthRepository = {
   async findUserByEmail(email: string) {
     return prisma.user.findUnique({
       where: { email },
-      include: { role: true },
     });
   },
 
   async findUserById(id: string) {
     return prisma.user.findUnique({
       where: { id },
-      include: { role: true },
     });
   },
 
@@ -20,12 +18,8 @@ export const AuthRepository = {
     return prisma.user.create({
       data: {
         email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
         passwordHash,
-        roleId,
       },
-      include: { role: true },
     });
   },
 };

@@ -1,51 +1,73 @@
 import prisma from "@/core/db/prisma";
-import { BookingFormValues } from "../validations/booking.schema";
+import { ReservationFormValues } from "../validations/booking.schema";
 
 export const BookingRepository = {
-  async findConflictingBookings(roomIds: string[], checkInDate: Date, checkOutDate: Date) {
-    return prisma.roomBooking.findMany({
+  async getAvailableRooms(propertyId: string, roomTypeIds: string[], checkInDate: Date, checkOutDate: Date) {
+    // 1. Find all rooms of the requested types in the property
+    const allRooms = await prisma.room.findMany({
       where: {
-        roomId: { in: roomIds },
-        booking: {
-          status: { notIn: ["CANCELLED"] },
-          OR: [
-            {
-              checkInDate: { lt: checkOutDate },
-              checkOutDate: { gt: checkInDate },
-            },
-          ],
-        },
+        roomTypeId: { in: roomTypeIds },
+        floor: { building: { propertyId } },
+        status: "AVAILABLE", // Not out of order or in maintenance
       },
-    });
-  },
-
-  async calculateTotalAmount(roomIds: string[], checkInDate: Date, checkOutDate: Date): Promise<number> {
-    const rooms = await prisma.room.findMany({
-      where: { id: { in: roomIds } },
       include: { roomType: true },
     });
 
-    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return rooms.reduce((sum, room) => sum + (room.roomType.basePrice * nights), 0);
+    // 2. Find any conflicting RoomAssignments
+    const conflictingAssignments = await prisma.roomAssignment.findMany({
+      where: {
+        roomId: { in: allRooms.map(r => r.id) },
+        stay: {
+          reservation: {
+            status: { notIn: ["CANCELLED", "NO_SHOW"] },
+          },
+        },
+        OR: [
+          {
+            startDate: { lt: checkOutDate },
+            endDate: { gt: checkInDate },
+          },
+        ],
+      },
+    });
+
+    const conflictingRoomIds = new Set(conflictingAssignments.map(a => a.roomId));
+
+    // 3. Filter out unavailable rooms
+    return allRooms.filter(room => !conflictingRoomIds.has(room.id));
   },
 
-  async createBooking(data: BookingFormValues & { totalAmount: number }) {
-    return prisma.booking.create({
+  async createReservation(data: ReservationFormValues, assignedRoomIds: string[]) {
+    // We create a Reservation, a Stay, and RoomAssignments in a single transaction.
+    return prisma.reservation.create({
       data: {
+        propertyId: data.propertyId,
         guestId: data.guestId,
         checkInDate: data.checkInDate,
         checkOutDate: data.checkOutDate,
         status: data.status,
-        notes: data.notes,
-        totalAmount: data.totalAmount,
-        roomBookings: {
-          create: data.roomIds.map(roomId => ({ roomId })),
+        stays: {
+          create: {
+            status: "PRE_ARRIVAL",
+            roomAssignments: {
+              create: assignedRoomIds.map(roomId => ({
+                roomId,
+                startDate: data.checkInDate,
+                endDate: data.checkOutDate,
+              })),
+            },
+          },
         },
       },
       include: {
-        roomBookings: true,
         guest: true,
+        stays: {
+          include: {
+            roomAssignments: {
+              include: { room: { include: { roomType: true } } },
+            },
+          },
+        },
       },
     });
   },

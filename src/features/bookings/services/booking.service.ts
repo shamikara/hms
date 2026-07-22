@@ -1,32 +1,43 @@
 import { BookingRepository } from "../repositories/booking.repository";
-import { BookingFormValues } from "../validations/booking.schema";
+import { ReservationFormValues } from "../validations/booking.schema";
 
 export const BookingService = {
-  async createBooking(data: BookingFormValues) {
-    // 1. Check for room availability to prevent double-booking
-    const conflictingBookings = await BookingRepository.findConflictingBookings(
-      data.roomIds,
+  async createReservation(data: ReservationFormValues) {
+    // 1. Get all available rooms for the requested types
+    const availableRooms = await BookingRepository.getAvailableRooms(
+      data.propertyId,
+      data.roomTypeIds,
       data.checkInDate,
       data.checkOutDate
     );
 
-    if (conflictingBookings.length > 0) {
-      throw new Error("One or more selected rooms are not available for the chosen dates.");
+    // 2. We need to assign at least one room per requested room type.
+    const assignedRoomIds: string[] = [];
+    const missingRoomTypes: string[] = [];
+
+    // Group available rooms by type to easily pick one
+    const roomsByType = availableRooms.reduce((acc, room) => {
+      if (!acc[room.roomTypeId]) acc[room.roomTypeId] = [];
+      acc[room.roomTypeId].push(room.id);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    // Pick one room for each requested type
+    for (const typeId of data.roomTypeIds) {
+      if (roomsByType[typeId] && roomsByType[typeId].length > 0) {
+        // Pop an available room so it's not double-assigned if the same type is requested twice
+        assignedRoomIds.push(roomsByType[typeId].pop()!);
+      } else {
+        missingRoomTypes.push(typeId);
+      }
     }
 
-    // 2. Calculate total amount
-    const totalAmount = await BookingRepository.calculateTotalAmount(
-      data.roomIds,
-      data.checkInDate,
-      data.checkOutDate
-    );
+    if (missingRoomTypes.length > 0) {
+      throw new Error("One or more requested room types are not available for these dates.");
+    }
 
-    // 3. Create the booking transaction
-    const booking = await BookingRepository.createBooking({
-      ...data,
-      totalAmount,
-    });
-
-    return booking;
+    // 3. Create the Reservation
+    const reservation = await BookingRepository.createReservation(data, assignedRoomIds);
+    return reservation;
   },
 };

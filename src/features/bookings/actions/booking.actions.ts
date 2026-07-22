@@ -1,22 +1,95 @@
 "use server";
 
-import { z } from "zod";
+import prisma from "@/core/db/prisma";
 import { BookingService } from "../services/booking.service";
-import { BookingSchema, BookingFormValues } from "../validations/booking.schema";
+import { GuestFormValues, ReservationFormValues, GuestSchema, ReservationSchema } from "../validations/booking.schema";
+import { Reservation, RoomType } from "@prisma/client";
 
-export async function createBookingAction(data: BookingFormValues) {
+export async function createPublicBooking(
+  guestData: GuestFormValues,
+  reservationData: Omit<ReservationFormValues, "guestId">
+): Promise<{ success: boolean; data?: Reservation; error?: string }> {
   try {
-    const parsedData = BookingSchema.parse(data);
-    const booking = await BookingService.createBooking(parsedData);
+    // 1. Validate inputs
+    const parsedGuest = GuestSchema.parse(guestData);
     
-    return { success: true, booking };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+    // 2. Find or Create Guest
+    let guest = await prisma.guestProfile.findUnique({
+      where: { email: parsedGuest.email },
+    });
+
+    if (!guest) {
+      guest = await prisma.guestProfile.create({
+        data: {
+          email: parsedGuest.email,
+          firstName: parsedGuest.firstName,
+          lastName: parsedGuest.lastName,
+        },
+      });
     }
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: "An unexpected error occurred." };
+
+    // 3. Validate reservation data with the new guestId
+    const fullReservationData = {
+      ...reservationData,
+      guestId: guest.id,
+    };
+    const parsedReservation = ReservationSchema.parse(fullReservationData);
+
+    // 4. Delegate to Service
+    const reservation = await BookingService.createReservation(parsedReservation);
+
+    return { success: true, data: reservation };
+  } catch (error: any) {
+    console.error("Booking Error:", error);
+    return { success: false, error: error.message || "Failed to create booking" };
+  }
+}
+
+export type RoomAvailability = {
+  roomType: RoomType;
+  availableCount: number;
+};
+
+export async function checkAvailability(propertyId: string, checkInDate: Date, checkOutDate: Date): Promise<{ success: boolean; data?: RoomAvailability[]; error?: string }> {
+  try {
+    // Return all room types and their available count
+    const allRoomTypes = await prisma.roomType.findMany({
+      where: { propertyId },
+      include: { rooms: true },
+    });
+
+    const availability = await Promise.all(allRoomTypes.map(async (rt) => {
+      const availableRooms = await prisma.room.findMany({
+        where: {
+          roomTypeId: rt.id,
+          status: "AVAILABLE",
+          NOT: {
+            assignments: {
+              some: {
+                stay: {
+                  reservation: {
+                    status: { notIn: ["CANCELLED", "NO_SHOW"] }
+                  }
+                },
+                OR: [
+                  {
+                    startDate: { lt: checkOutDate },
+                    endDate: { gt: checkInDate }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      });
+      return {
+        roomType: rt,
+        availableCount: availableRooms.length,
+      };
+    }));
+
+    return { success: true, data: availability };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to check availability" };
   }
 }
