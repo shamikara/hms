@@ -33,10 +33,19 @@ export function PublicFooter() {
               <Link href="/safari" className="hover:text-emerald-400 transition-colors">Safari Drives & Excursions</Link>
             </li>
             <li>
-              <Link href="/contact" className="hover:text-emerald-400 transition-colors">Concierge & Transfers</Link>
+              <Link href="/dining" className="hover:text-emerald-400 transition-colors">Gastronomy & Bush Dining</Link>
             </li>
             <li>
-              <Link href="/book" className="hover:text-emerald-400 transition-colors">Direct Availability Engine</Link>
+              <Link href="/spa" className="hover:text-emerald-400 transition-colors">Wilderness Spa & Wellness</Link>
+            </li>
+            <li>
+              <Link href="/packages" className="hover:text-emerald-400 transition-colors">Packages & Exclusive Offers</Link>
+            </li>
+            <li>
+              <Link href="/sustainability" className="hover:text-emerald-400 transition-colors">Conservation & Sustainability</Link>
+            </li>
+            <li>
+              <Link href="/contact" className="hover:text-emerald-400 transition-colors">Concierge & Transfers</Link>
             </li>
           </ul>
         </div>

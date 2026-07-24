@@ -33,6 +33,10 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
     { href: "/about", label: "The Lodge" },
     { href: "/rooms", label: "Accommodation" },
     { href: "/safari", label: "Experiences" },
+    { href: "/dining", label: "Gastronomy" },
+    { href: "/spa", label: "Spa & Wellness" },
+    { href: "/packages", label: "Packages" },
+    { href: "/sustainability", label: "Conservation" },
     { href: "/contact", label: "Contact" },
   ];
 
