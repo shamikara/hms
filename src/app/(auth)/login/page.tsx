@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
-import { Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   return (
@@ -19,29 +18,21 @@ export default function LoginPage() {
 
             <LoginForm />
           </div>
-
-          <div className="p-4 bg-stone-950 border-t border-stone-800/80 text-center text-xs font-mono space-y-1">
-            <p className="text-stone-300 font-semibold flex items-center justify-center space-x-1.5">
-              <span>A Product by Spandha Labs</span>
-              <Sparkles className="w-3 h-3 text-emerald-400" />
-            </p>
-            <p className="text-stone-500 italic text-[11px]">"Building software people remember."</p>
-            <p className="text-stone-400 text-[10px]">
-              Built with <strong className="text-stone-300">Platform OS</strong> •{" "}
-              <a
-                href="https://spandhalabs.lk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-400 hover:underline"
-              >
-                spandhalabs.lk
-              </a>
-            </p>
-          </div>
         </div>
 
-        <div className="mt-8 text-center text-xs text-stone-500 font-mono">
-          <p>&copy; {new Date().getFullYear()} Spandha Labs & Lily Resort Udawalawe. All rights reserved.</p>
+        <div className="mt-8 text-center text-xs text-stone-400 font-mono space-y-1">
+          <p>&copy; {new Date().getFullYear()} Lily Resort Udawalawe</p>
+          <p>
+            Built with <span className="text-stone-300 font-semibold">Platform OS</span> by{" "}
+            <a
+              href="https://spandhalabs.lk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-stone-300 hover:text-emerald-400 font-semibold transition-colors underline underline-offset-2"
+            >
+              Spandha Labs
+            </a>
+          </p>
         </div>
       </main>
     </div>
