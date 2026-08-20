@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Receipt,
   UtensilsCrossed,
+  Truck,
   PlusCircle,
   Building2,
   Moon,
@@ -97,6 +98,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <Compass className="mr-2 h-4 w-4 text-emerald-500" />
             <span>Safari Operations</span>
             <CommandShortcut>G S</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => runCommand(() => router.push("/admin/safari/fleet"))}
+          >
+            <Truck className="mr-2 h-4 w-4 text-emerald-500" />
+            <span>Safari Fleet Operations</span>
+            <CommandShortcut>G V</CommandShortcut>
           </CommandItem>
           <CommandItem
             onSelect={() => runCommand(() => router.push("/admin/restaurant"))}

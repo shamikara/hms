@@ -13,6 +13,7 @@ import {
   Building2,
   TreePine,
   Tent,
+  Truck,
 } from "lucide-react";
 
 export interface Property {
@@ -109,6 +110,12 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         badge: "3 Active",
         badgeVariant: "amber",
         shortcut: "G S",
+      },
+      {
+        title: "Safari Fleet",
+        href: "/admin/safari/fleet",
+        icon: Truck,
+        shortcut: "G V",
       },
       {
         title: "Dining & Bar POS",

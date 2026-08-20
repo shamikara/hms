@@ -43,6 +43,8 @@ model Property {
   vehicles     Vehicle[]            @relation("PropertyVehicles")
   routes       SafariRoute[]        @relation("PropertyRoutes")
   reservations Reservation[]        @relation("PropertyReservations")
+  trips        SafariTrip[]         @relation("PropertyTrips")
+  fleetAlerts  FleetAlert[]         @relation("PropertyFleetAlerts")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -173,6 +175,12 @@ model Employee {
   schedulesGuide SafariSchedule[]     @relation("GuideSchedules")
   schedulesDrive SafariSchedule[]     @relation("DriverSchedules")
 
+  /// Safari driving credentials. Nullable because most employees never drive a safari vehicle.
+  driverProfile     SafariDriver?        @relation("EmployeeDriverProfile")
+  tripsGuided       SafariTrip[]         @relation("GuideTrips")
+  maintenanceLogged VehicleMaintenance[] @relation("MaintenanceRecordedBy")
+  fuelLogsRecorded  VehicleFuelLog[]     @relation("FuelRecordedBy")
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   /// Soft delete flag for terminated employees.
@@ -231,7 +239,9 @@ model GuestProfile {
   email         String @unique
   loyaltyPoints Int    @default(0)
 
-  reservations Reservation[] @relation("GuestReservations")
+  reservations  Reservation[]  @relation("GuestReservations")
+  safariTrips   SafariTrip[]   @relation("GuestTrips")
+  safariReviews SafariReview[] @relation("GuestSafariReviews")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -425,7 +435,17 @@ model Payment {
 
 enum VehicleStatus {
   AVAILABLE
+  /// Held for an upcoming trip that has not departed yet.
+  RESERVED
+  /// Currently out on a game drive.
+  ON_SAFARI
+  /// Trip finished, vehicle inbound / being checked back in.
+  RETURNING
   MAINTENANCE
+  /// Grounded (accident, expired documents, awaiting parts).
+  OUT_OF_SERVICE
+  /// Legacy value, semantically equivalent to OUT_OF_SERVICE. Retained so
+  /// pre-existing rows and callers do not break.
   RETIRED
 }
 
@@ -434,11 +454,51 @@ model Vehicle {
   propertyId String
   property   Property @relation("PropertyVehicles", fields: [propertyId], references: [id], onDelete: Restrict)
 
-  plateNumber String
-  capacity    Int
+  plateNumber String /// Registration number
+  capacity    Int /// Total seating capacity (driver + passengers)
   status      VehicleStatus @default(AVAILABLE)
 
-  schedules SafariSchedule[] @relation("VehicleSchedules")
+  /// Human friendly fleet name, e.g. "Land Cruiser #01". Nullable for legacy rows.
+  displayName    String?
+  /// Manufacturer. Nullable for legacy rows created before fleet management existed.
+  make           String?
+  /// Model name. Nullable for legacy rows.
+  model          String?
+  vehicleType    VehicleType   @default(SAFARI_JEEP)
+  /// Guests that may be carried on safari. Nullable => fall back to `capacity`.
+  safariCapacity Int?
+  fuelType       FuelType      @default(DIESEL)
+  ownershipType  OwnershipType @default(OWNED)
+  /// Nullable because ownership records for older vehicles are often incomplete.
+  purchaseYear   Int?
+  /// Odometer reading in km. Monotonically increasing; advanced by trips and fuel logs.
+  currentMileage Int           @default(0)
+  /// Operational toggle. Inactive vehicles are excluded from assignment but retained
+  /// for historical trips and reviews.
+  isActive       Boolean       @default(true)
+  notes          String?
+  /// Image URLs / storage references. Plain text because no blob storage is configured.
+  imageUrls      String[]
+
+  // --- Denormalised rating aggregates (recomputed inside the review transaction).
+  ratingCount          Int       @default(0)
+  ratingAvg            Decimal?  @db.Decimal(4, 3)
+  /// Confidence adjusted (Bayesian) score used for ranking. See lib/rating.ts.
+  ratingBayesian       Decimal?  @db.Decimal(4, 3)
+  ratingCleanlinessAvg Decimal?  @db.Decimal(4, 3)
+  ratingComfortAvg     Decimal?  @db.Decimal(4, 3)
+  ratingConditionAvg   Decimal?  @db.Decimal(4, 3)
+  ratingRideQualityAvg Decimal?  @db.Decimal(4, 3)
+  ratingSuitabilityAvg Decimal?  @db.Decimal(4, 3)
+  ratingsUpdatedAt     DateTime?
+
+  schedules   SafariSchedule[]     @relation("VehicleSchedules")
+  trips       SafariTrip[]         @relation("VehicleTrips")
+  maintenance VehicleMaintenance[] @relation("VehicleMaintenance")
+  fuelLogs    VehicleFuelLog[]     @relation("VehicleFuelLogs")
+  documents   VehicleDocument[]    @relation("VehicleDocuments")
+  reviews     SafariReview[]       @relation("VehicleReviews")
+  alerts      FleetAlert[]         @relation("VehicleAlerts")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -447,6 +507,8 @@ model Vehicle {
 
   @@unique([propertyId, plateNumber]) /// Plate must be unique per property
   @@index([propertyId])
+  @@index([propertyId, status, isActive])
+  @@index([ratingBayesian])
 }
 
 model SafariRoute {
@@ -458,6 +520,7 @@ model SafariRoute {
   durationMin Int
 
   schedules SafariSchedule[] @relation("RouteSchedules")
+  trips     SafariTrip[]     @relation("RouteTrips")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -483,6 +546,9 @@ model SafariSchedule {
   endTime   DateTime
 
   bookings SafariBooking[] @relation("ScheduleBookings")
+  /// Operational execution record. Nullable for legacy schedules never dispatched
+  /// through the fleet module.
+  trip     SafariTrip?     @relation("ScheduleTrip")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -503,10 +569,418 @@ model SafariBooking {
 
   guestCount Int
 
+  /// The operational trip this booking was dispatched on. Nullable until dispatched.
+  trip SafariTrip? @relation("BookingTrip")
+
   createdAt DateTime @default(now())
 
   @@index([scheduleId])
   @@index([stayId])
+}
+
+// ============================================================================
+// 5B. SAFARI FLEET OPERATIONS
+// ============================================================================
+// This section layers fleet operations on top of section 5. It deliberately
+// reuses `Vehicle`, `SafariRoute`, `SafariSchedule`, `SafariBooking`, `Employee`
+// and `GuestProfile` rather than introducing parallel entities.
+//
+// Occupancy model: `SafariTrip` is the authoritative record of a vehicle/driver
+// being busy for a time window. A trip may be linked 1:1 to a legacy
+// `SafariSchedule`; conflict detection reads both, so schedules created by the
+// original SafariService still block assignment.
+
+enum VehicleType {
+  LAND_CRUISER
+  SAFARI_JEEP
+  MINIBUS
+  SUV
+  TRUCK
+  OTHER
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  HYBRID
+  ELECTRIC
+}
+
+enum OwnershipType {
+  OWNED
+  LEASED
+  CONTRACTED
+}
+
+enum DriverEmploymentStatus {
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+}
+
+/// Safari driving credentials attached to an existing Employee record.
+/// No name/contact fields here on purpose: the person lives in `Employee`.
+model SafariDriver {
+  id         String   @id @default(cuid())
+  employeeId String   @unique
+  employee   Employee @relation("EmployeeDriverProfile", fields: [employeeId], references: [id], onDelete: Restrict)
+
+  licenseNumber         String
+  licenseExpiry         DateTime
+  /// Years of safari driving experience.
+  safariExperienceYears Int                    @default(0)
+  employmentStatus      DriverEmploymentStatus @default(ACTIVE)
+  /// Rostering toggle a dispatcher can flip without changing employment status.
+  isAvailable           Boolean                @default(true)
+  /// Inactive drivers are excluded from assignment but retained for history.
+  isActive              Boolean                @default(true)
+  /// Nullable: no blob storage is configured, this holds an external URL if set.
+  imageUrl              String?
+  notes                 String?
+
+  // --- Denormalised rating aggregates (recomputed inside the review transaction).
+  ratingCount              Int       @default(0)
+  ratingAvg                Decimal?  @db.Decimal(4, 3)
+  /// Confidence adjusted (Bayesian) score used for ranking. See lib/rating.ts.
+  ratingBayesian           Decimal?  @db.Decimal(4, 3)
+  ratingSafetyAvg          Decimal?  @db.Decimal(4, 3)
+  ratingPunctualityAvg     Decimal?  @db.Decimal(4, 3)
+  ratingProfessionalismAvg Decimal?  @db.Decimal(4, 3)
+  ratingCommunicationAvg   Decimal?  @db.Decimal(4, 3)
+  ratingKnowledgeAvg       Decimal?  @db.Decimal(4, 3)
+  ratingsUpdatedAt         DateTime?
+
+  trips   SafariTrip[]   @relation("DriverTrips")
+  reviews SafariReview[] @relation("DriverReviews")
+  alerts  FleetAlert[]   @relation("DriverAlerts")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag. Historical trips keep pointing at the row.
+  deletedAt DateTime?
+
+  @@unique([licenseNumber])
+  @@index([employmentStatus, isActive])
+  @@index([licenseExpiry])
+  @@index([ratingBayesian])
+}
+
+enum SafariTripStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum SafariTripType {
+  MORNING_GAME_DRIVE
+  EVENING_GAME_DRIVE
+  FULL_DAY
+  NIGHT_DRIVE
+  BIRD_WATCHING
+  PRIVATE_CHARTER
+  TRANSFER
+  OTHER
+}
+
+/// The operational record of one safari run: who drove, which vehicle, when it
+/// actually left and came back, and what the odometer said.
+model SafariTrip {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyTrips", fields: [propertyId], references: [id], onDelete: Restrict)
+
+  /// Nullable: ad-hoc private charters are not driven off a published schedule.
+  scheduleId String?         @unique
+  schedule   SafariSchedule? @relation("ScheduleTrip", fields: [scheduleId], references: [id], onDelete: SetNull)
+  /// Nullable: internal/repositioning runs have no guest booking.
+  bookingId  String?         @unique
+  booking    SafariBooking?  @relation("BookingTrip", fields: [bookingId], references: [id], onDelete: SetNull)
+  /// Nullable for internal runs. Required for a trip to become reviewable.
+  guestId    String?
+  guest      GuestProfile?   @relation("GuestTrips", fields: [guestId], references: [id], onDelete: Restrict)
+
+  vehicleId String
+  vehicle   Vehicle      @relation("VehicleTrips", fields: [vehicleId], references: [id], onDelete: Restrict)
+  driverId  String
+  driver    SafariDriver @relation("DriverTrips", fields: [driverId], references: [id], onDelete: Restrict)
+  /// Nullable: not every drive carries a separate guide.
+  guideId   String?
+  guide     Employee?    @relation("GuideTrips", fields: [guideId], references: [id], onDelete: Restrict)
+  /// Nullable: free-form destinations are allowed via `destination`.
+  routeId   String?
+  route     SafariRoute? @relation("RouteTrips", fields: [routeId], references: [id], onDelete: Restrict)
+
+  /// Park / destination name, e.g. "Udawalawe National Park".
+  destination String
+  tripType    SafariTripType   @default(MORNING_GAME_DRIVE)
+  status      SafariTripStatus @default(SCHEDULED)
+
+  scheduledStart  DateTime
+  scheduledEnd    DateTime
+  /// Nullable until the trip is started.
+  actualDeparture DateTime?
+  /// Nullable until the trip is completed.
+  actualReturn    DateTime?
+
+  guestCount Int
+
+  /// Odometer at departure. Nullable until the trip starts.
+  startMileage   Int?
+  /// Odometer at return. Nullable until the trip completes.
+  endMileage     Int?
+  /// Derived as endMileage - startMileage on completion. Stored so historical
+  /// distance survives later odometer corrections.
+  distanceKm     Int?
+  /// Fuel gauge percentage 0-100. Nullable because not every vehicle reports it.
+  startFuelLevel Int?
+  endFuelLevel   Int?
+
+  operationalNotes String?
+  incidentNotes    String?
+
+  review SafariReview? @relation("TripReview")
+  alerts FleetAlert[]  @relation("TripAlerts")
+
+  version Int @default(1) /// Optimistic locking
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId, scheduledStart, scheduledEnd])
+  @@index([driverId, scheduledStart, scheduledEnd])
+  @@index([propertyId, status, scheduledStart])
+  @@index([status, scheduledStart])
+  @@index([guestId])
+  @@index([guideId, scheduledStart, scheduledEnd])
+}
+
+/// One guest review per completed trip. Driver and vehicle ids are denormalised
+/// so aggregates stay correct even if the trip assignment is later corrected.
+model SafariReview {
+  id     String     @id @default(cuid())
+  tripId String     @unique
+  trip   SafariTrip @relation("TripReview", fields: [tripId], references: [id], onDelete: Restrict)
+
+  guestId   String
+  guest     GuestProfile @relation("GuestSafariReviews", fields: [guestId], references: [id], onDelete: Restrict)
+  vehicleId String
+  vehicle   Vehicle      @relation("VehicleReviews", fields: [vehicleId], references: [id], onDelete: Restrict)
+  driverId  String
+  driver    SafariDriver @relation("DriverReviews", fields: [driverId], references: [id], onDelete: Restrict)
+
+  /// All ratings are integers on a 1-5 star scale. CHECK constraints are added
+  /// by the SQL migration because Prisma cannot express them.
+  overallRating Int
+  comment       String?
+
+  driverOverall         Int
+  driverSafety          Int
+  driverPunctuality     Int
+  driverProfessionalism Int
+  driverCommunication   Int
+  /// Nullable: only asked when the driver also acted as the guide/tracker.
+  driverKnowledge       Int?
+
+  vehicleOverall     Int
+  vehicleCleanliness Int
+  vehicleComfort     Int
+  vehicleCondition   Int
+  vehicleRideQuality Int
+  vehicleSuitability Int
+
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([vehicleId, submittedAt])
+  @@index([driverId, submittedAt])
+  @@index([guestId])
+}
+
+enum MaintenanceType {
+  GENERAL_SERVICE
+  OIL_CHANGE
+  TYRES
+  BRAKES
+  ENGINE
+  BATTERY
+  REPAIR
+  INSPECTION
+  OTHER
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model VehicleMaintenance {
+  id        String  @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle @relation("VehicleMaintenance", fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  type             MaintenanceType
+  status           MaintenanceStatus @default(SCHEDULED)
+  description      String
+  /// Nullable for in-house work.
+  serviceProvider  String?
+  serviceDate      DateTime
+  /// Odometer at service. Nullable when the job is booked ahead of time.
+  mileageAtService Int?
+
+  cost         Decimal @db.Decimal(19, 4)
+  currencyCode String
+
+  /// Parts replaced during the service.
+  partsReplaced String[]
+
+  /// Nullable: not every job schedules a follow-up.
+  nextServiceDate    DateTime?
+  nextServiceMileage Int?
+
+  notes       String?
+  /// Invoice / job-card reference or URL. Plain text: no blob storage configured.
+  documentUrl String?
+
+  /// Nullable: imported or system generated records have no author.
+  recordedById String?
+  recordedBy   Employee? @relation("MaintenanceRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId, serviceDate])
+  @@index([vehicleId, status])
+  @@index([status, nextServiceDate])
+  @@index([nextServiceDate])
+}
+
+model VehicleFuelLog {
+  id        String  @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle @relation("VehicleFuelLogs", fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  loggedAt     DateTime
+  /// Odometer at fill-up. Used together with the previous log to derive km/L.
+  mileage      Int
+  /// Litres dispensed.
+  litres       Decimal  @db.Decimal(10, 3)
+  totalCost    Decimal  @db.Decimal(19, 4)
+  currencyCode String
+
+  /// Nullable: station is not always captured.
+  station    String?
+  receiptRef String?
+  notes      String?
+
+  /// Nullable: imported records have no author.
+  recordedById String?
+  recordedBy   Employee? @relation("FuelRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([vehicleId, loggedAt, mileage]) /// Guards against double-submitted receipts
+  @@index([vehicleId, loggedAt])
+  @@index([loggedAt])
+}
+
+enum VehicleDocumentType {
+  INSURANCE
+  REVENUE_LICENSE
+  EMISSION_CERTIFICATE
+  FITNESS_CERTIFICATE
+  REGISTRATION
+  OTHER
+}
+
+/// Compliance documents. Validity is DERIVED from `expiryDate` at read time
+/// (see fleet/lib/documentStatus.ts) rather than stored, so it cannot go stale.
+model VehicleDocument {
+  id        String  @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle @relation("VehicleDocuments", fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  type           VehicleDocumentType
+  documentNumber String
+  issueDate      DateTime
+  expiryDate     DateTime
+  /// Scan URL / storage reference. Plain text: no blob storage configured.
+  fileUrl        String?
+  notes          String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete flag so superseded documents stay auditable.
+  deletedAt DateTime?
+
+  @@unique([vehicleId, type, documentNumber])
+  @@index([vehicleId, type, expiryDate])
+  @@index([expiryDate])
+}
+
+enum FleetAlertType {
+  SERVICE_DUE_DATE
+  SERVICE_DUE_MILEAGE
+  MAINTENANCE_OVERDUE
+  DOCUMENT_EXPIRING
+  DOCUMENT_EXPIRED
+  LICENSE_EXPIRING
+  LICENSE_EXPIRED
+  LOW_RATING
+  RATING_DECLINE
+  ASSIGNMENT_CONFLICT
+}
+
+enum FleetAlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum FleetAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+/// Operational alerts. `dedupeKey` is unique and encodes the alert meaningful
+/// state (entity + type + threshold bucket), so re-running the alert sweep
+/// updates rather than duplicates. That is what keeps this from spamming.
+model FleetAlert {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyFleetAlerts", fields: [propertyId], references: [id], onDelete: Restrict)
+
+  type     FleetAlertType
+  severity FleetAlertSeverity @default(WARNING)
+  status   FleetAlertStatus   @default(OPEN)
+
+  title   String
+  message String
+
+  /// Stable identity of "this alert, about this thing, at this threshold".
+  dedupeKey String @unique
+
+  /// All subject links are nullable: an alert targets exactly one of them.
+  vehicleId String?
+  vehicle   Vehicle?      @relation("VehicleAlerts", fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverId  String?
+  driver    SafariDriver? @relation("DriverAlerts", fields: [driverId], references: [id], onDelete: Cascade)
+  tripId    String?
+  trip      SafariTrip?   @relation("TripAlerts", fields: [tripId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  @@index([propertyId, status, severity])
+  @@index([type, status])
+  @@index([vehicleId])
+  @@index([driverId])
 }
 
 // ============================================================================

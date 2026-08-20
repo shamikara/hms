@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bell, Check, Compass, CalendarCheck, ShieldAlert, Sparkles } from "lucide-react";
+import { Bell, Check, Compass, CalendarCheck, ShieldAlert, Sparkles, Truck } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { listFleetAlertsAction } from "@/features/fleet/actions/analytics.actions";
 
 interface NotificationItem {
   id: string;
@@ -16,7 +17,7 @@ interface NotificationItem {
   description: string;
   time: string;
   unread: boolean;
-  type: "booking" | "safari" | "alert" | "system";
+  type: "booking" | "safari" | "alert" | "system" | "fleet";
 }
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
@@ -48,15 +49,50 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
 
 export function NotificationCenter() {
   const [notifications, setNotifications] = React.useState(MOCK_NOTIFICATIONS);
+  const [fleetAlerts, setFleetAlerts] = React.useState<NotificationItem[]>([]);
+  const [open, setOpen] = React.useState(false);
+  const loadedRef = React.useRef(false);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  // Real fleet alerts (service due, document/licence expiry, rating decline) are
+  // pulled on first open rather than on every admin page render. Failures are
+  // silent: a role without fleet access simply sees no fleet alerts.
+  React.useEffect(() => {
+    if (!open || loadedRef.current) return;
+    loadedRef.current = true;
+
+    listFleetAlertsAction()
+      .then((result) => {
+        if (!result.success || !result.data) return;
+        setFleetAlerts(
+          result.data.alerts.slice(0, 10).map((alert) => ({
+            id: alert.id,
+            title: alert.title,
+            description: alert.message,
+            time: new Date(alert.createdAt).toLocaleDateString(),
+            unread: alert.status === "OPEN",
+            type: "fleet" as const,
+          }))
+        );
+      })
+      .catch(() => {
+        /* Fleet alerts are advisory; never break the header on failure. */
+      });
+  }, [open]);
+
+  const allNotifications = React.useMemo(
+    () => [...fleetAlerts, ...notifications],
+    [fleetAlerts, notifications]
+  );
+
+  const unreadCount = allNotifications.filter((n) => n.unread).length;
 
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    setFleetAlerts((prev) => prev.map((n) => ({ ...n, unread: false })));
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button className="relative flex h-8 w-8 items-center justify-center rounded-md border border-stone-200 bg-white text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-white transition-colors cursor-pointer">
           <Bell className="h-4 w-4" />
@@ -90,7 +126,7 @@ export function NotificationCenter() {
         </div>
 
         <div className="max-h-80 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/60">
-          {notifications.map((n) => {
+          {allNotifications.map((n) => {
             return (
               <div
                 key={n.id}
@@ -103,6 +139,8 @@ export function NotificationCenter() {
                     <CalendarCheck className="h-3.5 w-3.5 text-emerald-500" />
                   ) : n.type === "safari" ? (
                     <Compass className="h-3.5 w-3.5 text-amber-500" />
+                  ) : n.type === "fleet" ? (
+                    <Truck className="h-3.5 w-3.5 text-amber-500" />
                   ) : (
                     <Sparkles className="h-3.5 w-3.5 text-blue-500" />
                   )}
