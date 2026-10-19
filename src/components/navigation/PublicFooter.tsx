@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone, Shield } from "lucide-react";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 export function PublicFooter() {
   return (
@@ -98,6 +99,11 @@ export function PublicFooter() {
           </a>
         </p>
       </div>
+
+      {/* Mounted here because the footer renders on exactly the guest-facing
+          pages — not login, not admin. The widget is fixed-position, so it
+          escapes the footer's layout box. */}
+      <ChatWidget />
     </footer>
   );
 }
