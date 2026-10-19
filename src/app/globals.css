@@ -141,3 +141,72 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Header */
+:root {
+  /* Referenced for layout offsets — keep stable, do not animate. */
+  --header-h: 62px;
+  /* Shared motion curve for every header state change. */
+  --ease: cubic-bezier(0.4, 0.14, 0.2, 1);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 76px;
+  }
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--header-h);
+  background-color: rgb(12 10 9 / 0.95);
+  border-bottom: 1px solid rgb(41 37 36 / 0.9);
+  backdrop-filter: blur(12px);
+  box-shadow: none;
+  transition:
+    transform 420ms var(--ease),
+    background-color 420ms var(--ease),
+    border-color 420ms var(--ease),
+    box-shadow 420ms var(--ease);
+}
+
+/* Hero pages pull their hero up under the header, which stays in flow. */
+.site-header[data-has-hero="true"] {
+  margin-bottom: calc(-1 * var(--header-h));
+}
+
+/* Headroom: slide away going down, return instantly coming back up. */
+.site-header[data-hidden="true"] {
+  transform: translateY(-100%);
+}
+
+/* Condensed: the surface asserts itself once clear of the top. */
+.site-header[data-scrolled="true"] {
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.65);
+}
+
+.site-header[data-scrolled="true"] .site-header__brand {
+  transform: scale(0.94);
+}
+
+/* Near-invisible above the hero, solid after it. */
+.site-header[data-over-hero="true"] {
+  background-color: rgb(12 10 9 / 0);
+  border-bottom-color: rgb(41 37 36 / 0);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.site-header__brand {
+  transform-origin: left center;
+  transition: transform 420ms var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .site-header__brand {
+    transition: none;
+  }
+}

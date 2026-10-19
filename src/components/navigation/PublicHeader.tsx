@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, ChevronRight, Phone, Mail, User, Shield } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { cn } from "@/lib/utils";
+import { useHeaderScroll } from "./useHeaderScroll";
 
 interface PublicHeaderProps {
   variant?: "transparent" | "solid";
@@ -16,6 +17,7 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
   const pathname = usePathname();
 
   const isSolid = variant === "solid";
+  const { hidden, scrolled, pastHero } = useHeaderScroll();
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -43,16 +45,15 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
   return (
     <>
       <header
-        className={cn(
-          "w-full z-40 py-3.5 px-4 sm:px-8 lg:px-16 flex justify-between items-center transition-all select-none",
-          isSolid
-            ? "sticky top-0 bg-stone-950/95 backdrop-blur-md border-b border-stone-850 text-stone-100 shadow-xl"
-            : "absolute top-0 text-stone-100"
-        )}
+        className="site-header w-full px-4 sm:px-8 lg:px-16 flex justify-between items-center select-none text-stone-100"
+        data-has-hero={!isSolid ? "true" : "false"}
+        data-over-hero={!isSolid && !pastHero ? "true" : "false"}
+        data-hidden={hidden ? "true" : "false"}
+        data-scrolled={scrolled ? "true" : "false"}
       >
         {/* Brand Logo & Name */}
         <ScrollReveal direction="down" delay={0.1} width="w-auto">
-          <Link href="/" className="flex items-center space-x-2 group">
+          <Link href="/" className="site-header__brand flex items-center space-x-2 group">
             <div className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-serif font-bold text-sm shrink-0">
               W
             </div>
@@ -195,7 +196,7 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
               <div className="pt-4 space-y-2 text-xs text-stone-400 font-mono">
                 <div className="flex items-center space-x-2">
                   <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>+94 47 223 4567</span>
+                  <span>+94 77 732 0237</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Mail className="w-3.5 h-3.5 text-emerald-400" />
