@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/core/db/prisma";
+import { requireAdminSession, UNAUTHENTICATED } from "@/features/admin/lib/requireAdminSession";
 
 const mockGuests = [
   { id: "g1", firstName: "Alexander", lastName: "Wright", email: "alexander.wright@luxurytravel.com", phone: "+44 7700 900077", reservations: [1, 2], createdAt: new Date("2026-01-15") },
@@ -10,6 +11,8 @@ const mockGuests = [
 ];
 
 export async function getAllGuests(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+
   try {
     const guests = await prisma.guestProfile.findMany({
       orderBy: { createdAt: 'desc' },

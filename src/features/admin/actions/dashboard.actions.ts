@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/core/db/prisma";
+import { requireAdminSession, UNAUTHENTICATED } from "@/features/admin/lib/requireAdminSession";
 import { startOfDay, endOfDay } from "date-fns";
 
 const mockRecentReservations = [
@@ -10,6 +11,8 @@ const mockRecentReservations = [
 ];
 
 export async function getDashboardMetrics(propertyId?: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+
   try {
     const today = new Date();
     const start = startOfDay(today);
@@ -59,6 +62,8 @@ export async function getDashboardMetrics(propertyId?: string): Promise<{ succes
 }
 
 export async function getRecentReservations(propertyId?: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+
   try {
     const propId = propertyId || "resort_1";
 

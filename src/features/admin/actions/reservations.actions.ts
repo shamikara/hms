@@ -1,9 +1,12 @@
 "use server";
 
 import prisma from "@/core/db/prisma";
+import { requireAdminSession, UNAUTHENTICATED } from "@/features/admin/lib/requireAdminSession";
 import { Reservation, ReservationStatus } from "@prisma/client";
 
 export async function getAllReservations(propertyId?: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+
   try {
     const propId = propertyId || "resort_1";
     if (!propId) throw new Error("No property found");
@@ -23,6 +26,8 @@ export async function getAllReservations(propertyId?: string): Promise<{ success
 }
 
 export async function updateReservationStatus(reservationId: string, status: ReservationStatus): Promise<{ success: boolean; data?: Reservation; error?: string }> {
+  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+
   try {
     const updated = await prisma.reservation.update({
       where: { id: reservationId },
