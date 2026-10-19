@@ -11,7 +11,7 @@ export default async function BookPage() {
       <PublicHeader variant="transparent" />
 
       <main className="flex-1">
-        <ParallaxHero imageSrc="/hero-bg-udawalawe.png" alt="Book your stay at Udawalawe Resort">
+        <ParallaxHero imageSrc="/property-verandah-day.webp" alt="Book your stay at Udawalawe Resort">
           <ScrollReveal delay={0.2}>
             <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs sm:text-sm mb-4 block font-mono">
               Direct Sanctuary Reservations

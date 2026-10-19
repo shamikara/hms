@@ -110,7 +110,7 @@ export default function AboutPage() {
           <ScrollReveal direction="left">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-stone-800 h-[450px]">
               <Image
-                src="/lily-resort-hero.png"
+                src="/property-verandah-dusk.webp"
                 alt="Wildlily Safari Resort Sanctuary"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"

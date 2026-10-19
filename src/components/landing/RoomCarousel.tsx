@@ -10,21 +10,21 @@ const rooms = [
     title: "Presidential Villa",
     description: "Ultimate luxury with a private infinity plunge pool overlooking the reserve canopy.",
     price: "$1,200 / night",
-    image: "/lily-presidential-villa.png",
+    image: "/room-deluxe-double.webp",
   },
   {
     id: 2,
     title: "Luxury Safari Pavilion",
     description: "Immersive wilderness experience with 5-star amenities bordering the jungle sanctuary.",
     price: "$450 / night",
-    image: "/lily-resort-hero.png",
+    image: "/room-twin-purple.webp",
   },
   {
     id: 3,
     title: "Family Wilderness Suite",
     description: "Spacious multi-room suite with private campfire lounge perfect for family retreats.",
     price: "$850 / night",
-    image: "/lily-presidential-villa.png", 
+    image: "/room-quadruple.webp", 
   }
 ];
 

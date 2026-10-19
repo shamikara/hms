@@ -7,14 +7,14 @@ import { useGSAP } from "@gsap/react";
 import { DISTANCE, DURATION, EASE } from "@/lib/motion/motionTokens";
 
 const galleryImages = [
-  { id: 1, src: "/lily-safari-elephants.png", alt: "Wild Elephants Bathing in Udawalawe", className: "col-span-2 row-span-2 aspect-square" },
-  { id: 2, src: "/lily-safari-leopard.png", alt: "Sri Lankan Leopard on Granite Rock", className: "col-span-1 row-span-1 aspect-square" },
-  { id: 3, src: "/lily-spa-pavilion.png", alt: "Ayurveda Wellness Spa Pavilion", className: "col-span-1 row-span-1 aspect-square" },
-  { id: 4, src: "/lily-aerial-resort.png", alt: "Aerial View of Wildlily Safari Resort Canopy & Reservoir", className: "col-span-2 row-span-1 aspect-[2/1]" },
-  { id: 5, src: "/lily-bush-dining.png", alt: "Romantic Candlelit Bush Dining Clearing", className: "col-span-1 row-span-1 aspect-square" },
-  { id: 6, src: "/lily-dining-pavilion.png", alt: "Open-Air Teak Dining Pavilion at Night", className: "col-span-1 row-span-1 aspect-square" },
-  { id: 7, src: "/lily-wildlife-birds.png", alt: "Wild Peacocks & Birdlife at Dawn", className: "col-span-1 row-span-1 aspect-square" },
-  { id: 8, src: "/lily-presidential-villa.png", alt: "Presidential Villa Infinity Plunge Pool", className: "col-span-1 row-span-1 aspect-square" },
+  { id: 1, src: "/safari-elephant-herd.webp", alt: "Wild Elephant Herd at Udawalawe", className: "col-span-2 row-span-2 aspect-square" },
+  { id: 2, src: "/safari-elephant-calf.webp", alt: "Elephant Mother and Calf", className: "col-span-1 row-span-1 aspect-square" },
+  { id: 3, src: "/pool-day.webp", alt: "The Swimming Pool by Day", className: "col-span-1 row-span-1 aspect-square" },
+  { id: 4, src: "/pool-dusk.webp", alt: "Poolside Pergola at Dusk", className: "col-span-2 row-span-1 aspect-[2/1]" },
+  { id: 5, src: "/dining-grill.webp", alt: "Sri Lankan Grilled Platters", className: "col-span-1 row-span-1 aspect-square" },
+  { id: 6, src: "/dining-rice-curry.webp", alt: "Traditional Rice and Curry", className: "col-span-1 row-span-1 aspect-square" },
+  { id: 7, src: "/safari-reservoir.webp", alt: "Udawalawe Reservoir Landscape", className: "col-span-1 row-span-1 aspect-square" },
+  { id: 8, src: "/room-detail.webp", alt: "Guest Room Interior", className: "col-span-1 row-span-1 aspect-square" },
 ];
 
 export function MasonryGallery() {

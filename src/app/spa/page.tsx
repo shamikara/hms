@@ -45,8 +45,8 @@ export default function SpaPage() {
       {/* Hero Banner */}
       <section className="relative h-[65vh] flex items-center justify-center overflow-hidden border-b border-stone-850">
         <Image
-          src="/lily-presidential-villa.png"
-          alt="Wilderness Spa & Ayurveda Pavilion"
+          src="/pool-loungers.webp"
+          alt="Poolside loungers at Wildlily Safari Resort"
           fill
           priority
           className="object-cover brightness-[0.45] scale-105 transition-transform duration-1000"

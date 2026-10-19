@@ -14,7 +14,7 @@ export default function RoomsPage() {
       per: "night",
       capacity: "4 Guests",
       size: "250 sq.m",
-      image: "/lily-presidential-villa.png",
+      image: "/room-deluxe-double.webp",
       description:
         "Our flagship residence boasting a private infinity plunge pool overhanging the reserve, dual master bedrooms, dedicated personal butler service, and outdoor moonlit baths.",
       features: [
@@ -33,7 +33,7 @@ export default function RoomsPage() {
       per: "night",
       capacity: "6 Guests",
       size: "180 sq.m",
-      image: "/lily-presidential-villa.png",
+      image: "/room-quadruple.webp",
       description:
         "Spacious two-bedroom retreat thoughtfully designed for families. Features a private firepit terrace, plush living room, and direct access to guided nature trails.",
       features: [
@@ -52,7 +52,7 @@ export default function RoomsPage() {
       per: "night",
       capacity: "2 Guests",
       size: "85 sq.m",
-      image: "/lily-resort-hero.png",
+      image: "/room-twin-yellow.webp",
       description:
         "Ultra-luxury air-conditioned canvas suite offering an intimate wilderness experience with hand-carved mahogany furnishings, private veranda, and jungle views.",
       features: [

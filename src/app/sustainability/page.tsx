@@ -18,7 +18,7 @@ export default function SustainabilityPage() {
       {/* Hero */}
       <section className="relative h-[65vh] flex items-center justify-center overflow-hidden border-b border-stone-850">
         <Image
-          src="/lily-safari-elephants.png"
+          src="/safari-elephants-bush.webp"
           alt="Conservation at Wildlily Safari Resort"
           fill
           priority
@@ -52,7 +52,7 @@ export default function SustainabilityPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="relative h-[380px] sm:h-[450px] rounded-2xl overflow-hidden border border-stone-800 shadow-2xl">
               <Image
-                src="/lily-safari-elephants.png"
+                src="/safari-elephant-calf.webp"
                 alt="Udawalawe Elephant Protection"
                 fill
                 className="object-cover"
@@ -98,8 +98,8 @@ export default function SustainabilityPage() {
             </div>
             <div className="relative h-[380px] sm:h-[450px] rounded-2xl overflow-hidden border border-stone-800 shadow-2xl lg:order-1">
               <Image
-                src="/lily-resort-hero.png"
-                alt="Solar Microgrid & Eco Lodge"
+                src="/property-garden.webp"
+                alt="Resort garden and grounds"
                 fill
                 className="object-cover"
               />

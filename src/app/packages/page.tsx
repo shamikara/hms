@@ -17,7 +17,7 @@ const packages = [
     tag: "MOST POPULAR",
     price: "$4,200",
     per: "per couple",
-    image: "/lily-safari-elephants.png",
+    image: "/safari-herd-plains.webp",
     description: "The definitive safari experience combining luxury villa living with daily private 4x4 game drives and naturalist-guided tracking.",
     inclusions: [
       "Accommodation in Presidential Safari Villa",
@@ -34,7 +34,7 @@ const packages = [
     tag: "ROMANCE ESCAPE",
     price: "$3,100",
     per: "per couple",
-    image: "/lily-bush-dining.png",
+    image: "/pool-night.webp",
     description: "An intimate romantic retreat designed for newlyweds. Enjoy candlelit bush dining, moonlit baths, and sunset champagne sundowners.",
     inclusions: [
       "Stay in Luxury Canvas Pavilion or Villa",
@@ -51,7 +51,7 @@ const packages = [
     tag: "EXPERT NATURALIST",
     price: "$5,400",
     per: "per person",
-    image: "/lily-safari-leopard.png",
+    image: "/safari-reservoir.webp",
     description: "Tailored specifically for wildlife photographers and enthusiasts seeking rare Sri Lankan leopard, sloth bear, and bird sightings.",
     inclusions: [
       "Private Custom Open-Top Camera Rigged Land Cruiser",
@@ -72,7 +72,7 @@ export default function PackagesPage() {
       {/* Hero */}
       <section className="relative h-[60vh] flex items-center justify-center overflow-hidden border-b border-stone-850">
         <Image
-          src="/lily-safari-elephants.png"
+          src="/safari-elephants-bush.webp"
           alt="Curated Safari Packages"
           fill
           priority

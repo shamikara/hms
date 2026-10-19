@@ -14,7 +14,7 @@ const diningExperiences = [
   {
     title: "The Jungle Pavilion",
     subtitle: "All-Day Estate Dining",
-    image: "/lily-resort-hero.png",
+    image: "/property-verandah-day.webp",
     description:
       "An open-air teak dining pavilion surrounded by lush tropical gardens and natural water lilies. Serving organic farm-to-table breakfast, Sri Lankan curries, and modern European dishes.",
     highlights: ["Organic Estate Ingredients", "Live Cooking Stations", "Artisan Ceylon Teas & Coffees"],
@@ -22,7 +22,7 @@ const diningExperiences = [
   {
     title: "Candlelit Bush Dining",
     subtitle: "Private Wilderness Clearing",
-    image: "/lily-bush-dining.png",
+    image: "/property-garden-night.webp",
     description:
       "Dine under equatorial stars deep inside a secluded forest clearing. Surrounded by tiki torches and a glowing bonfire, enjoy a private 5-course tasting menu prepared by your personal chef.",
     highlights: ["Personal Chef & Butler", "5-Course Tasting Menu", "Open Firepit & Celestial Stargazing"],
@@ -30,7 +30,7 @@ const diningExperiences = [
   {
     title: "The Sommelier Wine Cellar",
     subtitle: "Reserve Wines & Spirits",
-    image: "/lily-presidential-villa.png",
+    image: "/dining-rice-curry.webp",
     description:
       "Our climate-controlled cellar houses over 250 rare vintages from Old and New World vineyards, handcrafted single malts, and signature Sri Lankan botanical cocktails.",
     highlights: ["250+ Global Wine Vintages", "Sommelier-Led Tastings", "Botanical Sundowner Cocktails"],
@@ -45,7 +45,7 @@ export default function DiningPage() {
       {/* Hero Banner */}
       <section className="relative h-[65vh] flex items-center justify-center overflow-hidden border-b border-stone-850">
         <Image
-          src="/lily-bush-dining.png"
+          src="/dining-grill.webp"
           alt="Wilderness Dining at Wildlily Safari Resort"
           fill
           priority

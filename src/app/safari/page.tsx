@@ -11,7 +11,7 @@ export default function SafariPage() {
       title: "Dawn Elephant Gathering Drive",
       timing: "05:30 AM – 09:30 AM",
       icon: Sun,
-      image: "/lily-safari-elephants.png",
+      image: "/safari-elephant-herd.webp",
       description:
         "Embark in custom open-top 4x4 Land Cruisers at first light to witness wild elephant herds bathing at the reservoir, accompanied by rare endemic bird sightings.",
       highlights: [
@@ -25,7 +25,7 @@ export default function SafariPage() {
       title: "Sunset Leopard & Bear Tracking",
       timing: "03:00 PM – 06:30 PM",
       icon: Moon,
-      image: "/lily-safari-leopard.png",
+      image: "/safari-elephants-bush.webp",
       description:
         "Explore the dense rocky outcrops and riverine forests during peak predator activity hours in search of the elusive Sri Lankan Leopard and Sloth Bear.",
       highlights: [
@@ -39,7 +39,7 @@ export default function SafariPage() {
       title: "Candlelit Bush Dining & Stargazing",
       timing: "07:30 PM – 10:30 PM",
       icon: Utensils,
-      image: "/lily-bush-dining.png",
+      image: "/property-garden-night.webp",
       description:
         "A private 5-course candlelit dinner served deep inside a secluded forest clearing under the equatorial night sky, paired with sommelier-selected wines.",
       highlights: [

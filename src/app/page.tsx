@@ -13,7 +13,7 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <ParallaxHero imageSrc="/lily-resort-hero.png" alt="Wildlily Safari Resort luxury safari lodge at sunset">
+        <ParallaxHero imageSrc="/pool-dusk.webp" alt="The pool at Wildlily Safari Resort at dusk">
           <ScrollReveal delay={0.4}>
             <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs sm:text-sm mb-4 sm:mb-6 block font-mono">Welcome to Sri Lanka</span>
           </ScrollReveal>
