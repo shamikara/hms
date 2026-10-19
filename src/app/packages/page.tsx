@@ -24,7 +24,7 @@ const packages = [
       "All-Inclusive Farm-to-Table Meals & Reserve Wines",
       "3 Private 4x4 Land Cruiser Game Drives",
       "Private Candlelit Bush Dinner with Personal Chef",
-      "90-Minute Couples Ayurveda Abhyanga Spa Treatment",
+      "Home-Cooked Sri Lankan Dinner For Two",
       "Roundtrip Luxury Helicopter / SUV Airport Transfers",
     ],
   },

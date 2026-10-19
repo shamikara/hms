@@ -36,7 +36,6 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
     { href: "/rooms", label: "Accommodation" },
     { href: "/safari", label: "Experiences" },
     { href: "/dining", label: "Gastronomy" },
-    { href: "/spa", label: "Spa & Wellness" },
     { href: "/packages", label: "Packages" },
     { href: "/sustainability", label: "Conservation" },
     { href: "/contact", label: "Contact" },

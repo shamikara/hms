@@ -36,7 +36,6 @@ export function PublicFooter() {
               <Link href="/dining" className="hover:text-emerald-400 transition-colors">Gastronomy & Bush Dining</Link>
             </li>
             <li>
-              <Link href="/spa" className="hover:text-emerald-400 transition-colors">Wilderness Spa & Wellness</Link>
             </li>
             <li>
               <Link href="/packages" className="hover:text-emerald-400 transition-colors">Packages & Exclusive Offers</Link>

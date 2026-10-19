@@ -7,23 +7,23 @@ import { useRef } from "react";
 const rooms = [
   {
     id: 1,
-    title: "Presidential Villa",
-    description: "Ultimate luxury with a private infinity plunge pool overlooking the reserve canopy.",
-    price: "$1,200 / night",
+    title: "Deluxe Double Room",
+    description: "An air-conditioned double with one queen bed, a private bathroom and a desk.",
+    price: "Rates on request",
     image: "/room-deluxe-double.webp",
   },
   {
     id: 2,
-    title: "Luxury Safari Pavilion",
-    description: "Immersive wilderness experience with 5-star amenities bordering the jungle sanctuary.",
-    price: "$450 / night",
+    title: "Deluxe Quadruple Room",
+    description: "Two queen beds and a view over the pool — room for four.",
+    price: "Rates on request",
     image: "/room-twin-purple.webp",
   },
   {
     id: 3,
-    title: "Family Wilderness Suite",
-    description: "Spacious multi-room suite with private campfire lounge perfect for family retreats.",
-    price: "$850 / night",
+    title: "Family Junior Suite",
+    description: "Our most spacious room, with two queen beds and space for up to six.",
+    price: "Rates on request",
     image: "/room-quadruple.webp", 
   }
 ];

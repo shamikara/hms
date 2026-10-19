@@ -8,73 +8,73 @@ import { Users, Maximize2, Sparkles, Check, ArrowRight, ShieldCheck } from "luci
 export default function RoomsPage() {
   const roomTypes = [
     {
-      id: "presidential-villa",
-      name: "Presidential Safari Villa",
-      price: "$1,200",
-      per: "night",
-      capacity: "4 Guests",
-      size: "250 sq.m",
+      id: "deluxe-double",
+      name: "Deluxe Double Room",
+      price: "Rates on request",
+      per: "",
+      capacity: "2 Guests",
+      size: "",
       image: "/room-deluxe-double.webp",
       description:
-        "Our flagship residence boasting a private infinity plunge pool overhanging the reserve, dual master bedrooms, dedicated personal butler service, and outdoor moonlit baths.",
+        "A comfortable air-conditioned double with one queen bed, a private bathroom and a desk. Quiet, spotless and a short drive from the Udawalawe National Park entrance.",
       features: [
-        "Private 10m Infinity Plunge Pool",
-        "Dedicated 24/7 Butler Service",
-        "Panoramic Canopy Observation Deck",
-        "Indoor & Outdoor Rain Showers",
-        "Complimentary Premium Mini-Bar",
-        "Privileged Safari Drive Priority",
+        "One Queen Bed",
+        "Air Conditioning",
+        "Private Bathroom",
+        "Desk & Seating Area",
+        "Electric Kettle",
+        "Free Wi-Fi",
       ],
     },
     {
-      id: "family-suite",
-      name: "Family Wilderness Suite",
-      price: "$850",
-      per: "night",
-      capacity: "6 Guests",
-      size: "180 sq.m",
+      id: "deluxe-quadruple",
+      name: "Deluxe Quadruple Room",
+      price: "Rates on request",
+      per: "",
+      capacity: "4 Guests",
+      size: "",
       image: "/room-quadruple.webp",
       description:
-        "Spacious two-bedroom retreat thoughtfully designed for families. Features a private firepit terrace, plush living room, and direct access to guided nature trails.",
+        "Our largest double-bed room, with two queen beds and a view over the pool. Well suited to friends travelling together or a family of four.",
       features: [
-        "Two Master King Bedrooms",
-        "Private Campfire Lounge Terrace",
-        "Deep Soaking Freestanding Tub",
-        "Teak Dining & Living Pavilion",
-        "Starlink Satellite Wi-Fi",
-        "Junior Ranger Safari Kits Included",
+        "Two Queen Beds",
+        "Pool View",
+        "Air Conditioning",
+        "Private Bathroom",
+        "Electric Kettle",
+        "Free Wi-Fi",
       ],
     },
     {
-      id: "luxury-tent",
-      name: "Luxury Canvas Pavilion",
-      price: "$450",
-      per: "night",
-      capacity: "2 Guests",
-      size: "85 sq.m",
+      id: "family-junior-suite",
+      name: "Family Junior Suite",
+      price: "Rates on request",
+      per: "",
+      capacity: "Up to 6 Guests",
+      size: "",
       image: "/room-twin-yellow.webp",
       description:
-        "Ultra-luxury air-conditioned canvas suite offering an intimate wilderness experience with hand-carved mahogany furnishings, private veranda, and jungle views.",
+        "Our most spacious option, with two queen beds and room for up to six. Opens onto the garden and the verandah where breakfast is served.",
       features: [
-        "Custom Climate Control",
-        "Private Shaded Veranda",
-        "Four-Poster Teak King Bed",
-        "Organic Botanical Toiletries",
-        "High-End Bushell Binoculars",
-        "Twice-Daily Housekeeping",
+        "Two Queen Beds",
+        "Sleeps Up To Six",
+        "Garden View",
+        "Air Conditioning",
+        "Private Bathroom",
+        "Free Wi-Fi",
       ],
     },
   ];
 
   const amenities = [
-    "24/7 Dedicated Butler Service",
-    "Starlink High-Speed Wi-Fi",
-    "Nespresso Espresso Machines",
-    "Organic Herbal Spa Toiletries",
-    "Twice-Daily Housekeeping & Turn-Down",
-    "In-Villa Dining & Cocktail Bar",
-    "Wilderness Telescope & Binocular Kit",
-    "Complimentary Laundry Service",
+    "Outdoor Swimming Pool",
+    "Free Private Parking",
+    "Free Wi-Fi Throughout",
+    "On-Site Restaurant",
+    "Safari Jeep Booking",
+    "Air Conditioning In Every Room",
+    "Complimentary Toiletries & Hair Dryer",
+    "Housekeeping On Request",
   ];
 
   return (
@@ -92,12 +92,12 @@ export default function RoomsPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <h1 className="text-4xl sm:text-6xl font-serif text-white leading-tight">
-                Villas & Canvas Pavilions
+                Rooms & Suites
               </h1>
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-stone-400 text-sm sm:text-base max-w-xl mx-auto">
-                Designed to harmonize with the dry-zone sanctuary. Every suite offers uncompromised 5-star comfort and unobstructed views of Sri Lanka’s untamed nature.
+                Three air-conditioned rooms a short drive from the Udawalawe National Park entrance, with an outdoor pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.
               </p>
             </ScrollReveal>
           </div>
@@ -118,7 +118,7 @@ export default function RoomsPage() {
                     className="object-cover hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4 bg-stone-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs font-mono text-emerald-400">
-                    {room.price} <span className="text-stone-400">/ {room.per}</span>
+                    {room.price}{room.per && <span className="text-stone-400">/ {room.per}</span>}
                   </div>
                 </div>
 
@@ -130,10 +130,12 @@ export default function RoomsPage() {
                         <Users className="w-3.5 h-3.5 text-emerald-400" />
                         <span>{room.capacity}</span>
                       </span>
-                      <span className="flex items-center space-x-1">
-                        <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>{room.size}</span>
-                      </span>
+                      {room.size && (
+                        <span className="flex items-center space-x-1">
+                          <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{room.size}</span>
+                        </span>
+                      )}
                     </div>
                     <h2 className="text-2xl sm:text-3xl font-serif text-white">{room.name}</h2>
                     <p className="text-stone-300 text-xs sm:text-sm leading-relaxed">

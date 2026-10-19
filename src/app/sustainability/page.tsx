@@ -91,7 +91,7 @@ export default function SustainabilityPage() {
                 Our entire lodge operates on a 250kW solar photovoltaic microgrid backed by lithium energy storage. Single-use plastics are strictly prohibited across the resort; all water is purified on-site and served in reusable glass carafes.
               </p>
               <ul className="space-y-2 text-xs font-mono text-stone-400">
-                <li>• 250kW solar array powering 100% of luxury villas & spa</li>
+                <li>• Solar hot water across the guest rooms</li>
                 <li>• On-site glass water bottling plant & rainwater harvesting</li>
                 <li>• Closed-loop organic composting for estate vegetable gardens</li>
               </ul>
