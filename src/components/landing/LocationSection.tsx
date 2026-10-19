@@ -23,11 +23,11 @@ export function LocationSection() {
               <ul className="space-y-4 text-stone-300">
                 <li className="flex items-start gap-4">
                   <span className="text-emerald-400 text-xl mt-1">📍</span>
-                  <span>Udawalawe National Park Road, Thimbolketiya, Sri Lanka</span>
+                  <span>South Canal, Old Deewara Road, Udawalawa 70190, Sri Lanka</span>
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="text-emerald-400 text-xl">📞</span>
-                  <span>+94 47 223 4567</span>
+                  <span>+94 77 732 0237</span>
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="text-emerald-400 text-xl">✉️</span>
@@ -50,7 +50,7 @@ export function LocationSection() {
           <ScrollReveal direction="left" delay={0.4} className="lg:col-span-2 h-[500px] lg:h-[600px] w-full">
             <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-stone-800 relative">
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126938.86877209934!2d80.73031084225028!3d6.480004245638202!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae3f868c679b30b%3A0xc62b7be50d99dc07!2sUdawalawe%20National%20Park!5e0!3m2!1sen!2slk!4v1700000000000!5m2!1sen!2slk" 
+                src="https://maps.google.com/maps?q=6.420229,80.83551&z=15&output=embed" 
                 className="absolute inset-0 w-full h-full"
                 style={{ border: 0, filter: "grayscale(80%) contrast(120%) opacity(90%)" }}
                 allowFullScreen={true} 

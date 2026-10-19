@@ -56,11 +56,11 @@ export function PublicFooter() {
           <ul className="space-y-2.5 text-xs">
             <li className="flex items-start space-x-2.5">
               <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <span>National Park Road, Thimbolketiya, Udawalawe, Sri Lanka</span>
+              <span>South Canal, Old Deewara Road, Udawalawa 70190, Sri Lanka</span>
             </li>
             <li className="flex items-center space-x-2.5">
               <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>+94 47 223 4567</span>
+              <span>+94 77 732 0237</span>
             </li>
             <li className="flex items-center space-x-2.5">
               <Mail className="w-4 h-4 text-emerald-400 shrink-0" />

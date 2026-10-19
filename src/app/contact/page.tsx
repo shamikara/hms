@@ -174,7 +174,7 @@ export default function ContactPage() {
                   <MapPin className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-stone-200 block mb-0.5">Resort Address</strong>
-                    <span className="text-stone-400">Udawalawe National Park Road, Thimbolketiya, Sabaragamuwa Province, Sri Lanka</span>
+                    <span className="text-stone-400">South Canal, Old Deewara Road, Udawalawa 70190, Sabaragamuwa Province, Sri Lanka</span>
                   </div>
                 </div>
 
@@ -182,7 +182,7 @@ export default function ContactPage() {
                   <Phone className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div>
                     <strong className="text-stone-200 block mb-0.5">Reservations Direct</strong>
-                    <span className="text-stone-400">+94 47 223 4567 / +94 77 123 8900</span>
+                    <span className="text-stone-400">+94 77 732 0237</span>
                   </div>
                 </div>
 
@@ -232,7 +232,7 @@ export default function ContactPage() {
         {/* Map Section */}
         <section className="h-[400px] w-full border-t border-stone-800 relative">
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126938.86877209934!2d80.73031084225028!3d6.480004245638202!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae3f868c679b30b%3A0xc62b7be50d99dc07!2sUdawalawe%20National%20Park!5e0!3m2!1sen!2slk!4v1700000000000!5m2!1sen!2slk"
+            src="https://maps.google.com/maps?q=6.420229,80.83551&z=15&output=embed"
             className="w-full h-full border-0"
             style={{ filter: "grayscale(80%) contrast(120%) opacity(90%)" }}
             allowFullScreen={true}
