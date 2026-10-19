@@ -44,6 +44,34 @@ export const driverSelect = {
 
 export type DriverRow = Prisma.SafariDriverGetPayload<{ select: typeof driverSelect }>;
 
+/**
+ * Narrow projection for the guest-facing driver directory.
+ *
+ * Deliberately excludes everything in {@link driverSelect} that is internal:
+ * licence number and expiry, dispatcher notes, employment status and the
+ * employee's staff number. Only what a guest needs in order to choose a
+ * driver is selected, so the public page cannot leak personnel data.
+ */
+export const publicDriverSelect = {
+  id: true,
+  safariExperienceYears: true,
+  isAvailable: true,
+  imageUrl: true,
+  ratingCount: true,
+  ratingAvg: true,
+  ratingBayesian: true,
+  ratingSafetyAvg: true,
+  ratingPunctualityAvg: true,
+  ratingProfessionalismAvg: true,
+  ratingCommunicationAvg: true,
+  ratingKnowledgeAvg: true,
+  employee: { select: { firstName: true, lastName: true } },
+} satisfies Prisma.SafariDriverSelect;
+
+export type PublicDriverRow = Prisma.SafariDriverGetPayload<{
+  select: typeof publicDriverSelect;
+}>;
+
 export interface DriverListFilters {
   /** Restricts to drivers assigned to this property via PropertyAssignment. */
   propertyId?: string;
@@ -82,6 +110,31 @@ export const DriverRepository = {
       where,
       select: driverSelect,
       orderBy: [{ deletedAt: "asc" }, { employee: { firstName: "asc" } }],
+    });
+  },
+
+  /**
+   * Drivers a guest may choose from: active, employed and not archived.
+   * Ordered by the confidence-adjusted score so a thin run of five-star
+   * reviews cannot outrank a well-evidenced driver — see lib/rating.ts.
+   * Unrated drivers sort last rather than being hidden.
+   */
+  async listPublic(propertyId?: string): Promise<PublicDriverRow[]> {
+    return prisma.safariDriver.findMany({
+      where: {
+        deletedAt: null,
+        isActive: true,
+        employmentStatus: DriverEmploymentStatus.ACTIVE,
+        ...(propertyId
+          ? { employee: { assignments: { some: { propertyId } } } }
+          : {}),
+      },
+      select: publicDriverSelect,
+      orderBy: [
+        { ratingBayesian: { sort: "desc", nulls: "last" } },
+        { safariExperienceYears: "desc" },
+        { employee: { firstName: "asc" } },
+      ],
     });
   },
 

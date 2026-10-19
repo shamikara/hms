@@ -34,9 +34,10 @@ export function PublicFooter() {
               <Link href="/safari" className="hover:text-emerald-400 transition-colors">Safari Drives & Excursions</Link>
             </li>
             <li>
-              <Link href="/dining" className="hover:text-emerald-400 transition-colors">Gastronomy & Bush Dining</Link>
+              <Link href="/safari/drivers" className="hover:text-emerald-400 transition-colors">Meet the Drivers</Link>
             </li>
             <li>
+              <Link href="/dining" className="hover:text-emerald-400 transition-colors">Gastronomy & Bush Dining</Link>
             </li>
             <li>
               <Link href="/packages" className="hover:text-emerald-400 transition-colors">Packages & Exclusive Offers</Link>

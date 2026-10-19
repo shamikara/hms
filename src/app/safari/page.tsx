@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
-import { Compass, Sun, Moon, Utensils, Shield, Camera, Clock, ArrowRight } from "lucide-react";
+import { Compass, Sun, Moon, Utensils, Shield, Camera, Clock, ArrowRight, Users } from "lucide-react";
 
 export default function SafariPage() {
   const experiences = [
@@ -80,6 +80,15 @@ export default function SafariPage() {
               <p className="text-stone-400 text-sm sm:text-base max-w-xl mx-auto">
                 Sri Lanka's premier elephant sanctuary experienced with master naturalists, open 4x4 vehicles, and bespoke wilderness hospitality.
               </p>
+            </ScrollReveal>
+            <ScrollReveal delay={0.4}>
+              <Link
+                href="/safari/drivers"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-700/60 bg-emerald-950/40 px-5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-900/60"
+              >
+                <Users className="h-4 w-4" />
+                Meet the drivers & pick yours
+              </Link>
             </ScrollReveal>
           </div>
         </section>
