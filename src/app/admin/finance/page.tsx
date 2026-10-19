@@ -37,7 +37,7 @@ export default async function FinancePage() {
         <div>
           <h1 className="text-3xl font-serif text-stone-900 dark:text-white tracking-tight">Revenue & Financial Ledger</h1>
           <p className="text-stone-500 dark:text-stone-400 mt-1.5 text-sm">
-            Track cleared guest payments, folio postings, and active invoice ledgers across Lily Resort properties.
+            Track cleared guest payments, folio postings, and active invoice ledgers across Wildlily Safari Resort properties.
           </p>
         </div>
       </div>

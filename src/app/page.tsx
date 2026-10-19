@@ -13,13 +13,13 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <ParallaxHero imageSrc="/lily-resort-hero.png" alt="Lily Resort Udawalawe luxury safari lodge at sunset">
+        <ParallaxHero imageSrc="/lily-resort-hero.png" alt="Wildlily Safari Resort luxury safari lodge at sunset">
           <ScrollReveal delay={0.4}>
             <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs sm:text-sm mb-4 sm:mb-6 block font-mono">Welcome to Sri Lanka</span>
           </ScrollReveal>
           <ScrollReveal delay={0.6}>
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif text-white leading-tight mb-6 sm:mb-8 drop-shadow-lg">
-              Untamed Luxury at Lily Resort
+              Untamed Luxury at Wildlily Safari Resort
             </h1>
           </ScrollReveal>
           <BookingWidget />

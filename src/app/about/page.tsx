@@ -88,7 +88,7 @@ export default function AboutPage() {
                 Where the Jungle Canopy Meets 5-Star Serenity
               </h2>
               <p className="text-stone-300 text-sm sm:text-base leading-relaxed">
-                Lily Resort Udawalawe was established not merely as a hotel, but as a living conservation sanctuary. Set across 25 acres of pristine dry-zone forest, our villas were built using traditional timber craftsmanship without felling a single ancient tree.
+                Wildlily Safari Resort was established not merely as a hotel, but as a living conservation sanctuary. Set across 25 acres of pristine dry-zone forest, our villas were built using traditional timber craftsmanship without felling a single ancient tree.
               </p>
               <p className="text-stone-400 text-sm leading-relaxed">
                 Guests awake to the morning call of peacocks and wild hornbills, enjoying private infinity plunge pools that overlook natural watering holes visited daily by wild elephant herds.
@@ -111,7 +111,7 @@ export default function AboutPage() {
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-stone-800 h-[450px]">
               <Image
                 src="/lily-resort-hero.png"
-                alt="Lily Resort Udawalawe Sanctuary"
+                alt="Wildlily Safari Resort Sanctuary"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"

@@ -6,7 +6,7 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Utensils, Flame, Wine, Leaf, Clock, Award } from "lucide-react";
 
 export const metadata = {
-  title: "Wilderness Gastronomy & Dining | Lily Resort Udawalawe",
+  title: "Wilderness Gastronomy & Dining | Wildlily Safari Resort",
   description: "Experience farm-to-table fine dining, private candlelit bush dinners, and sommelier-curated wines in the heart of Udawalawe sanctuary.",
 };
 
@@ -46,7 +46,7 @@ export default function DiningPage() {
       <section className="relative h-[65vh] flex items-center justify-center overflow-hidden border-b border-stone-850">
         <Image
           src="/lily-bush-dining.png"
-          alt="Wilderness Dining at Lily Resort Udawalawe"
+          alt="Wilderness Dining at Wildlily Safari Resort"
           fill
           priority
           className="object-cover brightness-[0.4] scale-105 transition-transform duration-1000"

@@ -54,11 +54,11 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
         <ScrollReveal direction="down" delay={0.1} width="w-auto">
           <Link href="/" className="flex items-center space-x-2 group">
             <div className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-serif font-bold text-sm shrink-0">
-              L
+              W
             </div>
             <span className="font-serif tracking-widest uppercase text-white drop-shadow-md text-base sm:text-xl lg:text-2xl font-medium">
-              <span className="inline sm:hidden">Lily Resort</span>
-              <span className="hidden sm:inline">Lily Resort Udawalawe</span>
+              <span className="inline sm:hidden">Wildlily</span>
+              <span className="hidden sm:inline">Wildlily Safari Resort</span>
             </span>
           </Link>
         </ScrollReveal>
@@ -121,10 +121,10 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
               className="flex items-center space-x-2"
             >
               <div className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-serif font-bold text-sm">
-                L
+                W
               </div>
               <span className="font-serif tracking-widest uppercase text-white text-base font-semibold">
-                Lily Resort
+                Wildlily Safari Resort
               </span>
             </Link>
 
@@ -199,7 +199,7 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Mail className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>reservations@lilyresortudawalawe.com</span>
+                  <span>reservations@wildlilysafariresort.com</span>
                 </div>
                 <div className="flex items-center space-x-2 text-[11px] text-stone-500 pt-2">
                   <Shield className="w-3 h-3 text-emerald-500" />

@@ -6,8 +6,8 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Sparkles, Heart, Flower2, Droplets, Sun, Calendar } from "lucide-react";
 
 export const metadata = {
-  title: "Wilderness Spa & Ayurveda Wellness | Lily Resort Udawalawe",
-  description: "Rejuvenate with ancient Sri Lankan Ayurveda rituals, botanical massages, and forest infinity pool therapies at Lily Resort.",
+  title: "Wilderness Spa & Ayurveda Wellness | Wildlily Safari Resort",
+  description: "Rejuvenate with ancient Sri Lankan Ayurveda rituals, botanical massages, and forest infinity pool therapies at Wildlily Safari Resort.",
 };
 
 const spaTreatments = [

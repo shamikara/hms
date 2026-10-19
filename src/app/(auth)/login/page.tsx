@@ -12,8 +12,8 @@ export default function LoginPage() {
           <div className="h-2 w-full bg-emerald-700" />
           <div className="p-8 sm:p-12">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-serif text-white mb-2 tracking-tight">Lily Resort Portal</h1>
-              <p className="text-stone-400 text-sm">Sign in to Lily Resort Udawalawe Enterprise Platform</p>
+              <h1 className="text-3xl font-serif text-white mb-2 tracking-tight">Wildlily Safari Resort Portal</h1>
+              <p className="text-stone-400 text-sm">Sign in to Wildlily Safari Resort Enterprise Platform</p>
             </div>
 
             <LoginForm />
@@ -21,7 +21,7 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-8 text-center text-xs text-stone-400 font-mono space-y-1">
-          <p>&copy; {new Date().getFullYear()} Lily Resort Udawalawe</p>
+          <p>&copy; {new Date().getFullYear()} Wildlily Safari Resort</p>
           <p>
             Built with <span className="text-stone-300 font-semibold">Platform OS</span> by{" "}
             <a

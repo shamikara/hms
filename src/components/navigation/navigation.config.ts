@@ -28,7 +28,7 @@ export interface Property {
 export const HMS_PROPERTIES: Property[] = [
   {
     id: "prop-1",
-    name: "Lily Resort Udawalawe",
+    name: "Wildlily Safari Resort",
     code: "LIL-01",
     location: "Udawalawe, Sri Lanka",
     status: "PEAK",

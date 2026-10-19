@@ -6,7 +6,7 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Shield, Leaf, Sun, Heart, Globe, Award, Sparkles } from "lucide-react";
 
 export const metadata = {
-  title: "Conservation & Sustainability | Lily Resort Udawalawe",
+  title: "Conservation & Sustainability | Wildlily Safari Resort",
   description: "Learn about our commitment to wild elephant protection, 100% solar off-grid energy, local community empowerment, and zero-single-use-plastic policy.",
 };
 
@@ -19,7 +19,7 @@ export default function SustainabilityPage() {
       <section className="relative h-[65vh] flex items-center justify-center overflow-hidden border-b border-stone-850">
         <Image
           src="/lily-safari-elephants.png"
-          alt="Conservation at Lily Resort Udawalawe"
+          alt="Conservation at Wildlily Safari Resort"
           fill
           priority
           className="object-cover brightness-[0.4] scale-105 transition-transform duration-1000"
@@ -67,7 +67,7 @@ export default function SustainabilityPage() {
               </span>
               <h2 className="text-3xl font-serif text-white">Elephant Conservation & Rehabilitation</h2>
               <p className="text-stone-300 text-base leading-relaxed">
-                Lily Resort works hand-in-hand with the Department of Wildlife Conservation and the local Elephant Transit Home (ETH). A portion of every stay directly funds orphan elephant milk formula, veterinary care, and radio-collar tracking.
+                Wildlily Safari Resort works hand-in-hand with the Department of Wildlife Conservation and the local Elephant Transit Home (ETH). A portion of every stay directly funds orphan elephant milk formula, veterinary care, and radio-collar tracking.
               </p>
               <ul className="space-y-2 text-xs font-mono text-stone-400">
                 <li>• 10% of room revenues donated to Elephant Transit Home</li>

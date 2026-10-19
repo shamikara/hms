@@ -6,7 +6,7 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Compass, Sparkles, Heart, Shield, Check, Calendar, ArrowRight } from "lucide-react";
 
 export const metadata = {
-  title: "Exclusive Safari Packages & Offers | Lily Resort Udawalawe",
+  title: "Exclusive Safari Packages & Offers | Wildlily Safari Resort",
   description: "Explore curated luxury stay packages including all-inclusive safari game drives, honeymoon escapes, and wildlife photography expeditions.",
 };
 

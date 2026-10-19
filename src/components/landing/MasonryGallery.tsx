@@ -10,7 +10,7 @@ const galleryImages = [
   { id: 1, src: "/lily-safari-elephants.png", alt: "Wild Elephants Bathing in Udawalawe", className: "col-span-2 row-span-2 aspect-square" },
   { id: 2, src: "/lily-safari-leopard.png", alt: "Sri Lankan Leopard on Granite Rock", className: "col-span-1 row-span-1 aspect-square" },
   { id: 3, src: "/lily-spa-pavilion.png", alt: "Ayurveda Wellness Spa Pavilion", className: "col-span-1 row-span-1 aspect-square" },
-  { id: 4, src: "/lily-aerial-resort.png", alt: "Aerial View of Lily Resort Canopy & Reservoir", className: "col-span-2 row-span-1 aspect-[2/1]" },
+  { id: 4, src: "/lily-aerial-resort.png", alt: "Aerial View of Wildlily Safari Resort Canopy & Reservoir", className: "col-span-2 row-span-1 aspect-[2/1]" },
   { id: 5, src: "/lily-bush-dining.png", alt: "Romantic Candlelit Bush Dining Clearing", className: "col-span-1 row-span-1 aspect-square" },
   { id: 6, src: "/lily-dining-pavilion.png", alt: "Open-Air Teak Dining Pavilion at Night", className: "col-span-1 row-span-1 aspect-square" },
   { id: 7, src: "/lily-wildlife-birds.png", alt: "Wild Peacocks & Birdlife at Dawn", className: "col-span-1 row-span-1 aspect-square" },
@@ -46,7 +46,7 @@ export function MasonryGallery() {
           Wilderness Photography & Estate Gallery
         </span>
         <h3 className="text-4xl md:text-5xl font-serif text-white">
-          Moments at Lily Resort Udawalawe
+          Moments at Wildlily Safari Resort
         </h3>
         <p className="text-stone-400 text-sm max-w-xl mx-auto pt-2 font-light">
           Photorealistic captures of our sanctuary architecture, wild elephant herds, Sri Lankan leopards, and candlelit bush gastronomy.

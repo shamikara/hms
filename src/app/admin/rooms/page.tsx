@@ -47,7 +47,7 @@ export default function RoomsPage() {
         <div>
           <h1 className="text-3xl font-serif text-stone-900 dark:text-white tracking-tight">Room Inventory & Status</h1>
           <p className="text-stone-500 dark:text-stone-400 mt-1.5 text-sm">
-            Monitor real-time room occupancy, housekeeping states, and nightly rates across Lily Resort.
+            Monitor real-time room occupancy, housekeeping states, and nightly rates across Wildlily Safari Resort.
           </p>
         </div>
         <div className="flex space-x-3 w-full sm:w-auto">
