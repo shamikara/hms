@@ -31,7 +31,7 @@ export function LocationSection() {
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="text-emerald-400 text-xl">✉️</span>
-                  <span>reservations@udawalaweresort.com</span>
+                  <span>reservations@wildlilysafariresort.com</span>
                 </li>
               </ul>
             </div>

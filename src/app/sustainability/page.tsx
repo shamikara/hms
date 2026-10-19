@@ -6,7 +6,7 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Shield, Leaf, Sun, Heart, Globe, Award, Sparkles } from "lucide-react";
 
 export const metadata = {
-  title: "Conservation & Sustainability | Wildlily Safari Resort",
+  title: "Conservation & Sustainability",
   description: "Learn about our commitment to wild elephant protection, 100% solar off-grid energy, local community empowerment, and zero-single-use-plastic policy.",
 };
 

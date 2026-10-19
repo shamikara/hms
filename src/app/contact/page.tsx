@@ -190,7 +190,7 @@ export default function ContactPage() {
                   <Mail className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div>
                     <strong className="text-stone-200 block mb-0.5">Email Concierge</strong>
-                    <span className="text-stone-400">reservations@udawalaweresort.com</span>
+                    <span className="text-stone-400">reservations@wildlilysafariresort.com</span>
                   </div>
                 </div>
 

@@ -1,9 +1,21 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Users, Maximize2, Sparkles, Check, ArrowRight, ShieldCheck } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Rooms & Rates",
+  description: "Three air-conditioned rooms with private bathrooms, free Wi-Fi and pool or garden views.",
+  alternates: { canonical: "/rooms" },
+  openGraph: {
+    title: "Rooms & Rates",
+    description: "Three air-conditioned rooms with private bathrooms, free Wi-Fi and pool or garden views.",
+    url: "/rooms",
+  },
+};
 
 export default function RoomsPage() {
   const roomTypes = [

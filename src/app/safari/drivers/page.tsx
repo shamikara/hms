@@ -13,7 +13,7 @@ import {
 import { MIN_REVIEWS_FOR_INSIGHT, formatRating } from "@/features/fleet/lib/rating";
 
 export const metadata: Metadata = {
-  title: "Our Safari Drivers | Wildlily Safari Resort",
+  title: "Our Safari Drivers",
   description:
     "Meet the drivers who take our guests into Udawalawe National Park, with ratings left by guests who have actually travelled with them.",
 };

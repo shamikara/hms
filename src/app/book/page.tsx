@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import { ScrollReveal, ParallaxHero } from "@/components/ui/ScrollReveal";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
+
+export const metadata: Metadata = {
+  title: "Book Your Stay",
+  description: "Check availability and request a room at Wildlily Safari Resort, Udawalawe.",
+  alternates: { canonical: "/book" },
+  openGraph: {
+    title: "Book Your Stay",
+    description: "Check availability and request a room at Wildlily Safari Resort, Udawalawe.",
+    url: "/book",
+  },
+};
 
 export default async function BookPage() {
   const property = { id: "resort_1" };

@@ -1,9 +1,21 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { ShieldCheck, Leaf, Sun, Compass, Award, Users } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "About the Resort",
+  description: "A small guesthouse beside Udawalawe National Park, and the people who run it.",
+  alternates: { canonical: "/about" },
+  openGraph: {
+    title: "About the Resort",
+    description: "A small guesthouse beside Udawalawe National Park, and the people who run it.",
+    url: "/about",
+  },
+};
 
 export default function AboutPage() {
   const pillars = [

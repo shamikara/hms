@@ -6,7 +6,7 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Utensils, Flame, Wine, Leaf, Clock, Award } from "lucide-react";
 
 export const metadata = {
-  title: "Wilderness Gastronomy & Dining | Wildlily Safari Resort",
+  title: "Wilderness Gastronomy & Dining",
   description: "Experience farm-to-table fine dining, private candlelit bush dinners, and sommelier-curated wines in the heart of Udawalawe sanctuary.",
 };
 

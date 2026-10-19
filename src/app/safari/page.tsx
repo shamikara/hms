@@ -1,9 +1,21 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Compass, Sun, Moon, Utensils, Shield, Camera, Clock, ArrowRight, Users } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Udawalawe Safari Drives",
+  description: "Morning and afternoon safari jeeps into Udawalawe National Park, arranged by the house.",
+  alternates: { canonical: "/safari" },
+  openGraph: {
+    title: "Udawalawe Safari Drives",
+    description: "Morning and afternoon safari jeeps into Udawalawe National Park, arranged by the house.",
+    url: "/safari",
+  },
+};
 
 export default function SafariPage() {
   const experiences = [
