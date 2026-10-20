@@ -2,24 +2,44 @@ import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { SessionPayload } from "@/features/auth/types";
 
-const secretKey = process.env.SESSION_SECRET;
-const key = new TextEncoder().encode(secretKey);
+/**
+ * Signing key for the session cookie.
+ *
+ * Resolved lazily so an unset variable surfaces as a readable error at the
+ * point of use rather than crashing module load. Encoding `undefined` yields
+ * a zero-length key, and jose then fails with "Zero-length key is not
+ * supported" — which says nothing about the actual cause.
+ */
+function sessionKey(): Uint8Array {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      "SESSION_SECRET is not set. Sessions cannot be signed without it. " +
+        "Set it in the hosting platform's environment variables — a local " +
+        ".env file is not deployed.",
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export async function encrypt(payload: SessionPayload) {
   return new SignJWT(payload as any)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("1d")
-    .sign(key);
+    .sign(sessionKey());
 }
 
 export async function decrypt(session: string | undefined = "") {
+  // Resolved outside the try: a missing secret is a deployment fault and must
+  // surface, whereas a bad token is ordinary and returns null.
+  const key = sessionKey();
   try {
     const { payload } = await jwtVerify(session, key, {
       algorithms: ["HS256"],
     });
     return payload as unknown as SessionPayload;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

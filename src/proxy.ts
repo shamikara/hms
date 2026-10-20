@@ -38,14 +38,25 @@ const STAFF_ROLES = new Set([
   "DRIVER",
 ]);
 
-const key = new TextEncoder().encode(process.env.SESSION_SECRET);
-
 async function readSession(
   request: NextRequest,
 ): Promise<{ userId: string; role: string } | null> {
   const token = request.cookies.get("session")?.value;
   if (!token) return null;
+
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    // Encoding undefined gives a zero-length key, which jose rejects with a
+    // message that never mentions the missing variable. Say it plainly.
+    console.error(
+      "SESSION_SECRET is not set; every session will be rejected. " +
+        "Set it in the hosting platform's environment variables.",
+    );
+    return null;
+  }
+
   try {
+    const key = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, key, { algorithms: ["HS256"] });
     if (typeof payload.userId !== "string" || payload.userId.length === 0) return null;
     return {
