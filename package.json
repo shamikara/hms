@@ -58,6 +58,7 @@
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts",
-    "seed:sample-drivers": "npx tsx prisma/seed-sample-drivers.ts"
+    "seed:sample-drivers": "npx tsx prisma/seed-sample-drivers.ts",
+    "seed:sample-ops": "npx tsx prisma/seed-sample-operations.ts"
   }
 }

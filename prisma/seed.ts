@@ -43,8 +43,22 @@ async function main() {
         "  ADMIN_EMAIL=you@example.com ADMIN_PASSWORD='a-long-password' npm run seed",
     );
   }
-  if (password.length < 12) {
-    throw new Error("ADMIN_PASSWORD must be at least 12 characters.");
+  // The minimum is a guard, not a policy engine. It can be waived
+  // deliberately, which is louder than quietly lowering the threshold.
+  const allowWeak = process.argv.includes("--allow-weak-password");
+  if (password.length < 12 && !allowWeak) {
+    throw new Error(
+      "ADMIN_PASSWORD must be at least 12 characters.\n" +
+        "Pass --allow-weak-password to override (not advisable for an admin " +
+        "account reachable from the public internet).",
+    );
+  }
+  if (allowWeak) {
+    console.warn(
+      "WARNING: weak admin password accepted via --allow-weak-password.\n" +
+        "         This account can read every guest record. Change it before " +
+        "real bookings arrive.\n",
+    );
   }
 
   console.log("Seeding…");
@@ -84,13 +98,23 @@ async function main() {
     create: { email, passwordHash, isActive: true },
   });
 
+  // Derived from the email so re-running is idempotent and a second admin
+  // does not collide with the first on (organizationId, employeeId).
+  const employeeNumber =
+    "ADM-" +
+    Buffer.from(email.toLowerCase())
+      .toString("base64url")
+      .replace(/[^A-Za-z0-9]/g, "")
+      .slice(0, 12)
+      .toUpperCase();
+
   const employee = await prisma.employee.upsert({
     where: { userId: user.id },
     update: {},
     create: {
       userId: user.id,
       organizationId: organization.id,
-      employeeId: "EMP-0001",
+      employeeId: employeeNumber,
       firstName: "Site",
       lastName: "Administrator",
     },

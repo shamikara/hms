@@ -1,14 +1,8 @@
 "use server";
 
 import prisma from "@/core/db/prisma";
-import { requireAdminSession, UNAUTHENTICATED } from "@/features/admin/lib/requireAdminSession";
+import { requireAdminSession, UNAUTHENTICATED, resolveDefaultPropertyId, NO_PROPERTY } from "@/features/admin/lib/requireAdminSession";
 import { startOfDay, endOfDay } from "date-fns";
-
-const mockRecentReservations = [
-  { id: "RES-9901", guest: { firstName: "Alexander", lastName: "Wright", email: "alexander.wright@luxurytravel.com" }, status: "CONFIRMED", checkInDate: new Date(), checkOutDate: new Date(Date.now() + 86400000 * 3) },
-  { id: "RES-9902", guest: { firstName: "Sophia", lastName: "Martinez", email: "sophia.m@natureestates.org" }, status: "CONFIRMED", checkInDate: new Date(), checkOutDate: new Date(Date.now() + 86400000 * 2) },
-  { id: "RES-9903", guest: { firstName: "Marcus", lastName: "Vance", email: "marcus.vance@safarijournal.com" }, status: "CHECKED_IN", checkInDate: new Date(Date.now() - 86400000), checkOutDate: new Date(Date.now() + 86400000) },
-];
 
 export async function getDashboardMetrics(propertyId?: string): Promise<{ success: boolean; data?: any; error?: string }> {
   if (!(await requireAdminSession())) return UNAUTHENTICATED;
@@ -18,7 +12,8 @@ export async function getDashboardMetrics(propertyId?: string): Promise<{ succes
     const start = startOfDay(today);
     const end = endOfDay(today);
 
-    const propId = propertyId || "resort_1";
+    const propId = propertyId ?? (await resolveDefaultPropertyId());
+    if (!propId) return { success: false, error: NO_PROPERTY };
 
     const [todayArrivals, pendingReservations, totalGuests] = await Promise.all([
       prisma.reservation.count({
@@ -40,24 +35,14 @@ export async function getDashboardMetrics(propertyId?: string): Promise<{ succes
       prisma.guestProfile.count(),
     ]);
 
+    // Zero is a real answer. `|| 4` turned a quiet day into four arrivals.
     return {
       success: true,
-      data: {
-        todayArrivals: todayArrivals || 4,
-        pendingReservations: pendingReservations || 2,
-        totalGuests: totalGuests || 18,
-      },
+      data: { todayArrivals, pendingReservations, totalGuests },
     };
   } catch (error: any) {
-    console.warn("Prisma DB unreachable on getDashboardMetrics, using fallback metrics:", error?.message);
-    return {
-      success: true,
-      data: {
-        todayArrivals: 4,
-        pendingReservations: 2,
-        totalGuests: 18,
-      },
-    };
+    console.error("getDashboardMetrics failed:", error?.message);
+    return { success: false, error: "Could not load today's figures." };
   }
 }
 
@@ -65,7 +50,8 @@ export async function getRecentReservations(propertyId?: string): Promise<{ succ
   if (!(await requireAdminSession())) return UNAUTHENTICATED;
 
   try {
-    const propId = propertyId || "resort_1";
+    const propId = propertyId ?? (await resolveDefaultPropertyId());
+    if (!propId) return { success: false, error: NO_PROPERTY };
 
     const reservations = await prisma.reservation.findMany({
       where: { propertyId: propId },
@@ -76,9 +62,10 @@ export async function getRecentReservations(propertyId?: string): Promise<{ succ
       take: 5,
     });
 
-    return { success: true, data: reservations.length > 0 ? reservations : mockRecentReservations };
+    // An empty list means no reservations, not "show these instead".
+    return { success: true, data: reservations };
   } catch (error: any) {
-    console.warn("Prisma DB unreachable on getRecentReservations, using fallback data:", error?.message);
-    return { success: true, data: mockRecentReservations };
+    console.error("getRecentReservations failed:", error?.message);
+    return { success: false, error: "Could not load recent reservations." };
   }
 }
