@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { AuthRepository } from "../repositories/auth.repository";
 import { LoginFormValues, RegisterFormValues } from "../validations/auth.schema";
-import { AuthUser } from "../types";
+import { AuthUser, GUEST_ROLE } from "../types";
 
 export const AuthService = {
   async register(data: RegisterFormValues, roleId: string): Promise<AuthUser> {
@@ -13,12 +13,16 @@ export const AuthService = {
     const passwordHash = await bcrypt.hash(data.password, 10);
     const user = await AuthRepository.createUser(data, passwordHash, roleId);
 
+    // A newly registered account has no employee record, so it holds no
+    // staff privileges. Roles are granted by assigning the user to a
+    // property, never by signing up.
     return {
       id: user.id,
       email: user.email,
-      firstName: "System",
-      lastName: "User",
-      role: "SUPER_ADMIN",
+      firstName: "",
+      lastName: "",
+      role: GUEST_ROLE,
+      roles: [],
     };
   },
 
@@ -41,12 +45,19 @@ export const AuthService = {
       throw new Error("Account is disabled.");
     }
 
+    // Resolve the real role from the database. A user without an employee
+    // record — a guest, say — gets GUEST and no staff privileges. Returning a
+    // fixed SUPER_ADMIN here previously handed every account, guests
+    // included, full access to the operations area.
+    const profile = await AuthRepository.findRolesForUser(user.id);
+
     return {
       id: user.id,
       email: user.email,
-      firstName: "System",
-      lastName: "User",
-      role: "SUPER_ADMIN",
+      firstName: profile?.firstName ?? "",
+      lastName: profile?.lastName ?? "",
+      role: profile?.roles[0] ?? GUEST_ROLE,
+      roles: profile?.roles ?? [],
     };
   },
 };

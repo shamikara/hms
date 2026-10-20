@@ -15,37 +15,74 @@ import { jwtVerify } from "jose";
  * version of Next.
  */
 
-const PROTECTED_PREFIXES = ["/admin", "/safari/review"];
+/** Needs a signed-in user of any kind — guests included. */
+const SIGNED_IN_PREFIXES = ["/safari/review"];
+
+/** Needs a signed-in user holding a staff role. */
+const STAFF_PREFIXES = ["/admin"];
+
+/**
+ * Roles permitted into the operations area. GUEST is deliberately absent:
+ * guests sign in to rate their safari drives, and must not reach /admin.
+ */
+const STAFF_ROLES = new Set([
+  "SUPER_ADMIN",
+  "GENERAL_MANAGER",
+  "RESORT_MANAGER",
+  "FLEET_MANAGER",
+  "SAFARI_COORDINATOR",
+  "FINANCE_OFFICER",
+  "RECEPTIONIST",
+  "RANGER",
+  "GUIDE",
+  "DRIVER",
+]);
 
 const key = new TextEncoder().encode(process.env.SESSION_SECRET);
 
-async function hasValidSession(request: NextRequest): Promise<boolean> {
+async function readSession(
+  request: NextRequest,
+): Promise<{ userId: string; role: string } | null> {
   const token = request.cookies.get("session")?.value;
-  if (!token) return false;
+  if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, key, { algorithms: ["HS256"] });
-    return typeof payload.userId === "string" && payload.userId.length > 0;
+    if (typeof payload.userId !== "string" || payload.userId.length === 0) return null;
+    return {
+      userId: payload.userId,
+      role: typeof payload.role === "string" ? payload.role : "",
+    };
   } catch {
     // Expired, tampered with, or signed by a different secret.
-    return false;
+    return null;
   }
+}
+
+function matches(pathname: string, prefixes: string[]): boolean {
+  return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  const isProtected = PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-  if (!isProtected) return NextResponse.next();
+  const needsStaff = matches(pathname, STAFF_PREFIXES);
+  const needsSignIn = needsStaff || matches(pathname, SIGNED_IN_PREFIXES);
+  if (!needsSignIn) return NextResponse.next();
 
-  if (await hasValidSession(request)) return NextResponse.next();
+  const session = await readSession(request);
 
-  // Send them to sign in, remembering where they were headed.
-  const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("next", `${pathname}${search}`);
+  if (session && (!needsStaff || STAFF_ROLES.has(session.role))) {
+    return NextResponse.next();
+  }
 
-  const response = NextResponse.redirect(loginUrl);
+  // A signed-in guest who wandered into /admin is sent home rather than to a
+  // login form they have already satisfied.
+  const target = session
+    ? new URL("/", request.url)
+    : new URL("/login", request.url);
+  if (!session) target.searchParams.set("next", `${pathname}${search}`);
+
+  const response = NextResponse.redirect(target);
   // Belt and braces: never let a protected URL be cached or indexed.
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
   return response;
