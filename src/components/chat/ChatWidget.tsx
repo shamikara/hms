@@ -137,7 +137,10 @@ export function ChatWidget() {
           ref={panelRef}
           role="dialog"
           aria-label="Resort assistant"
-          className="fixed bottom-24 right-5 z-50 w-[calc(100vw-2.5rem)] sm:w-[400px] max-h-[min(34rem,calc(100vh-8rem))] flex flex-col rounded-2xl bg-stone-950 border border-stone-800 shadow-2xl overflow-hidden"
+          // select-text because the host footer sets select-none, which would
+          // otherwise stop guests copying anything the assistant says and can
+          // interfere with the input on mobile browsers.
+          className="fixed bottom-24 right-5 z-50 w-[calc(100vw-2.5rem)] sm:w-[400px] max-h-[min(34rem,calc(100vh-8rem))] flex flex-col rounded-2xl bg-stone-950 border border-stone-800 shadow-2xl overflow-hidden select-text"
         >
           <header className="flex items-center justify-between px-4 py-3 border-b border-stone-850 bg-stone-900/80">
             <div className="flex items-center gap-2.5">
