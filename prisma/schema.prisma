@@ -99,6 +99,14 @@ model RoomType {
   name     String
   capacity Int /// Max occupancy allowed
 
+  /// Marketing copy shown on the public booking screen.
+  /// Nullable: a room type may exist before anyone has written its blurb.
+  description String?
+  /// Nightly rate in the property's baseCurrency, before tax and discounts.
+  /// Nullable, and deliberately so: "no rate set" must read as rate-on-request
+  /// rather than silently becoming a number the guest is then quoted.
+  basePrice   Decimal? @db.Decimal(19, 4)
+
   rooms Room[] @relation("RoomTypeClassification")
 
   createdAt DateTime  @default(now())
@@ -237,6 +245,9 @@ model GuestProfile {
   firstName     String
   lastName      String
   email         String @unique
+  /// E.164 where possible. Nullable because historic records predate it and
+  /// a walk-in may decline to give one.
+  phone         String?
   loyaltyPoints Int    @default(0)
 
   reservations  Reservation[]  @relation("GuestReservations")
@@ -1034,4 +1045,26 @@ model Setting {
   @@unique([organizationId, key])
   @@unique([propertyId, key])
   @@index([level])
+}
+
+// ============================================================================
+// 9. ABUSE CONTROL
+// ============================================================================
+
+/// Fixed-window request counter backing the login and booking throttles.
+///
+/// Deliberately in Postgres rather than process memory: the app runs as
+/// serverless functions, so an in-memory counter is reset by every cold start
+/// and is not shared between concurrent instances — which is to say it does
+/// not limit anything.
+model RateLimitHit {
+  /// Scope plus subject, e.g. "login:ip:203.0.113.4" or "login:email:a@b.com".
+  key String
+  /// Start of the fixed window this row counts. Part of the key so a new
+  /// window is a new row and expiry needs no scheduled job.
+  windowStart DateTime
+  count       Int      @default(0)
+
+  @@id([key, windowStart])
+  @@index([windowStart])
 }
