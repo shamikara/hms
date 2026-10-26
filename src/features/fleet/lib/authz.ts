@@ -1,6 +1,6 @@
 import prisma from "@/core/db/prisma";
 import { verifySession } from "@/core/lib/session";
-import { Logger } from "@/core/logging/Logger";
+import { resolveActorFromDb } from "@/core/authz/actor";
 
 /**
  * Authorization for the Safari Fleet module.
@@ -13,8 +13,6 @@ import { Logger } from "@/core/logging/Logger";
  * `src/shared/middleware/permissions.ts` is left untouched: it is a stub used
  * by nothing, and rewriting it is outside this change.
  */
-
-const logger = new Logger("FleetAuthz");
 
 export type FleetPermission =
   /** Read fleet data (lists, dashboards, vehicle/driver detail). */
@@ -96,52 +94,18 @@ export async function getFleetActor(): Promise<FleetActor> {
     throw new AuthzError("You must be signed in.", "UNAUTHENTICATED");
   }
 
-  const dbRoles = new Set<string>();
+  const resolved = await resolveActorFromDb(session.userId);
 
-  let employeeId: string | null = null;
-  let organizationId: string | null = null;
-  const propertyIds: string[] = [];
+  // Fall back to the session claim only when the database could not be
+  // reached. A database that answers "no roles" is giving an answer, not a
+  // gap: a guest, or an employee whose assignments were revoked, holds none.
+  const roleList = resolved.resolved ? resolved.roles : session.roles;
 
-  try {
-    const employee = await prisma.employee.findUnique({
-      where: { userId: session.userId },
-      select: {
-        id: true,
-        organizationId: true,
-        assignments: {
-          select: {
-            propertyId: true,
-            roles: { select: { role: { select: { name: true } } } },
-          },
-        },
-      },
-    });
-
-    if (employee) {
-      employeeId = employee.id;
-      organizationId = employee.organizationId;
-      for (const assignment of employee.assignments) {
-        propertyIds.push(assignment.propertyId);
-        for (const roleAssignment of assignment.roles) {
-          dbRoles.add(roleAssignment.role.name);
-        }
-      }
-    }
-  } catch (error) {
-    logger.warn("Could not resolve employee roles; falling back to session role", {
-      userId: session.userId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-
-  // Fall back to the session claim only when the database told us nothing.
-  const roleList =
-    dbRoles.size > 0 ? [...dbRoles] : session.role ? [session.role] : [];
   return {
     userId: session.userId,
-    employeeId,
-    organizationId,
-    propertyIds,
+    employeeId: resolved.employeeId,
+    organizationId: resolved.organizationId,
+    propertyIds: resolved.propertyIds,
     roles: roleList,
     permissions: permissionsForRoles(roleList),
   };

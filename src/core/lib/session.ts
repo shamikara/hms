@@ -67,7 +67,12 @@ export async function verifySession() {
     return null;
   }
 
-  return { isAuth: true, userId: session.userId, role: session.role };
+  return {
+    isAuth: true,
+    userId: session.userId,
+    role: session.role,
+    roles: session.roles ?? (session.role ? [session.role] : []),
+  };
 }
 
 export async function deleteSession() {

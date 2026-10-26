@@ -18,6 +18,13 @@ export interface AuthUser {
 
 export interface SessionPayload {
   userId: string;
+  /** Primary role. Kept for display and for cookies issued before `roles`. */
   role: string;
+  /**
+   * Every role the user holds. The proxy gates on this: someone who is both a
+   * DRIVER and a RECEPTIONIST must not be judged on whichever one happened to
+   * sort first.
+   */
+  roles?: string[];
   expiresAt: Date;
 }

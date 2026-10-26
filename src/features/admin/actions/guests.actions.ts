@@ -1,10 +1,11 @@
 "use server";
 
 import prisma from "@/core/db/prisma";
-import { requireAdminSession, UNAUTHENTICATED } from "@/features/admin/lib/requireAdminSession";
+import { requireAdminPermission } from "@/features/admin/lib/requireAdminSession";
 
 export async function getAllGuests(): Promise<{ success: boolean; data?: any[]; error?: string }> {
-  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+  const guard = await requireAdminPermission("guests:view");
+  if (!guard.ok) return guard.failure;
 
   try {
     const guests = await prisma.guestProfile.findMany({

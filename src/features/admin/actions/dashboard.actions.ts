@@ -1,11 +1,12 @@
 "use server";
 
 import prisma from "@/core/db/prisma";
-import { requireAdminSession, UNAUTHENTICATED, resolveDefaultPropertyId, NO_PROPERTY } from "@/features/admin/lib/requireAdminSession";
+import { requireAdminPermission, resolveDefaultPropertyId, NO_PROPERTY } from "@/features/admin/lib/requireAdminSession";
 import { startOfDay, endOfDay } from "date-fns";
 
 export async function getDashboardMetrics(propertyId?: string): Promise<{ success: boolean; data?: any; error?: string }> {
-  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+  const guard = await requireAdminPermission("reservations:view");
+  if (!guard.ok) return guard.failure;
 
   try {
     const today = new Date();
@@ -47,7 +48,8 @@ export async function getDashboardMetrics(propertyId?: string): Promise<{ succes
 }
 
 export async function getRecentReservations(propertyId?: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
-  if (!(await requireAdminSession())) return UNAUTHENTICATED;
+  const guard = await requireAdminPermission("reservations:view");
+  if (!guard.ok) return guard.failure;
 
   try {
     const propId = propertyId ?? (await resolveDefaultPropertyId());

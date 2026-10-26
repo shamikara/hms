@@ -18,29 +18,47 @@ import { jwtVerify } from "jose";
 /** Needs a signed-in user of any kind — guests included. */
 const SIGNED_IN_PREFIXES = ["/safari/review"];
 
-/** Needs a signed-in user holding a staff role. */
-const STAFF_PREFIXES = ["/admin"];
-
 /**
- * Roles permitted into the operations area. GUEST is deliberately absent:
- * guests sign in to rate their safari drives, and must not reach /admin.
+ * Front-of-house and management roles: everything in the operations area that
+ * is not carved out below.
  */
-const STAFF_ROLES = new Set([
+const OPERATIONS_ROLES = [
   "SUPER_ADMIN",
   "GENERAL_MANAGER",
   "RESORT_MANAGER",
-  "FLEET_MANAGER",
-  "SAFARI_COORDINATOR",
   "FINANCE_OFFICER",
   "RECEPTIONIST",
-  "RANGER",
-  "GUIDE",
-  "DRIVER",
-]);
+  "SAFARI_COORDINATOR",
+];
+
+/**
+ * Role rules for the operations area, matched most specific first.
+ *
+ * The safari field roles reach the fleet screens and nothing else: a driver
+ * has no business in the guest CRM or the revenue ledger. Finance is narrower
+ * again. Previously a single STAFF_ROLES set let every role, DRIVER included,
+ * into all of /admin.
+ *
+ * This is the outer gate only — it reads the signed cookie and never touches
+ * the database. The server actions behind these pages authorise themselves
+ * against the database (features/admin/lib/requireAdminSession.ts and
+ * features/fleet/lib/authz.ts), which is what actually protects the data.
+ */
+const ROLE_RULES: ReadonlyArray<{ prefix: string; roles: readonly string[] }> = [
+  {
+    prefix: "/admin/safari/fleet",
+    roles: [...OPERATIONS_ROLES, "FLEET_MANAGER", "RANGER", "GUIDE", "DRIVER"],
+  },
+  {
+    prefix: "/admin/finance",
+    roles: ["SUPER_ADMIN", "GENERAL_MANAGER", "RESORT_MANAGER", "FINANCE_OFFICER"],
+  },
+  { prefix: "/admin", roles: OPERATIONS_ROLES },
+];
 
 async function readSession(
   request: NextRequest,
-): Promise<{ userId: string; role: string } | null> {
+): Promise<{ userId: string; roles: string[] } | null> {
   const token = request.cookies.get("session")?.value;
   if (!token) return null;
 
@@ -59,10 +77,14 @@ async function readSession(
     const key = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, key, { algorithms: ["HS256"] });
     if (typeof payload.userId !== "string" || payload.userId.length === 0) return null;
-    return {
-      userId: payload.userId,
-      role: typeof payload.role === "string" ? payload.role : "",
-    };
+    // `roles` is absent from cookies issued before it was added; fall back to
+    // the single claim so existing sessions are not all logged out at once.
+    const roles = Array.isArray(payload.roles)
+      ? payload.roles.filter((r): r is string => typeof r === "string")
+      : typeof payload.role === "string" && payload.role
+        ? [payload.role]
+        : [];
+    return { userId: payload.userId, roles };
   } catch {
     // Expired, tampered with, or signed by a different secret.
     return null;
@@ -76,13 +98,15 @@ function matches(pathname: string, prefixes: string[]): boolean {
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  const needsStaff = matches(pathname, STAFF_PREFIXES);
-  const needsSignIn = needsStaff || matches(pathname, SIGNED_IN_PREFIXES);
+  const rule = ROLE_RULES.find((r) => matches(pathname, [r.prefix]));
+  const needsSignIn = Boolean(rule) || matches(pathname, SIGNED_IN_PREFIXES);
   if (!needsSignIn) return NextResponse.next();
 
   const session = await readSession(request);
 
-  if (session && (!needsStaff || STAFF_ROLES.has(session.role))) {
+  const allowed =
+    session && (!rule || session.roles.some((role) => rule.roles.includes(role)));
+  if (allowed) {
     return NextResponse.next();
   }
 
@@ -102,7 +126,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   /*
    * Everything except Next internals, the metadata routes and static files.
-   * The matcher is deliberately broad; PROTECTED_PREFIXES decides what is
+   * The matcher is deliberately broad; ROLE_RULES decides what is
    * actually gated, so adding a protected area is a one-line change.
    */
   matcher: [
