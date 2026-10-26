@@ -1,20 +1,51 @@
 import prisma from "@/core/db/prisma";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { ReservationFormValues } from "../validations/booking.schema";
 
+/**
+ * Either the singleton client or a transaction handle. Every method takes one
+ * so the availability check and the write that depends on it can run inside
+ * the same transaction — checking availability on one connection and writing
+ * on another is how two guests end up in one room.
+ */
+type Db = PrismaClient | Prisma.TransactionClient;
+
 export const BookingRepository = {
-  async getAvailableRooms(propertyId: string, roomTypeIds: string[], checkInDate: Date, checkOutDate: Date) {
+  /** Active, bookable room types for a property. */
+  async getRoomTypes(propertyId: string, db: Db = prisma) {
+    return db.roomType.findMany({
+      where: { propertyId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        capacity: true,
+        basePrice: true,
+      },
+      orderBy: { name: "asc" },
+    });
+  },
+
+  async getAvailableRooms(
+    propertyId: string,
+    roomTypeIds: string[],
+    checkInDate: Date,
+    checkOutDate: Date,
+    db: Db = prisma
+  ) {
     // 1. Find all rooms of the requested types in the property
-    const allRooms = await prisma.room.findMany({
+    const allRooms = await db.room.findMany({
       where: {
         roomTypeId: { in: roomTypeIds },
         floor: { building: { propertyId } },
         status: "AVAILABLE", // Not out of order or in maintenance
+        deletedAt: null,
       },
       include: { roomType: true },
     });
 
     // 2. Find any conflicting RoomAssignments
-    const conflictingAssignments = await prisma.roomAssignment.findMany({
+    const conflictingAssignments = await db.roomAssignment.findMany({
       where: {
         roomId: { in: allRooms.map(r => r.id) },
         stay: {
@@ -37,9 +68,9 @@ export const BookingRepository = {
     return allRooms.filter(room => !conflictingRoomIds.has(room.id));
   },
 
-  async createReservation(data: ReservationFormValues, assignedRoomIds: string[]) {
+  async createReservation(data: ReservationFormValues, assignedRoomIds: string[], db: Db = prisma) {
     // We create a Reservation, a Stay, and RoomAssignments in a single transaction.
-    return prisma.reservation.create({
+    return db.reservation.create({
       data: {
         propertyId: data.propertyId,
         guestId: data.guestId,

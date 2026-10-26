@@ -1,168 +1,164 @@
 "use server";
 
+import { z } from "zod";
 import prisma from "@/core/db/prisma";
-import { BookingService } from "../services/booking.service";
-import { GuestFormValues, ReservationFormValues, GuestSchema, ReservationSchema } from "../validations/booking.schema";
+import { BookingService, BookingError, RoomTypeAvailability } from "../services/booking.service";
+import {
+  BOOKING_RULE,
+  callerAddress,
+  consumeRateLimit,
+  describeWait,
+} from "@/core/security/rateLimit";
+import { toBookingReference } from "../lib/reference";
+import {
+  GuestFormValues,
+  ReservationFormValues,
+  GuestSchema,
+  ReservationSchema,
+  AvailabilitySchema,
+} from "../validations/booking.schema";
+
+export type RoomAvailability = RoomTypeAvailability;
+
+type ActionResult<T> = { success: boolean; data?: T; error?: string };
+
+/**
+ * Message shown when something failed on our side.
+ *
+ * These actions used to answer an unreachable database with a fabricated
+ * confirmation — a `DEMO-RES-...` id, a "we'll email you shortly", and nothing
+ * written anywhere. A guest who is told their room is held will turn up. If we
+ * cannot take the booking, we have to say so.
+ */
+const UNAVAILABLE =
+  "We could not reach the reservations system just now. Please try again in a moment, or email us and we will book you in by hand.";
+
+/** Turns a validation failure into the first readable message it produced. */
+function firstIssue(error: z.ZodError): string {
+  return error.issues?.[0]?.message ?? "Please check the details and try again.";
+}
 
 export async function createPublicBooking(
   guestData: GuestFormValues,
   reservationData: Omit<ReservationFormValues, "guestId">
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<ActionResult<{ reference: string; checkInDate: Date; checkOutDate: Date }>> {
+  let parsedGuest;
   try {
-    // 1. Validate inputs
-    const parsedGuest = GuestSchema.parse(guestData);
-    
-    // 2. Try DB booking if database is reachable
-    let guest;
-    try {
-      guest = await prisma.guestProfile.findUnique({
-        where: { email: parsedGuest.email },
-      });
+    parsedGuest = GuestSchema.parse(guestData);
+  } catch (error) {
+    if (error instanceof z.ZodError) return { success: false, error: firstIssue(error) };
+    throw error;
+  }
 
-      if (!guest) {
-        guest = await prisma.guestProfile.create({
-          data: {
-            email: parsedGuest.email,
-            firstName: parsedGuest.firstName,
-            lastName: parsedGuest.lastName,
-          },
-        });
-      }
+  // A booking holds real inventory, so an unthrottled form can empty the
+  // property. Checked after validation so malformed spam costs a database
+  // round trip only once it looks like a real submission.
+  const limit = await consumeRateLimit(`booking:ip:${await callerAddress()}`, BOOKING_RULE);
+  if (!limit.allowed) {
+    return {
+      success: false,
+      error: `That is a lot of requests from one place. Please wait ${describeWait(limit.retryAfterSeconds)}, or email us and we will book you in by hand.`,
+    };
+  }
 
-      const fullReservationData = {
-        ...reservationData,
-        guestId: guest.id,
-      };
-      const parsedReservation = ReservationSchema.parse(fullReservationData);
+  try {
+    // One guest profile per email address. Upsert rather than find-then-create:
+    // two tabs submitting at once would otherwise collide on the unique index.
+    const guest = await prisma.guestProfile.upsert({
+      where: { email: parsedGuest.email },
+      update: {
+        firstName: parsedGuest.firstName,
+        lastName: parsedGuest.lastName,
+        ...(parsedGuest.phone ? { phone: parsedGuest.phone } : {}),
+      },
+      create: {
+        email: parsedGuest.email,
+        firstName: parsedGuest.firstName,
+        lastName: parsedGuest.lastName,
+        phone: parsedGuest.phone ?? null,
+      },
+    });
 
-      const reservation = await BookingService.createReservation(parsedReservation);
-      return { success: true, data: reservation };
-    } catch (dbError) {
-      console.warn("DB offline/unreachable, providing successful demo booking response:", dbError);
-      // Fallback for Vercel sample/demo deployments without live Postgres DB connection
-      return {
-        success: true,
-        data: {
-          id: `DEMO-RES-${Date.now()}`,
-          status: "CONFIRMED",
-          checkInDate: reservationData.checkInDate,
-          checkOutDate: reservationData.checkOutDate,
-          guest: {
-            firstName: parsedGuest.firstName,
-            lastName: parsedGuest.lastName,
-            email: parsedGuest.email,
-          },
-        },
-      };
+    const parsedReservation = ReservationSchema.parse({
+      ...reservationData,
+      guestId: guest.id,
+    });
+
+    const reservation = await BookingService.createReservation(parsedReservation);
+
+    // Only what the confirmation screen needs. The full row carries the
+    // guest's record and the room ids, which the browser has no use for.
+    return {
+      success: true,
+      data: {
+        // The short form, so the reference the guest is shown is the one the
+        // front desk can search for.
+        reference: toBookingReference(reservation.id),
+        checkInDate: reservation.checkInDate,
+        checkOutDate: reservation.checkOutDate,
+      },
+    };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: firstIssue(error) };
     }
-  } catch (error: any) {
-    console.error("Booking Error:", error);
-    return { success: false, error: error.message || "Failed to create booking" };
+    // Lost the race for the last room, or asked for a type that is gone.
+    if (error instanceof BookingError) {
+      return { success: false, error: error.message };
+    }
+    console.error("createPublicBooking failed:", error);
+    return { success: false, error: UNAVAILABLE };
   }
 }
 
-export type RoomAvailability = {
-  roomType: {
-    id: string;
-    name: string;
-    description: string;
-    basePrice: number;
-    capacity: number;
-  };
-  availableCount: number;
-};
-
-// Fallback demo rooms when DB is unreachable on hosted environments
-const mockRoomTypes: RoomAvailability[] = [
-  {
-    roomType: {
-      id: "rt_presidential_villa",
-      name: "Presidential Safari Villa",
-      description: "Flagship residence with private plunge pool, butler service, and canopy views.",
-      basePrice: 1200,
-      capacity: 4,
-    },
-    availableCount: 2,
-  },
-  {
-    roomType: {
-      id: "rt_family_suite",
-      name: "Family Wilderness Suite",
-      description: "Spacious two-bedroom retreat with private campfire terrace.",
-      basePrice: 850,
-      capacity: 6,
-    },
-    availableCount: 3,
-  },
-  {
-    roomType: {
-      id: "rt_luxury_canvas",
-      name: "Luxury Canvas Pavilion",
-      description: "Air-conditioned luxury canvas tent with outdoor rainfall shower.",
-      basePrice: 450,
-      capacity: 2,
-    },
-    availableCount: 5,
-  },
-];
-
 export async function checkAvailability(
-  propertyId: string, 
-  checkInDate: Date, 
+  propertyId: string,
+  checkInDate: Date,
   checkOutDate: Date
-): Promise<{ success: boolean; data?: RoomAvailability[]; error?: string }> {
+): Promise<ActionResult<RoomAvailability[]>> {
+  const parsed = AvailabilitySchema.safeParse({ checkInDate, checkOutDate });
+  if (!parsed.success) {
+    return { success: false, error: firstIssue(parsed.error) };
+  }
+
   try {
-    const allRoomTypes = await prisma.roomType.findMany({
-      where: { propertyId },
-      include: { rooms: true },
+    const availability = await BookingService.getAvailability(
+      propertyId,
+      parsed.data.checkInDate,
+      parsed.data.checkOutDate
+    );
+    // An empty list means this property has no room types set up — a real
+    // answer, and one the screen should show plainly rather than filling in.
+    return { success: true, data: availability };
+  } catch (error) {
+    console.error("checkAvailability failed:", error);
+    return { success: false, error: UNAVAILABLE };
+  }
+}
+
+/**
+ * The property the public booking screen takes reservations for.
+ *
+ * The page previously hardcoded `{ id: "resort_1" }`, which matches no row, so
+ * every availability lookup ran against a property that does not exist. Reads
+ * the oldest property, matching how the admin screens resolve a default.
+ */
+export async function getBookableProperty(): Promise<
+  ActionResult<{ id: string; name: string; baseCurrency: string }>
+> {
+  try {
+    const property = await prisma.property.findFirst({
+      where: { deletedAt: null },
+      select: { id: true, name: true, baseCurrency: true },
+      orderBy: { createdAt: "asc" },
     });
 
-    if (!allRoomTypes || allRoomTypes.length === 0) {
-      return { success: true, data: mockRoomTypes };
+    if (!property) {
+      return { success: false, error: UNAVAILABLE };
     }
-
-    const availability = await Promise.all(
-      allRoomTypes.map(async (rt) => {
-        const availableRooms = await prisma.room.findMany({
-          where: {
-            roomTypeId: rt.id,
-            status: "AVAILABLE",
-            NOT: {
-              assignments: {
-                some: {
-                  stay: {
-                    reservation: {
-                      status: { notIn: ["CANCELLED", "NO_SHOW"] },
-                    },
-                  },
-                  OR: [
-                    {
-                      startDate: { lt: checkOutDate },
-                      endDate: { gt: checkInDate },
-                    },
-                  ],
-                },
-              },
-            },
-          },
-        });
-        return {
-          roomType: {
-            id: rt.id,
-            name: rt.name,
-            description: "Luxury Safari Accommodation",
-            basePrice: 850,
-            capacity: rt.capacity,
-          },
-          availableCount: availableRooms.length > 0 ? availableRooms.length : 2,
-        };
-      })
-    );
-
-    return { success: true, data: availability };
-  } catch (error: any) {
-    console.warn("Prisma DB unreachable on checkAvailability, using fallback demo data:", error?.message);
-    // Graceful fallback for Vercel sample app without live database connection
-    return { success: true, data: mockRoomTypes };
+    return { success: true, data: property };
+  } catch (error) {
+    console.error("getBookableProperty failed:", error);
+    return { success: false, error: UNAVAILABLE };
   }
 }

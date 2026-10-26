@@ -25,6 +25,11 @@ export function BookingWidget() {
     );
   }, { scope: containerRef });
 
+  const bookQuery = new URLSearchParams();
+  if (checkIn) bookQuery.set("checkIn", checkIn);
+  if (checkOut) bookQuery.set("checkOut", checkOut);
+  const bookHref = bookQuery.toString() ? `/book?${bookQuery}` : "/book";
+
   return (
     <div 
       ref={containerRef}
@@ -63,7 +68,7 @@ export function BookingWidget() {
           </select>
         </div>
       </div>
-      <Link href="/book" className="w-full md:w-auto">
+      <Link href={bookHref} className="w-full md:w-auto">
         <button className="bg-emerald-700 hover:bg-emerald-600 text-white px-8 py-3 rounded-full text-sm font-medium tracking-wide transition-all w-full md:w-auto shadow-lg shrink-0">
           Check Availability
         </button>

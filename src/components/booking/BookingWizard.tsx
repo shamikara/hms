@@ -1,16 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { checkAvailability, createPublicBooking, RoomAvailability } from "@/features/bookings/actions/booking.actions";
 
-export function BookingWizard({ propertyId }: { propertyId: string }) {
+export function BookingWizard({
+  propertyId,
+  currencyCode,
+  initialCheckIn = "",
+  initialCheckOut = "",
+}: {
+  propertyId: string;
+  /** The property's baseCurrency, so rates are shown in the money they are set in. */
+  currencyCode: string;
+  initialCheckIn?: string;
+  initialCheckOut?: string;
+}) {
+  // Rebuilt only when the property's currency changes, not on every render.
+  const currency = useMemo(
+    () =>
+      new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: currencyCode,
+        maximumFractionDigits: 0,
+      }),
+    [currencyCode],
+  );
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form State
-  const [checkInDate, setCheckInDate] = useState("");
-  const [checkOutDate, setCheckOutDate] = useState("");
+  const [checkInDate, setCheckInDate] = useState(initialCheckIn);
+  const [checkOutDate, setCheckOutDate] = useState(initialCheckOut);
   const [availableRooms, setAvailableRooms] = useState<RoomAvailability[]>([]);
   const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
   
@@ -18,6 +40,10 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // The reservation reference the server actually stored.
+  const [reference, setReference] = useState<string | null>(null);
 
   const handleCheckAvailability = async () => {
     if (!checkInDate || !checkOutDate) {
@@ -30,7 +56,9 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
     setLoading(false);
     
     if (result.success && result.data) {
-      setAvailableRooms(result.data.filter(r => r.availableCount > 0));
+      // Sold-out types stay in the list, shown as unavailable: a shorter list
+      // reads as "we don't have that room" rather than "not on those dates".
+      setAvailableRooms(result.data);
       setStep(2);
     } else {
       setError(result.error || "Failed to check availability.");
@@ -46,7 +74,7 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
     setError(null);
 
     const result = await createPublicBooking(
-      { firstName, lastName, email },
+      { firstName, lastName, email, phone: phone || undefined },
       { 
         propertyId, 
         roomTypeIds: selectedRoomTypes,
@@ -58,6 +86,7 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
 
     setLoading(false);
     if (result.success) {
+      setReference(result.data?.reference ?? null);
       setStep(4);
     } else {
       setError(result.error || "Booking failed.");
@@ -125,10 +154,12 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
             ) : (
               <div className="space-y-4 mb-8">
                 {availableRooms.map((room) => (
-                  <div 
-                    key={room.roomType.id} 
-                    className={`p-6 rounded-xl border-2 transition-all cursor-pointer flex justify-between items-center ${selectedRoomTypes.includes(room.roomType.id) ? 'border-emerald-500 bg-emerald-500/5' : 'border-stone-200 dark:border-stone-800 hover:border-emerald-500/50'}`}
+                  <div
+                    key={room.roomType.id}
+                    aria-disabled={room.availableCount === 0}
+                    className={`p-6 rounded-xl border-2 transition-all flex justify-between items-center gap-4 ${room.availableCount === 0 ? 'border-stone-200 dark:border-stone-800 opacity-50 cursor-not-allowed' : selectedRoomTypes.includes(room.roomType.id) ? 'border-emerald-500 bg-emerald-500/5 cursor-pointer' : 'border-stone-200 dark:border-stone-800 hover:border-emerald-500/50 cursor-pointer'}`}
                     onClick={() => {
+                      if (room.availableCount === 0) return;
                       if (selectedRoomTypes.includes(room.roomType.id)) {
                         setSelectedRoomTypes(selectedRoomTypes.filter(id => id !== room.roomType.id));
                       } else {
@@ -138,10 +169,23 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
                   >
                     <div>
                       <h4 className="text-xl font-medium text-stone-900 dark:text-stone-100">{room.roomType.name}</h4>
-                      <p className="text-sm text-stone-500 mt-1">Capacity: {room.roomType.capacity} Guests</p>
+                      {room.roomType.description && (
+                        <p className="text-sm text-stone-500 mt-1">{room.roomType.description}</p>
+                      )}
+                      <p className="text-sm text-stone-500 mt-1">Sleeps {room.roomType.capacity}</p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 block">{room.availableCount} Available</span>
+                    <div className="text-right shrink-0">
+                      {room.roomType.basePrice === null ? (
+                        <span className="text-sm text-stone-500 block">Rate on request</span>
+                      ) : (
+                        <span className="text-lg font-medium text-stone-900 dark:text-stone-100 block">
+                          {currency.format(room.roomType.basePrice)}
+                          <span className="text-xs text-stone-500 font-normal"> / night</span>
+                        </span>
+                      )}
+                      <span className={`text-sm font-medium block mt-1 ${room.availableCount === 0 ? 'text-stone-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {room.availableCount === 0 ? "None left on these dates" : `${room.availableCount} available`}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -187,14 +231,28 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-500 mb-2">Email</label>
-                <input 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-500 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-500 mb-2">
+                    Phone <span className="text-stone-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+94 77 123 4567"
+                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                  />
+                </div>
               </div>
             </div>
 
@@ -218,10 +276,16 @@ export function BookingWizard({ propertyId }: { propertyId: string }) {
             <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
               ✓
             </div>
-            <h3 className="text-3xl font-serif mb-4 text-stone-900 dark:text-stone-100">Reservation Confirmed</h3>
-            <p className="text-stone-500 mb-8 max-w-md mx-auto">
-              Thank you, {firstName}! We have received your reservation request and will send a confirmation email to {email} shortly.
+            <h3 className="text-3xl font-serif mb-4 text-stone-900 dark:text-stone-100">Request Received</h3>
+            <p className="text-stone-500 mb-4 max-w-md mx-auto">
+              Thank you, {firstName}. We have your request and are holding the room while our
+              reservations team confirms it with you directly. It is not confirmed until they do.
             </p>
+            {reference && (
+              <p className="text-stone-500 mb-8 text-sm">
+                Your reference: <span className="font-mono text-stone-900 dark:text-stone-100">{reference}</span>
+              </p>
+            )}
             <button onClick={() => window.location.href = "/"} className="bg-emerald-700 hover:bg-emerald-600 text-white px-8 py-3 rounded-full font-medium transition-colors">
               Return Home
             </button>
