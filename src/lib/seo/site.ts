@@ -69,8 +69,6 @@ export const SITE_ROUTES: {
   { path: "/safari", priority: 0.8, changeFrequency: "monthly" },
   { path: "/safari/drivers", priority: 0.7, changeFrequency: "weekly" },
   { path: "/dining", priority: 0.7, changeFrequency: "monthly" },
-  { path: "/packages", priority: 0.7, changeFrequency: "monthly" },
   { path: "/about", priority: 0.6, changeFrequency: "yearly" },
   { path: "/contact", priority: 0.6, changeFrequency: "yearly" },
-  { path: "/sustainability", priority: 0.5, changeFrequency: "yearly" },
 ];

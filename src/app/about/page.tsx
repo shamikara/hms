@@ -4,7 +4,8 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
-import { ShieldCheck, Leaf, Sun, Compass, Award, Users } from "lucide-react";
+import { Home, Waves, Utensils, Compass } from "lucide-react";
+import { SITE } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: "About the Resort",
@@ -18,48 +19,31 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+  /** What the house actually offers, as listed on the booking platforms. */
   const pillars = [
     {
-      icon: Leaf,
-      title: "Wild Habitat Protection",
+      icon: Home,
+      title: "Three Rooms",
       description:
-        "Over 30% of our annual profits directly fund local anti-poaching patrols, elephant migration corridor restoration, and habitat monitoring around Udawalawe National Park.",
+        "A double, a quadruple and a family junior suite. All air-conditioned, all with private bathrooms. Small enough that the team knows who you are by the second morning.",
     },
     {
-      icon: Sun,
-      title: "100% Solar & Eco-Tech",
+      icon: Waves,
+      title: "The Pool",
       description:
-        "Powered entirely by our off-grid solar micro-array, with closed-loop thermodynamic water heating, greywater bio-filtration, and zero single-use plastics across the property.",
+        "An outdoor pool in the garden with loungers under a pergola. It is the thing guests mention most after the food, and it is a good place to be in the hours the park is shut.",
     },
     {
-      icon: ShieldCheck,
-      title: "Biophilic Eco-Architecture",
+      icon: Utensils,
+      title: "Food Cooked to Order",
       description:
-        "Designed to blend imperceptibly into the canopy using hand-carved local granite, reclaimed teak, and open-air timber frames that eliminate the need for artificial cooling.",
+        "A restaurant on site cooking fresh Sri Lankan meals rather than holding a buffet. Continental breakfast is served between 7:30am and 10:00am and is charged separately.",
     },
     {
       icon: Compass,
-      title: "Expert Senior Trackers",
+      title: "Safari Arranged for You",
       description:
-        "Our naturalist team comprises veteran Sri Lankan rangers with over 15 years of experience in elephant behavior, bird taxonomy, and wildlife photography guidance.",
-    },
-  ];
-
-  const team = [
-    {
-      name: "Chaminda Bandara",
-      role: "Head Wildlife Naturalist",
-      bio: "18 years tracking elephant herds and Sri Lankan leopards across the southern wild corridors.",
-    },
-    {
-      name: "Elena Rostova",
-      role: "General Manager",
-      bio: "Former luxury lodge director with 12 years managing boutique wilderness resorts in East Africa and South Asia.",
-    },
-    {
-      name: "Chef Kanishka Silva",
-      role: "Executive Culinary Director",
-      bio: "Pioneer of modern Sri Lankan eco-gastronomy utilizing organic produce from our estate garden.",
+        "The house books jeeps and drivers into Udawalawe National Park for a morning or afternoon drive. The drivers are independent operators we work with regularly.",
     },
   ];
 
@@ -73,17 +57,18 @@ export default function AboutPage() {
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <ScrollReveal delay={0.1}>
               <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs sm:text-sm font-mono block">
-                Our Story & Heritage
+                About the House
               </span>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <h1 className="text-4xl sm:text-6xl font-serif tracking-tight text-white leading-tight">
-                A Sanctuary Built in Harmony with the Wild
+                A Small Guesthouse by the Park
               </h1>
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-stone-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-                Founded in 2012 at the border of Udawalawe National Park, our lodge was envisioned as a haven where luxury hospitality directly empowers wildlife conservation.
+                Three air-conditioned rooms, an outdoor pool and a kitchen that cooks to order, a
+                short drive from the Udawalawe National Park entrance.
               </p>
             </ScrollReveal>
           </div>
@@ -94,26 +79,33 @@ export default function AboutPage() {
           <ScrollReveal direction="right">
             <div className="space-y-6">
               <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs font-mono block">
-                The Heritage
+                What We Are
               </span>
               <h2 className="text-3xl sm:text-4xl font-serif text-white leading-tight">
-                Where the Jungle Canopy Meets 5-Star Serenity
+                Small, and Not Pretending Otherwise
               </h2>
               <p className="text-stone-300 text-sm sm:text-base leading-relaxed">
-                Wildlily Safari Resort was established not merely as a hotel, but as a living conservation sanctuary. Set across 25 acres of pristine dry-zone forest, our villas were built using traditional timber craftsmanship without felling a single ancient tree.
+                This is a guesthouse with three rooms, not a resort with a wing. What that buys you is
+                a team that can be flexible about dinner times and early safari starts, and what it
+                costs you is the things a large hotel has — there is no spa, no gym and no second
+                restaurant.
               </p>
               <p className="text-stone-400 text-sm leading-relaxed">
-                Guests awake to the morning call of peacocks and wild hornbills, enjoying private infinity plunge pools that overlook natural watering holes visited daily by wild elephant herds.
+                The front desk is staffed from 7:00am to 7:00pm, the team speak English, and
+                housekeeping is available on request. Free Wi-Fi throughout and free private parking
+                on site.
               </p>
 
               <div className="pt-4 grid grid-cols-2 gap-6 border-t border-stone-850">
                 <div>
-                  <span className="text-3xl font-serif text-emerald-400 block">250+</span>
-                  <span className="text-xs text-stone-400 font-mono">Resident Elephants Tracked</span>
+                  <span className="text-3xl font-serif text-emerald-400 block">3</span>
+                  <span className="text-xs text-stone-400 font-mono">Guest Rooms</span>
                 </div>
                 <div>
-                  <span className="text-3xl font-serif text-emerald-400 block">100%</span>
-                  <span className="text-xs text-stone-400 font-mono">Renewable Energy Grid</span>
+                  <span className="text-3xl font-serif text-emerald-400 block">{SITE.rating.value}</span>
+                  <span className="text-xs text-stone-400 font-mono">
+                    Average Across {SITE.rating.count} Platform Reviews
+                  </span>
                 </div>
               </div>
             </div>
@@ -130,8 +122,8 @@ export default function AboutPage() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 p-4 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl">
-                <span className="text-emerald-400 text-xs font-mono font-medium block">Udawalawe Border Conservation Zone</span>
-                <p className="text-xs text-stone-300 mt-1">Direct access to Sri Lanka’s premier elephant safari preserve.</p>
+                <span className="text-emerald-400 text-xs font-mono font-medium block">Udawalawa, Sabaragamuwa Province</span>
+                <p className="text-xs text-stone-300 mt-1">A short drive from the national park entrance.</p>
               </div>
             </div>
           </ScrollReveal>
@@ -142,13 +134,13 @@ export default function AboutPage() {
           <div className="max-w-7xl mx-auto space-y-16">
             <div className="text-center max-w-2xl mx-auto space-y-4">
               <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs font-mono block">
-                Ethos & Principles
+                What You Get
               </span>
               <h2 className="text-3xl sm:text-4xl font-serif text-white">
-                Our Four Conservation Pillars
+                The Four Things We Do
               </h2>
               <p className="text-stone-400 text-sm">
-                Every stay at Udawalawe Resort actively supports local communities and ecosystem preservation.
+                A short list, honestly described, rather than a long one you would have to check.
               </p>
             </div>
 
@@ -173,48 +165,19 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Team Section */}
-        <section className="py-20 px-6 sm:px-8 lg:px-16 max-w-7xl mx-auto space-y-16">
-          <div className="text-center max-w-2xl mx-auto space-y-4">
-            <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs font-mono block">
-              Naturalists & Hospitality
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-serif text-white">
-              Guided by Passionate Stewards
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((member, i) => (
-              <ScrollReveal key={i} delay={i * 0.15}>
-                <div className="bg-stone-900/40 p-6 rounded-2xl border border-stone-800 space-y-3 hover:bg-stone-900/80 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-emerald-900/40 text-emerald-400 flex items-center justify-center font-mono font-bold text-sm">
-                    {member.name.charAt(0)}
-                  </div>
-                  <h3 className="text-lg font-serif text-white">{member.name}</h3>
-                  <span className="text-xs font-mono text-emerald-400 block">{member.role}</span>
-                  <p className="text-xs text-stone-400 leading-relaxed pt-2 border-t border-stone-800">
-                    {member.bio}
-                  </p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </section>
-
         {/* Call to Action Banner */}
         <section className="py-16 px-6 sm:px-8 lg:px-16 bg-gradient-to-r from-emerald-950 via-stone-900 to-emerald-950 border-t border-emerald-900/40 text-center">
           <div className="max-w-3xl mx-auto space-y-6">
-            <h2 className="text-3xl sm:text-4xl font-serif text-white">Experience Untamed Wilderness Firsthand</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif text-white">Come and Stay</h2>
             <p className="text-stone-300 text-sm">
-              Book your villa today and enjoy curated game drives, farm-to-table dining, and direct wildlife views.
+              Send us your dates and we will tell you what is free and what it costs.
             </p>
             <div className="pt-4">
               <Link
                 href="/book"
                 className="inline-block px-8 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs uppercase tracking-widest transition-colors shadow-xl"
               >
-                Reserve Your Stay &rarr;
+                Check Availability &rarr;
               </Link>
             </div>
           </div>

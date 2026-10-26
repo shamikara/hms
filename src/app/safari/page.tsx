@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
-import { Compass, Sun, Moon, Utensils, Shield, Camera, Clock, ArrowRight, Users } from "lucide-react";
+import { Compass, Sun, Moon, Clock, ArrowRight, Users } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Udawalawe Safari Drives",
@@ -18,56 +18,38 @@ export const metadata: Metadata = {
 };
 
 export default function SafariPage() {
+  /**
+   * The two drives the house arranges. Timings are the park's own gate hours,
+   * not a promise about any particular jeep — the drivers are independent and
+   * the team books whoever is free.
+   */
   const experiences = [
     {
-      title: "Dawn Elephant Gathering Drive",
-      timing: "05:30 AM – 09:30 AM",
+      title: "Morning Drive",
+      timing: "Leaves before dawn",
       icon: Sun,
       image: "/safari-elephant-herd.webp",
       description:
-        "Embark in custom open-top 4x4 Land Cruisers at first light to witness wild elephant herds bathing at the reservoir, accompanied by rare endemic bird sightings.",
+        "The park opens at first light and this is when the elephants are most active and the heat is bearable. You leave before breakfast is served, so tell the team the night before and they will sort food for you.",
       highlights: [
-        "Private 4x4 Toyota Land Cruiser",
-        "Senior Naturalist & Local Tracker",
-        "Gourmet Bush Breakfast & Artisan Coffee",
-        "High-Power Swarovski Binoculars Included",
+        "Jeep and driver arranged by the house",
+        "A short drive to the park entrance",
+        "Park entrance fees paid at the gate",
       ],
     },
     {
-      title: "Sunset Leopard & Bear Tracking",
-      timing: "03:00 PM – 06:30 PM",
+      title: "Afternoon Drive",
+      timing: "Leaves mid-afternoon",
       icon: Moon,
       image: "/safari-elephants-bush.webp",
       description:
-        "Explore the dense rocky outcrops and riverine forests during peak predator activity hours in search of the elusive Sri Lankan Leopard and Sloth Bear.",
+        "The second gate slot of the day, back before dark. Easier if you have arrived late or would rather not start before sunrise, and the light towards the end is the better of the two for photographs.",
       highlights: [
-        "Optimal Low-Light Photography Setup",
-        "Expert Predator Tracking Guidance",
-        "Chilled Refreshment & Refreshing Towels",
-        "Return for Sunset Sundowners at Lodge",
+        "Jeep and driver arranged by the house",
+        "Back in time for dinner at the house",
+        "Park entrance fees paid at the gate",
       ],
     },
-    {
-      title: "Candlelit Bush Dining & Stargazing",
-      timing: "07:30 PM – 10:30 PM",
-      icon: Utensils,
-      image: "/property-garden-night.webp",
-      description:
-        "A private 5-course candlelit dinner served deep inside a secluded forest clearing under the equatorial night sky, paired with sommelier-selected wines.",
-      highlights: [
-        "Private Chef & Dedicated Waitstaff",
-        "Open Campfire & Lantern Ambiance",
-        "Stargazing Guidance with Celestial Telescope",
-        "5-Course Organic Tasting Menu",
-      ],
-    },
-  ];
-
-  const vehicleSpecs = [
-    { label: "Fleet Vehicles", detail: "Custom Toyota Land Cruiser 70-Series" },
-    { label: "Seating Layout", detail: "Tiered 3-Row Open-Air Observation Seats" },
-    { label: "Optics & Camera", detail: "Stabilized Telephoto Lens Mounts + Swarovski Optics" },
-    { label: "Onboard Amenities", detail: "Iced Hydration Bar + USB-C Charging Stations" },
   ];
 
   return (
@@ -80,17 +62,19 @@ export default function SafariPage() {
           <div className="max-w-4xl mx-auto space-y-4">
             <ScrollReveal delay={0.1}>
               <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs font-mono block">
-                Guided Wilderness Expeditions
+                Arranged by the House
               </span>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <h1 className="text-4xl sm:text-6xl font-serif text-white leading-tight">
-                Udawalawe Safari Excursions
+                Udawalawe Safari Drives
               </h1>
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-stone-400 text-sm sm:text-base max-w-xl mx-auto">
-                Sri Lanka's premier elephant sanctuary experienced with master naturalists, open 4x4 vehicles, and bespoke wilderness hospitality.
+                Udawalawe is elephant country, and herds are a near-certainty rather than a lucky
+                sighting. Tell the team whether you want a morning or an afternoon drive and they
+                will organise a jeep and a driver.
               </p>
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
@@ -153,7 +137,7 @@ export default function SafariPage() {
                         href="/book"
                         className="px-6 py-3 rounded-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs uppercase tracking-wider transition-colors inline-flex items-center space-x-2 shadow-lg"
                       >
-                        <span>Reserve Experience</span>
+                        <span>Request This Drive</span>
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -164,22 +148,22 @@ export default function SafariPage() {
           })}
         </section>
 
-        {/* Fleet & Specs */}
+        {/* What to expect */}
         <section className="py-16 px-6 sm:px-8 lg:px-16 bg-stone-900/60 border-t border-stone-850">
-          <div className="max-w-7xl mx-auto space-y-10">
-            <div className="text-center max-w-xl mx-auto space-y-2">
-              <span className="text-emerald-400 font-mono text-xs uppercase tracking-widest block">Safari Operations Standards</span>
-              <h3 className="text-2xl sm:text-3xl font-serif text-white">Custom Safari Fleet & Optics</h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {vehicleSpecs.map((spec, i) => (
-                <div key={i} className="p-6 rounded-2xl bg-stone-950 border border-stone-800 space-y-2">
-                  <span className="text-xs font-mono text-emerald-400 uppercase tracking-wider block">{spec.label}</span>
-                  <p className="text-sm font-serif text-stone-100">{spec.detail}</p>
-                </div>
-              ))}
-            </div>
+          <div className="max-w-3xl mx-auto space-y-6 text-center">
+            <span className="text-emerald-400 font-mono text-xs uppercase tracking-widest block">
+              Worth Knowing
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-serif text-white">Before You Book a Drive</h3>
+            <p className="text-stone-300 text-sm leading-relaxed">
+              The jeeps and drivers are independent operators the house works with, not a fleet we
+              own. Park entrance fees are set by the Department of Wildlife Conservation and are paid
+              at the gate, separately from whatever you settle with the driver.
+            </p>
+            <p className="text-stone-400 text-sm leading-relaxed">
+              We will tell you the current rates when you ask, rather than quote a figure here that
+              may have moved.
+            </p>
           </div>
         </section>
       </main>

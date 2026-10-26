@@ -32,12 +32,10 @@ export function PublicHeader({ variant = "transparent" }: PublicHeaderProps) {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { href: "/about", label: "The Lodge" },
-    { href: "/rooms", label: "Accommodation" },
-    { href: "/safari", label: "Experiences" },
-    { href: "/dining", label: "Gastronomy" },
-    { href: "/packages", label: "Packages" },
-    { href: "/sustainability", label: "Conservation" },
+    { href: "/about", label: "About" },
+    { href: "/rooms", label: "Rooms" },
+    { href: "/safari", label: "Safari" },
+    { href: "/dining", label: "Food" },
     { href: "/contact", label: "Contact" },
   ];
 

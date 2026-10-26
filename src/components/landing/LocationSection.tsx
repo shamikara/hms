@@ -1,6 +1,7 @@
 "use client";
 
 import { ScrollReveal } from "../ui/ScrollReveal";
+import { SITE } from "@/lib/seo/site";
 
 export function LocationSection() {
   return (
@@ -11,7 +12,8 @@ export function LocationSection() {
             <span className="text-emerald-400 font-medium tracking-widest uppercase text-sm mb-4 block">Location</span>
             <h3 className="text-4xl md:text-5xl font-serif text-white">Find Us in Udawalawe</h3>
             <p className="mt-6 text-stone-400 max-w-2xl mx-auto text-lg leading-relaxed">
-              Situated right on the edge of the world-renowned Udawalawe National Park, our luxury resort offers unparalleled access to Sri Lanka's finest elephant viewing experiences.
+              We are a short drive from the Udawalawe National Park entrance, so a morning drive means
+              an early start rather than a long one.
             </p>
           </div>
         </ScrollReveal>
@@ -23,15 +25,17 @@ export function LocationSection() {
               <ul className="space-y-4 text-stone-300">
                 <li className="flex items-start gap-4">
                   <span className="text-emerald-400 text-xl mt-1">📍</span>
-                  <span>South Canal, Old Deewara Road, Udawalawa 70190, Sri Lanka</span>
+                  <span>
+                    {SITE.address.street}, {SITE.address.locality} {SITE.address.postalCode}, Sri Lanka
+                  </span>
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="text-emerald-400 text-xl">📞</span>
-                  <span>+94 77 732 0237</span>
+                  <span>{SITE.phoneDisplay}</span>
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="text-emerald-400 text-xl">✉️</span>
-                  <span>reservations@wildlilysafariresort.com</span>
+                  <span>{SITE.email}</span>
                 </li>
               </ul>
             </div>
@@ -39,11 +43,16 @@ export function LocationSection() {
             <div className="bg-stone-800/50 p-8 rounded-2xl border border-stone-700/50 backdrop-blur-sm">
               <h4 className="text-xl font-serif text-white mb-4">How to Get Here</h4>
               <p className="text-stone-300 text-sm leading-relaxed mb-4">
-                We are located a 4.5-hour drive from Bandaranaike International Airport (CMB) in Colombo. Private transfers can be arranged upon request.
+                Udawalawa is roughly a four to five hour drive from Bandaranaike International Airport
+                (CMB), depending on traffic. Call or email us and we will tell you the best way to
+                reach us from wherever you are starting.
               </p>
-              <button className="text-emerald-400 hover:text-emerald-300 font-medium text-sm tracking-wide uppercase transition-colors group flex items-center gap-2">
-                Arrange Transfer <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </button>
+              <a
+                href={`tel:${SITE.phone}`}
+                className="text-emerald-400 hover:text-emerald-300 font-medium text-sm tracking-wide uppercase transition-colors group flex items-center gap-2"
+              >
+                Call Us <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </a>
             </div>
           </ScrollReveal>
           

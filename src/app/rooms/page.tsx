@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
-import { Users, Maximize2, Sparkles, Check, ArrowRight, ShieldCheck } from "lucide-react";
+import { Users, Maximize2, Sparkles, Check, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Rooms & Rates",
@@ -99,7 +99,7 @@ export default function RoomsPage() {
           <div className="max-w-4xl mx-auto space-y-4">
             <ScrollReveal delay={0.1}>
               <span className="text-emerald-400 font-medium tracking-widest uppercase text-xs font-mono block">
-                Sanctuary Accommodations
+                Accommodation
               </span>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
@@ -170,7 +170,7 @@ export default function RoomsPage() {
                       href="/book"
                       className="px-6 py-3 rounded-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs uppercase tracking-wider transition-colors inline-flex items-center space-x-2 shadow-lg"
                     >
-                      <span>Reserve This Suite</span>
+                      <span>Reserve This Room</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -184,8 +184,8 @@ export default function RoomsPage() {
         <section className="py-16 px-6 sm:px-8 lg:px-16 bg-stone-900/60 border-t border-stone-850">
           <div className="max-w-7xl mx-auto space-y-8">
             <div className="text-center max-w-xl mx-auto space-y-2">
-              <span className="text-emerald-400 font-mono text-xs uppercase tracking-widest block">Standard Across All Accommodations</span>
-              <h3 className="text-2xl sm:text-3xl font-serif text-white">5-Star Wilderness Amenities</h3>
+              <span className="text-emerald-400 font-mono text-xs uppercase tracking-widest block">Standard In Every Room</span>
+              <h3 className="text-2xl sm:text-3xl font-serif text-white">What Is Included</h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

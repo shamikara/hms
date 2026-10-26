@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, MapPin, Phone, Shield } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 
 export function PublicFooter() {
@@ -12,12 +12,9 @@ export function PublicFooter() {
             Wildlily Safari Resort
           </Link>
           <p className="text-xs leading-relaxed text-stone-400">
-            A 5-star sanctuary nestled on the boundary of Udawalawe National Park. Experience Sri Lanka's wildlife with unmatched luxury, zero-footprint eco-architecture, and personalized service.
+            A small guesthouse beside Udawalawe National Park with three air-conditioned rooms, an
+            outdoor pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.
           </p>
-          <div className="flex items-center space-x-2 text-xs text-emerald-400 pt-2 font-mono">
-            <Shield className="w-3.5 h-3.5" />
-            <span>Certified Biosphere Eco-Lodge</span>
-          </div>
         </div>
 
         {/* Quick Links */}
@@ -25,28 +22,22 @@ export function PublicFooter() {
           <h4 className="text-xs font-semibold text-stone-200 uppercase tracking-widest font-mono">Explore</h4>
           <ul className="space-y-2 text-xs">
             <li>
-              <Link href="/about" className="hover:text-emerald-400 transition-colors">The Lodge & Heritage</Link>
+              <Link href="/about" className="hover:text-emerald-400 transition-colors">About the House</Link>
             </li>
             <li>
-              <Link href="/rooms" className="hover:text-emerald-400 transition-colors">Villas & Accommodation</Link>
+              <Link href="/rooms" className="hover:text-emerald-400 transition-colors">Rooms</Link>
             </li>
             <li>
-              <Link href="/safari" className="hover:text-emerald-400 transition-colors">Safari Drives & Excursions</Link>
+              <Link href="/safari" className="hover:text-emerald-400 transition-colors">Safari Drives</Link>
             </li>
             <li>
               <Link href="/safari/drivers" className="hover:text-emerald-400 transition-colors">Meet the Drivers</Link>
             </li>
             <li>
-              <Link href="/dining" className="hover:text-emerald-400 transition-colors">Gastronomy & Bush Dining</Link>
+              <Link href="/dining" className="hover:text-emerald-400 transition-colors">Food & Breakfast</Link>
             </li>
             <li>
-              <Link href="/packages" className="hover:text-emerald-400 transition-colors">Packages & Exclusive Offers</Link>
-            </li>
-            <li>
-              <Link href="/sustainability" className="hover:text-emerald-400 transition-colors">Conservation & Sustainability</Link>
-            </li>
-            <li>
-              <Link href="/contact" className="hover:text-emerald-400 transition-colors">Concierge & Transfers</Link>
+              <Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact</Link>
             </li>
           </ul>
         </div>
@@ -72,15 +63,15 @@ export function PublicFooter() {
 
         {/* Guest Experience */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold text-stone-200 uppercase tracking-widest font-mono">Guest Experience</h4>
+          <h4 className="text-xs font-semibold text-stone-200 uppercase tracking-widest font-mono">Guest Sign-In</h4>
           <p className="text-xs text-stone-400">
-            Access your reservation details, pre-arrival concierge preferences, and safari schedules.
+            If you have been on a safari drive with us, sign in to rate your driver.
           </p>
           <Link
             href="/login"
             className="inline-flex items-center justify-center w-full py-2.5 px-4 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 hover:bg-emerald-900 transition-colors text-xs font-medium"
           >
-            Access Guest Portal &rarr;
+            Sign In &rarr;
           </Link>
         </div>
       </div>
