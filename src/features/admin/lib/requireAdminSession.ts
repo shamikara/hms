@@ -25,7 +25,15 @@ export type AdminPermission =
   /** Read guest CRM records (names, contact details, stay history). */
   | "guests:view"
   /** See revenue, invoices and payment figures. */
-  | "finance:view";
+  | "finance:view"
+  /** Post charges, take payments and close a folio. */
+  | "billing:manage"
+  /** Read the room inventory: buildings, floors, room types, rooms. */
+  | "rooms:view"
+  /** Create and change inventory, including the rates charged for it. */
+  | "rooms:manage"
+  /** Set a room's housekeeping state. */
+  | "housekeeping:manage";
 
 const ALL: AdminPermission[] = [
   "admin:access",
@@ -33,6 +41,10 @@ const ALL: AdminPermission[] = [
   "reservations:manage",
   "guests:view",
   "finance:view",
+  "billing:manage",
+  "rooms:view",
+  "rooms:manage",
+  "housekeeping:manage",
 ];
 
 /**
@@ -47,9 +59,28 @@ const ROLE_PERMISSIONS: Record<string, AdminPermission[]> = {
   SUPER_ADMIN: ALL,
   GENERAL_MANAGER: ALL,
   RESORT_MANAGER: ALL,
-  FINANCE_OFFICER: ["admin:access", "finance:view", "reservations:view", "guests:view"],
-  RECEPTIONIST: ["admin:access", "reservations:view", "reservations:manage", "guests:view"],
+  FINANCE_OFFICER: [
+    "admin:access",
+    "finance:view",
+    "billing:manage",
+    "reservations:view",
+    "guests:view",
+    "rooms:view",
+  ],
+  // The desk takes payments and settles folios, but does not set the rates it
+  // is charging — that stays with management.
+  RECEPTIONIST: [
+    "admin:access",
+    "reservations:view",
+    "reservations:manage",
+    "guests:view",
+    "finance:view",
+    "billing:manage",
+    "rooms:view",
+    "housekeeping:manage",
+  ],
   SAFARI_COORDINATOR: ["admin:access", "reservations:view", "guests:view"],
+  HOUSEKEEPER: ["admin:access", "rooms:view", "housekeeping:manage"],
 };
 
 export interface AdminActor {
