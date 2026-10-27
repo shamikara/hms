@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Compass, Star } from "lucide-react";
 import { listMyReviewableTripsAction } from "@/features/fleet/actions/reviews.actions";
 
 export const dynamic = "force-dynamic";
+
+/** One guest's own trips. Nothing here belongs in a search index. */
+export const metadata: Metadata = {
+  title: "Your safaris",
+  robots: { index: false, follow: false },
+};
 
 /**
  * "My safaris" — the guest's own completed drives, with a link to review the

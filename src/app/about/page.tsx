@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Home, Waves, Utensils, Compass } from "lucide-react";
@@ -49,6 +50,7 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-stone-950 font-sans text-stone-100 selection:bg-emerald-200 selection:text-emerald-900 flex flex-col">
+      <BreadcrumbJsonLd trail={[{ name: "Home", path: "/" }, { name: "About", path: "/about" }]} />
       <PublicHeader variant="solid" />
 
       <main className="flex-1">

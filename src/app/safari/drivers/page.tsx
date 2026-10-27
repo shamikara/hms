@@ -5,6 +5,7 @@ import { Star, Compass, ShieldCheck, Clock, MessageSquare, UserRound } from "luc
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { FleetUnavailable } from "@/features/fleet/components/FleetUnavailable";
 import {
   DriverRepository,
@@ -168,6 +169,13 @@ export default async function SafariDriversPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-950 font-sans text-stone-100 selection:bg-emerald-200 selection:text-emerald-900">
+      <BreadcrumbJsonLd
+        trail={[
+          { name: "Home", path: "/" },
+          { name: "Safari", path: "/safari" },
+          { name: "Our Drivers", path: "/safari/drivers" },
+        ]}
+      />
       <PublicHeader variant="solid" />
 
       <main className="flex-1">

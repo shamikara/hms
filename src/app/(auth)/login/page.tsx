@@ -1,6 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
+
+/**
+ * robots.txt already asks crawlers not to fetch this page, but a crawler that
+ * reaches it from a link anyway never reads robots.txt again to find out. The
+ * header says the same thing to whoever is actually looking at the response.
+ */
+export const metadata: Metadata = {
+  title: "Staff sign-in",
+  robots: { index: false, follow: false },
+};
 
 export default function LoginPage() {
   return (

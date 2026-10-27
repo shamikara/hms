@@ -57,18 +57,26 @@ export const SITE = {
   ogImage: "/og-image.jpg",
 } as const;
 
-/** Pages included in the sitemap, with their relative crawl priority. */
+/**
+ * Pages included in the sitemap, with their relative crawl priority.
+ *
+ * `lastModified` is the date the page's content last actually changed, and is
+ * written by hand when it does. Deriving it from `new Date()` would tell every
+ * crawl that every page changed this morning, which is both untrue and
+ * self-defeating: a sitemap that cries wolf gets its dates ignored.
+ */
 export const SITE_ROUTES: {
   path: string;
+  lastModified: string;
   priority: number;
   changeFrequency: "weekly" | "monthly" | "yearly";
 }[] = [
-  { path: "/", priority: 1.0, changeFrequency: "weekly" },
-  { path: "/rooms", priority: 0.9, changeFrequency: "monthly" },
-  { path: "/book", priority: 0.9, changeFrequency: "monthly" },
-  { path: "/safari", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/safari/drivers", priority: 0.7, changeFrequency: "weekly" },
-  { path: "/dining", priority: 0.7, changeFrequency: "monthly" },
-  { path: "/about", priority: 0.6, changeFrequency: "yearly" },
-  { path: "/contact", priority: 0.6, changeFrequency: "yearly" },
+  { path: "/", lastModified: "2026-10-19", priority: 1.0, changeFrequency: "weekly" },
+  { path: "/rooms", lastModified: "2026-10-26", priority: 0.9, changeFrequency: "monthly" },
+  { path: "/book", lastModified: "2026-10-26", priority: 0.9, changeFrequency: "monthly" },
+  { path: "/safari", lastModified: "2026-10-26", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/safari/drivers", lastModified: "2026-10-20", priority: 0.7, changeFrequency: "weekly" },
+  { path: "/dining", lastModified: "2026-10-26", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/about", lastModified: "2026-10-26", priority: 0.6, changeFrequency: "yearly" },
+  { path: "/contact", lastModified: "2026-10-26", priority: 0.6, changeFrequency: "yearly" },
 ];

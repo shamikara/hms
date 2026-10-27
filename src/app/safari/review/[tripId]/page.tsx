@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Compass, Info } from "lucide-react";
@@ -5,6 +6,12 @@ import { checkReviewEligibilityAction } from "@/features/fleet/actions/reviews.a
 import { SafariReviewForm } from "@/features/fleet/components/SafariReviewForm";
 
 export const dynamic = "force-dynamic";
+
+/** Tied to one guest's trip. Nothing here belongs in a search index. */
+export const metadata: Metadata = {
+  title: "Rate your safari",
+  robots: { index: false, follow: false },
+};
 
 /**
  * Guest review page.

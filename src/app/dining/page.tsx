@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Utensils, Coffee, Clock } from "lucide-react";
@@ -23,6 +24,7 @@ export const metadata: Metadata = {
 export default function DiningPage() {
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 selection:bg-emerald-800 selection:text-stone-100">
+      <BreadcrumbJsonLd trail={[{ name: "Home", path: "/" }, { name: "Dining", path: "/dining" }]} />
       <PublicHeader variant="solid" />
 
       {/* Hero Banner */}

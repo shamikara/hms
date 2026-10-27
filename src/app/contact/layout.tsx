@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 
 /**
  * The contact page is a client component (it holds form state), so it cannot
@@ -18,5 +19,15 @@ export const metadata: Metadata = {
 };
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      <BreadcrumbJsonLd
+        trail={[
+          { name: "Home", path: "/" },
+          { name: "Contact & Directions", path: "/contact" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }

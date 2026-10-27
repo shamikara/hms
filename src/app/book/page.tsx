@@ -3,6 +3,7 @@ import { ScrollReveal, ParallaxHero } from "@/components/ui/ScrollReveal";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { getBookableProperty } from "@/features/bookings/actions/booking.actions";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default async function BookPage({
 
   return (
     <div className="min-h-screen bg-stone-950 font-sans text-stone-100 flex flex-col">
+      <BreadcrumbJsonLd trail={[{ name: "Home", path: "/" }, { name: "Book a Stay", path: "/book" }]} />
       <PublicHeader variant="transparent" />
 
       <main className="flex-1">
