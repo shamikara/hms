@@ -123,6 +123,19 @@ enum RoomStatus {
   OUT_OF_ORDER
 }
 
+/// Whether a room is ready for the next guest.
+///
+/// Deliberately separate from RoomStatus: that says whether a room can be
+/// sold at all, this says whether it can be walked into this afternoon. A
+/// room is routinely sellable and dirty at the same time — that is most of
+/// every morning — and collapsing the two would make check-out either
+/// un-sell the room or quietly hand the next guest an unmade bed.
+enum HousekeepingStatus {
+  CLEAN
+  DIRTY
+  INSPECTED
+}
+
 /// The physical rentable unit.
 model Room {
   id         String   @id @default(cuid())
@@ -133,6 +146,9 @@ model Room {
 
   roomNumber String
   status     RoomStatus @default(AVAILABLE)
+
+  /// Set to DIRTY on check-out, and back by housekeeping.
+  housekeeping HousekeepingStatus @default(CLEAN)
 
   assignments RoomAssignment[] @relation("RoomStays")
 
@@ -336,6 +352,13 @@ model RoomAssignment {
 
   startDate DateTime
   endDate   DateTime
+
+  /// The nightly rate agreed when this room was booked.
+  ///
+  /// Captured here rather than read back off RoomType at checkout, because the
+  /// rate on the type is today's price and the guest agreed to the one in force
+  /// when they booked. Nullable only for rows that predate this column.
+  ratePerNight Decimal? @db.Decimal(19, 4)
 
   /// When this assignment stopped holding the room. NULL means it still does.
   ///
