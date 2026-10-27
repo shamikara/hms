@@ -5,7 +5,7 @@ import { requireAdminPermission, resolveDefaultPropertyId, NO_PROPERTY } from "@
 import { Reservation, ReservationStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { BookingService, BookingError } from "@/features/bookings/services/booking.service";
+import { BookingService, BookingError, isRoomOverlapError } from "@/features/bookings/services/booking.service";
 import { GuestSchema, ReservationSchema } from "@/features/bookings/validations/booking.schema";
 import { toBookingReference } from "@/features/bookings/lib/reference";
 
@@ -148,11 +148,14 @@ export async function updateReservationStatus(reservationId: string, status: Res
   if (!guard.ok) return guard.failure;
 
   try {
-    const updated = await prisma.reservation.update({
-      where: { id: reservationId },
-      data: { status },
-    });
-    return { success: true, data: updated };
+    // Goes through the same helper as confirm/cancel so a status set through
+    // this route cannot leave `releasedAt` disagreeing with it.
+    const result = await setReservationStatus(reservationId, status);
+    if (!result.success) return result;
+
+    const updated = await prisma.reservation.findUnique({ where: { id: reservationId } });
+    revalidatePath("/admin/bookings");
+    return { success: true, data: updated ?? undefined };
   } catch (error: any) {
     console.error("updateReservationStatus failed:", error?.message);
     return { success: false, error: "Could not update the reservation." };
@@ -164,15 +167,61 @@ export async function updateReservationStatus(reservationId: string, status: Res
  * a request, not a booking — and this is the step that turns one into a
  * commitment the resort has made.
  */
+/** Statuses under which a reservation has given its rooms back. */
+const RELEASING_STATUSES: ReservationStatus[] = ["CANCELLED", "NO_SHOW"];
+
+/**
+ * Moves a reservation to a new status, keeping its room assignments in step.
+ *
+ * `RoomAssignment.releasedAt` mirrors this status so the database can police
+ * room overlaps on its own (see migration 05). The two must move together or
+ * a cancelled booking goes on blocking its room — hence one transaction, not
+ * two updates.
+ *
+ * Reinstating can legitimately fail: if the room was rebooked while this one
+ * was cancelled, RoomAssignment_no_overlap refuses, which is the database
+ * doing its job rather than a fault.
+ */
+async function setReservationStatus(
+  reservationId: string,
+  status: ReservationStatus,
+): Promise<{ success: boolean; error?: string }> {
+  const releasing = RELEASING_STATUSES.includes(status);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.reservation.update({
+        where: { id: reservationId },
+        data: { status },
+      });
+
+      await tx.roomAssignment.updateMany({
+        where: {
+          stay: { reservationId },
+          ...(releasing ? { releasedAt: null } : { NOT: { releasedAt: null } }),
+        },
+        data: { releasedAt: releasing ? new Date() : null },
+      });
+    });
+    return { success: true };
+  } catch (error) {
+    if (!releasing && isRoomOverlapError(error)) {
+      return {
+        success: false,
+        error: "That room has since been given to another guest, so this booking cannot be reinstated.",
+      };
+    }
+    throw error;
+  }
+}
+
 export async function confirmReservation(reservationId: string): Promise<{ success: boolean; error?: string }> {
   const guard = await requireAdminPermission("reservations:manage");
   if (!guard.ok) return guard.failure;
 
   try {
-    await prisma.reservation.update({
-      where: { id: reservationId },
-      data: { status: "CONFIRMED" },
-    });
+    const result = await setReservationStatus(reservationId, "CONFIRMED");
+    if (!result.success) return result;
     revalidatePath("/admin/bookings");
     return { success: true };
   } catch (error: any) {
@@ -186,10 +235,8 @@ export async function cancelReservation(reservationId: string): Promise<{ succes
   if (!guard.ok) return guard.failure;
 
   try {
-    await prisma.reservation.update({
-      where: { id: reservationId },
-      data: { status: "CANCELLED" },
-    });
+    const result = await setReservationStatus(reservationId, "CANCELLED");
+    if (!result.success) return result;
     revalidatePath("/admin/bookings");
     return { success: true };
   } catch (error: any) {

@@ -337,6 +337,17 @@ model RoomAssignment {
   startDate DateTime
   endDate   DateTime
 
+  /// When this assignment stopped holding the room. NULL means it still does.
+  ///
+  /// Exists so the database can enforce "no two bookings in one room at once"
+  /// with an EXCLUDE constraint, the way SafariTrip already does for vehicles
+  /// and drivers. An EXCLUDE can only read columns on its own row, and whether
+  /// a booking still counts lives two tables away on Reservation.status — so
+  /// that fact is mirrored here. Cancelling a reservation must set this, which
+  /// features/admin/actions/reservations.actions.ts does in the same
+  /// transaction as the status change.
+  releasedAt DateTime?
+
   @@index([stayId])
   @@index([roomId])
 }

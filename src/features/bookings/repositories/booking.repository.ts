@@ -42,12 +42,21 @@ export const BookingRepository = {
         deletedAt: null,
       },
       include: { roomType: true },
+      // Stable order so two concurrent callers see the same list; which room
+      // each then picks is randomised in the service.
+      orderBy: { id: "asc" },
     });
 
     // 2. Find any conflicting RoomAssignments
     const conflictingAssignments = await db.roomAssignment.findMany({
       where: {
         roomId: { in: allRooms.map(r => r.id) },
+        // `releasedAt` is the same condition the RoomAssignment_no_overlap
+        // constraint uses, so the application and the database agree on which
+        // assignments still hold a room. The reservation status check behind
+        // it is belt and braces: the two should never disagree, and if they do
+        // the safer reading wins.
+        releasedAt: null,
         stay: {
           reservation: {
             status: { notIn: ["CANCELLED", "NO_SHOW"] },

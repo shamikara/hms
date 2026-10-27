@@ -15,6 +15,75 @@ export class BookingError extends Error {
   }
 }
 
+/** Shown whenever the room went while the guest was deciding. */
+const ROOM_TAKEN =
+  "One or more of the rooms you chose has just been taken for those dates. Please check availability again.";
+
+/**
+ * Postgres SQLSTATEs that mean "two bookings collided", not "something broke".
+ *
+ *   40001 serialization_failure  - SERIALIZABLE aborted one of the pair
+ *   40P01 deadlock_detected      - they locked each other out
+ *   23P01 exclusion_violation    - RoomAssignment_no_overlap refused the write
+ *
+ * All three are safe and sensible to retry: re-running re-reads availability,
+ * so the retry either picks a different room or correctly reports none left.
+ */
+const CONFLICT_SQLSTATES = new Set(["40001", "40P01", "23P01"]);
+
+/** How many times to run the transaction before giving up. */
+const MAX_ATTEMPTS = 3;
+
+/**
+ * True when an error is a booking collision rather than a fault.
+ *
+ * Prisma reports a serialization failure as P2034, but an exclusion-constraint
+ * violation has no dedicated Prisma code and arrives from the pg driver with
+ * its SQLSTATE in varying places depending on how it was raised. Rather than
+ * depend on one shape, this looks for the code anywhere in the error chain and
+ * falls back to the constraint name.
+ */
+function isBookingConflict(error: unknown): boolean {
+  return matchesConflict(error, CONFLICT_SQLSTATES);
+}
+
+/**
+ * True when the RoomAssignment_no_overlap constraint refused a write — the
+ * room is already spoken for over those dates.
+ *
+ * Exported because the admin actions need the same answer when reinstating a
+ * cancelled booking, and two copies of this would eventually disagree.
+ */
+export function isRoomOverlapError(error: unknown): boolean {
+  return matchesConflict(error, new Set(["23P01"]));
+}
+
+function matchesConflict(error: unknown, codes: Set<string>): boolean {
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const candidate = current as { code?: unknown; meta?: unknown; cause?: unknown; message?: unknown };
+
+    if (codes.has("40001") && candidate.code === "P2034") return true;
+    if (typeof candidate.code === "string" && codes.has(candidate.code)) return true;
+    if (typeof candidate.message === "string" && candidate.message.includes("RoomAssignment_no_overlap")) {
+      return true;
+    }
+
+    current = candidate.cause ?? candidate.meta;
+  }
+
+  return false;
+}
+
+/** Short randomised pause, so two retrying transactions do not collide again. */
+function backoff(attempt: number): Promise<void> {
+  const base = 25 * attempt;
+  return new Promise((resolve) => setTimeout(resolve, base + Math.random() * base));
+}
+
 export interface RoomTypeAvailability {
   roomType: {
     id: string;
@@ -72,12 +141,37 @@ export const BookingService = {
   /**
    * Creates the reservation, holding a room of each requested type.
    *
-   * The availability check and the write run in one serializable transaction:
-   * checking first and writing afterwards leaves a window in which two guests
-   * are each told the last room is theirs. Postgres aborts the loser, and the
-   * caller sees an ordinary "no longer available" error.
+   * The availability check and the write run in one serializable transaction,
+   * and the RoomAssignment_no_overlap constraint backs that up in the database
+   * itself. Between them, two guests cannot end up in one room.
+   *
+   * A collision is retried rather than reported: losing a race is not the
+   * guest's problem, and re-running re-reads availability, so the retry takes
+   * a different room if there is one. Only once the retries are spent does it
+   * become an error, and then it says the room has gone rather than blaming
+   * the system.
    */
   async createReservation(data: ReservationFormValues) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.attemptReservation(data);
+      } catch (error) {
+        // Genuinely nothing free; retrying would find the same answer.
+        if (error instanceof BookingError) throw error;
+        if (!isBookingConflict(error)) throw error;
+
+        if (attempt >= MAX_ATTEMPTS) {
+          // Every attempt collided. Something is free in theory but we keep
+          // losing the race, so tell the guest the truth about the room.
+          throw new BookingError(ROOM_TAKEN);
+        }
+        await backoff(attempt);
+      }
+    }
+  },
+
+  /** One pass at taking the booking. See {@link createReservation}. */
+  async attemptReservation(data: ReservationFormValues) {
     return prisma.$transaction(
       async (tx) => {
         const availableRooms = await BookingRepository.getAvailableRooms(
@@ -95,16 +189,20 @@ export const BookingService = {
           return acc;
         }, {} as Record<string, string[]>);
 
-        // Pick one room for each requested type
+        // Pick one room for each requested type.
         const assignedRoomIds: string[] = [];
         for (const typeId of data.roomTypeIds) {
-          // Pop an available room so it's not double-assigned if the same type is requested twice
-          const roomId = roomsByType[typeId]?.pop();
-          if (!roomId) {
-            throw new BookingError(
-              "One or more of the rooms you chose has just been taken for those dates. Please check availability again."
-            );
+          const pool = roomsByType[typeId];
+          if (!pool || pool.length === 0) {
+            throw new BookingError(ROOM_TAKEN);
           }
+          // Chosen at random, and removed from the pool so the same room is
+          // not handed out twice when one type is requested twice.
+          //
+          // Taking the first or last free room instead would make two
+          // simultaneous bookers reach for the same one every time, and the
+          // database would reject a booking even with rooms to spare.
+          const [roomId] = pool.splice(Math.floor(Math.random() * pool.length), 1);
           assignedRoomIds.push(roomId);
         }
 
