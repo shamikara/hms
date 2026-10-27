@@ -3,7 +3,6 @@ import {
   CalendarCheck,
   BedDouble,
   Users,
-  Compass,
   UtensilsCrossed,
   Receipt,
   Settings,
@@ -87,6 +86,12 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         shortcut: "G B",
       },
       {
+        title: "Availability",
+        href: "/admin/calendar",
+        icon: CalendarCheck,
+        shortcut: "G A",
+      },
+      {
         title: "Room Inventory",
         href: "/admin/rooms",
         icon: BedDouble,
@@ -104,21 +109,13 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
     groupLabel: "Resort Operations",
     items: [
       {
-        title: "Safari Operations",
-        href: "/admin/safari",
-        icon: Compass,
-        badge: "3 Active",
-        badgeVariant: "amber",
-        shortcut: "G S",
-      },
-      {
         title: "Safari Fleet",
         href: "/admin/safari/fleet",
         icon: Truck,
         shortcut: "G V",
       },
       {
-        title: "Dining & Bar POS",
+        title: "Dining & Bar",
         href: "/admin/restaurant",
         icon: UtensilsCrossed,
         shortcut: "G P",
