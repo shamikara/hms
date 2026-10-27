@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import prisma from "@/core/db/prisma";
 import { BookingRepository } from "../repositories/booking.repository";
 import { ReservationFormValues } from "../validations/booking.schema";
@@ -182,15 +183,18 @@ export const BookingService = {
           tx
         );
 
-        // Group available rooms by type to easily pick one
+        // Group available rooms by type to easily pick one. The rate is taken
+        // now, with the booking, rather than read off the room type again at
+        // check-out — by then it may have been repriced, and the guest agreed
+        // to the figure that was showing today.
         const roomsByType = availableRooms.reduce((acc, room) => {
           if (!acc[room.roomTypeId]) acc[room.roomTypeId] = [];
-          acc[room.roomTypeId].push(room.id);
+          acc[room.roomTypeId].push({ roomId: room.id, ratePerNight: room.roomType.basePrice });
           return acc;
-        }, {} as Record<string, string[]>);
+        }, {} as Record<string, { roomId: string; ratePerNight: Prisma.Decimal | null }[]>);
 
         // Pick one room for each requested type.
-        const assignedRoomIds: string[] = [];
+        const assignedRooms: { roomId: string; ratePerNight: Prisma.Decimal | null }[] = [];
         for (const typeId of data.roomTypeIds) {
           const pool = roomsByType[typeId];
           if (!pool || pool.length === 0) {
@@ -202,11 +206,11 @@ export const BookingService = {
           // Taking the first or last free room instead would make two
           // simultaneous bookers reach for the same one every time, and the
           // database would reject a booking even with rooms to spare.
-          const [roomId] = pool.splice(Math.floor(Math.random() * pool.length), 1);
-          assignedRoomIds.push(roomId);
+          const [room] = pool.splice(Math.floor(Math.random() * pool.length), 1);
+          assignedRooms.push(room);
         }
 
-        return BookingRepository.createReservation(data, assignedRoomIds, tx);
+        return BookingRepository.createReservation(data, assignedRooms, tx);
       },
       { isolationLevel: "Serializable" }
     );

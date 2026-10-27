@@ -77,7 +77,12 @@ export const BookingRepository = {
     return allRooms.filter(room => !conflictingRoomIds.has(room.id));
   },
 
-  async createReservation(data: ReservationFormValues, assignedRoomIds: string[], db: Db = prisma) {
+  async createReservation(
+    data: ReservationFormValues,
+    /** Each room, with the rate in force when it was taken. */
+    assignedRooms: { roomId: string; ratePerNight: Prisma.Decimal | null }[],
+    db: Db = prisma,
+  ) {
     // We create a Reservation, a Stay, and RoomAssignments in a single transaction.
     return db.reservation.create({
       data: {
@@ -90,8 +95,9 @@ export const BookingRepository = {
           create: {
             status: "PRE_ARRIVAL",
             roomAssignments: {
-              create: assignedRoomIds.map(roomId => ({
+              create: assignedRooms.map(({ roomId, ratePerNight }) => ({
                 roomId,
+                ratePerNight,
                 startDate: data.checkInDate,
                 endDate: data.checkOutDate,
               })),

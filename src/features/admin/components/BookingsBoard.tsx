@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   UserCheck,
   LogOut,
@@ -188,8 +189,13 @@ export function BookingsBoard({
               ) : (
                 filtered.map((res) => (
                   <tr key={res.id} className="hover:bg-stone-50 dark:hover:bg-stone-950/50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs font-semibold text-stone-900 dark:text-stone-100 whitespace-nowrap">
-                      {res.reference}
+                    <td className="px-6 py-4 font-mono text-xs font-semibold whitespace-nowrap">
+                      <Link
+                        href={`/admin/bookings/${res.id}`}
+                        className="text-stone-900 dark:text-stone-100 hover:text-emerald-500 transition-colors underline-offset-4 hover:underline"
+                      >
+                        {res.reference}
+                      </Link>
                     </td>
 
                     <td className="px-6 py-4">

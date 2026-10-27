@@ -8,6 +8,7 @@ import { z } from "zod";
 import { BookingService, BookingError, isRoomOverlapError } from "@/features/bookings/services/booking.service";
 import { GuestSchema, ReservationSchema } from "@/features/bookings/validations/booking.schema";
 import { toBookingReference } from "@/features/bookings/lib/reference";
+import { FolioError, postRoomCharges } from "@/features/billing/services/folio.service";
 
 /**
  * What the front desk sees for one reservation.
@@ -313,7 +314,11 @@ export async function checkOutReservation(reservationId: string): Promise<{ succ
   try {
     const stay = await prisma.stay.findFirst({
       where: { reservationId },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        roomAssignments: { where: { releasedAt: null }, select: { roomId: true } },
+      },
       orderBy: { createdAt: "asc" },
     });
 
@@ -322,12 +327,35 @@ export async function checkOutReservation(reservationId: string): Promise<{ succ
       return { success: false, error: "This guest is not currently checked in." };
     }
 
-    await prisma.stay.update({
-      where: { id: stay.id },
-      data: { status: "CHECKED_OUT", actualDepart: new Date() },
-    });
+    // Charges are posted before the stay closes so a guest cannot leave
+    // without a bill existing. Idempotent, so a retried check-out does not
+    // bill twice. It throws when a room type has no rate — deliberately, since
+    // the alternative is inventing a figure on a real invoice.
+    try {
+      await postRoomCharges(reservationId);
+    } catch (error) {
+      if (error instanceof FolioError) return { success: false, error: error.message };
+      throw error;
+    }
+
+    const roomIds = stay.roomAssignments.map((a) => a.roomId);
+
+    await prisma.$transaction([
+      prisma.stay.update({
+        where: { id: stay.id },
+        data: { status: "CHECKED_OUT", actualDepart: new Date() },
+      }),
+      // The room the guest just left needs making up. Without this, check-out
+      // left the room looking exactly as it did while they were asleep in it.
+      prisma.room.updateMany({
+        where: { id: { in: roomIds } },
+        data: { housekeeping: "DIRTY" },
+      }),
+    ]);
 
     revalidatePath("/admin/bookings");
+    revalidatePath(`/admin/bookings/${reservationId}`);
+    revalidatePath("/admin/rooms");
     return { success: true };
   } catch (error: any) {
     console.error("checkOutReservation failed:", error?.message);
@@ -415,5 +443,34 @@ export async function createWalkInReservation(input: {
     }
     console.error("createWalkInReservation failed:", error);
     return { success: false, error: "Could not create the walk-in booking." };
+  }
+}
+
+/**
+ * One reservation, for the detail screen that carries the folio.
+ *
+ * Reuses the same shape the desk list uses so the two screens cannot drift in
+ * how they describe a booking.
+ */
+export async function getDeskReservation(
+  reservationId: string,
+): Promise<{ success: boolean; data?: DeskReservation; error?: string }> {
+  const guard = await requireAdminPermission("reservations:view");
+  if (!guard.ok) return guard.failure;
+
+  try {
+    const propId = await resolveDefaultPropertyId();
+    if (!propId) return { success: false, error: NO_PROPERTY };
+
+    const all = await getDeskReservations(propId);
+    if (!all.success || !all.data) return { success: false, error: all.error };
+
+    const match = all.data.find((r) => r.id === reservationId);
+    if (!match) return { success: false, error: "That reservation could not be found." };
+
+    return { success: true, data: match };
+  } catch (error: any) {
+    console.error("getDeskReservation failed:", error?.message);
+    return { success: false, error: "Could not load the reservation." };
   }
 }
