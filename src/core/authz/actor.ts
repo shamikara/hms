@@ -46,6 +46,7 @@ export async function resolveActorFromDb(userId: string): Promise<ResolvedActor>
         id: true,
         organizationId: true,
         deletedAt: true,
+        user: { select: { isActive: true, deletedAt: true } },
         assignments: {
           select: {
             propertyId: true,
@@ -56,7 +57,10 @@ export async function resolveActorFromDb(userId: string): Promise<ResolvedActor>
     });
 
     // A terminated employee keeps their row but must keep none of their access.
-    if (employee && !employee.deletedAt) {
+    // Nor does a deactivated sign-in: checking it here, not only at login,
+    // means switching someone off takes effect on their very next request
+    // rather than when their session cookie happens to expire.
+    if (employee && !employee.deletedAt && employee.user.isActive && !employee.user.deletedAt) {
       employeeId = employee.id;
       organizationId = employee.organizationId;
       for (const assignment of employee.assignments) {
