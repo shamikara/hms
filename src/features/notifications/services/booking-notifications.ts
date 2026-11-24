@@ -21,7 +21,7 @@ export interface BookingRequestDetails {
  * so they are formatted in UTC: formatting in a local zone west of UTC would
  * show every date a day early.
  */
-function formatDate(date: Date, style: "long" | "short" = "long"): string {
+export function formatDate(date: Date, style: "long" | "short" = "long"): string {
   return new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
     day: "numeric",
@@ -36,7 +36,7 @@ function nights(checkIn: Date, checkOut: Date): number {
 }
 
 /** Check-in → check-out as two boxes with the nights between, like a ticket. */
-function stayTicket(d: BookingRequestDetails): string {
+export function stayTicket(d: Pick<BookingRequestDetails, "checkInDate" | "checkOutDate">): string {
   const n = nights(d.checkInDate, d.checkOutDate);
   const box = (label: string, date: Date) => `
     <td width="42%" style="background:${C.sand};border-radius:14px;padding:14px 16px;">

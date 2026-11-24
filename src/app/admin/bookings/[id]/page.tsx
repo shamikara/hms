@@ -4,6 +4,8 @@ import { getDeskReservation } from "@/features/admin/actions/reservations.action
 import { loadFolio } from "@/features/billing/actions/folio.actions";
 import { getAdminActor } from "@/features/admin/lib/requireAdminSession";
 import { FolioPanel } from "@/features/billing/components/FolioPanel";
+import { listOnlinePayments } from "@/features/payments/actions/payment-admin.actions";
+import { OnlinePaymentsPanel } from "@/features/payments/components/OnlinePaymentsPanel";
 
 export default async function ReservationDetailPage({
   params,
@@ -12,10 +14,11 @@ export default async function ReservationDetailPage({
 }) {
   const { id } = await params;
 
-  const [reservationResult, folioResult, actor] = await Promise.all([
+  const [reservationResult, folioResult, actor, onlineResult] = await Promise.all([
     getDeskReservation(id),
     loadFolio(id),
     getAdminActor(),
+    listOnlinePayments(id),
   ]);
 
   const reservation = reservationResult.success ? reservationResult.data : null;
@@ -60,6 +63,13 @@ export default async function ReservationDetailPage({
               {reservation.phone ? ` · ${reservation.phone}` : ""}
             </p>
           </header>
+
+          {onlineResult.success && onlineResult.data && (
+            <OnlinePaymentsPanel
+              rows={onlineResult.data}
+              canManage={actor?.permissions.includes("billing:manage") ?? false}
+            />
+          )}
 
           {folioResult.success && folioResult.data ? (
             <FolioPanel

@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { checkAvailability, createPublicBooking, RoomAvailability } from "@/features/bookings/actions/booking.actions";
+import { checkAvailability, createPublicBooking, startPaidBooking, RoomAvailability } from "@/features/bookings/actions/booking.actions";
+import type { PublicPaymentOptions } from "@/features/payments/services/payment-settings.service";
+
+type PayChoice = "ADVANCE" | "FULL" | "REQUEST";
 
 export function BookingWizard({
   propertyId,
@@ -9,6 +12,7 @@ export function BookingWizard({
   initialCheckIn = "",
   initialCheckOut = "",
   initialGuests = 2,
+  payment = null,
 }: {
   propertyId: string;
   /** The property's baseCurrency, so rates are shown in the money they are set in. */
@@ -16,6 +20,8 @@ export function BookingWizard({
   initialCheckIn?: string;
   initialCheckOut?: string;
   initialGuests?: number;
+  /** Null or payNow=false: requests only, as before. */
+  payment?: PublicPaymentOptions | null;
 }) {
   // Rebuilt only when the property's currency changes, not on every render.
   const currency = useMemo(
@@ -44,6 +50,8 @@ export function BookingWizard({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  const [payChoice, setPayChoice] = useState<PayChoice>(payment?.payNow ? "ADVANCE" : "REQUEST");
 
   // The reservation reference the server actually stored.
   const [reference, setReference] = useState<string | null>(null);
@@ -74,6 +82,43 @@ export function BookingWizard({
     .filter((r) => selectedRoomTypes.includes(r.roomType.id))
     .reduce((sum, r) => sum + r.roomType.capacity, 0);
   const tooSmall = selectedRoomTypes.length > 0 && selectedCapacity < guests;
+
+  // An estimate for the screen; the server works out the real charge from the
+  // rates it locks in, so a tampered page cannot change what is charged.
+  const nights =
+    checkInDate && checkOutDate
+      ? Math.max(0, Math.round((Date.parse(checkOutDate) - Date.parse(checkInDate)) / 86_400_000))
+      : 0;
+  const picked = availableRooms.filter((r) => selectedRoomTypes.includes(r.roomType.id));
+  const allPriced = picked.length > 0 && picked.every((r) => r.roomType.basePrice !== null);
+  const canPayNow = Boolean(payment?.payNow) && allPriced && nights > 0;
+  const stayTotal = allPriced
+    ? picked.reduce((sum, r) => sum + (r.roomType.basePrice ?? 0) * nights, 0) * (1 + (payment?.taxPercent ?? 0) / 100)
+    : 0;
+  const advance = payment ? Math.min(stayTotal, Math.max(10, Math.ceil((stayTotal * payment.advancePercent) / 100))) : 0;
+  const effectiveChoice: PayChoice = canPayNow ? payChoice : "REQUEST";
+
+  const handlePay = async () => {
+    if (!firstName || !lastName || !email) {
+      setError("Please fill out all guest details.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const result = await startPaidBooking(
+      { firstName, lastName, email, phone: phone || undefined },
+      { propertyId, roomTypeIds: selectedRoomTypes, checkInDate: new Date(checkInDate), checkOutDate: new Date(checkOutDate) },
+      guests,
+      effectiveChoice,
+    );
+    if (result.success && result.data) {
+      // Off to the Payments.lk card page; keep the button disabled meanwhile.
+      window.location.href = result.data.checkoutUrl;
+      return;
+    }
+    setLoading(false);
+    setError(result.error || "Payment could not be started.");
+  };
 
   const handleBook = async () => {
     if (!firstName || !lastName || !email) {
@@ -285,16 +330,76 @@ export function BookingWizard({
               </div>
             </div>
 
+            {canPayNow && payment && (
+              <fieldset className="mb-8">
+                <legend className="text-sm font-medium text-stone-500 mb-3">How would you like to book?</legend>
+                <div className="space-y-3">
+                  {(
+                    [
+                      {
+                        value: "ADVANCE" as const,
+                        title: `Pay ${payment.advancePercent}% now`,
+                        amount: currency.format(advance),
+                        note: `Instantly confirmed. The rest (${currency.format(Math.max(0, stayTotal - advance))}) is paid at the resort.`,
+                      },
+                      {
+                        value: "FULL" as const,
+                        title: "Pay in full now",
+                        amount: currency.format(stayTotal),
+                        note: "Instantly confirmed. Nothing to pay on arrival except extras.",
+                      },
+                      {
+                        value: "REQUEST" as const,
+                        title: "Request only, pay at the resort",
+                        amount: "No payment now",
+                        note: "We hold the room and confirm with you by email or phone.",
+                      },
+                    ]
+                  ).filter((o) => !(o.value === "ADVANCE" && payment.advancePercent >= 100)).map((o) => (
+                    <label
+                      key={o.value}
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${payChoice === o.value ? "border-emerald-500 bg-emerald-500/5" : "border-stone-200 dark:border-stone-800 hover:border-emerald-500/50"}`}
+                    >
+                      <input
+                        type="radio"
+                        name="pay-choice"
+                        value={o.value}
+                        checked={payChoice === o.value}
+                        onChange={() => setPayChoice(o.value)}
+                        className="mt-1 accent-emerald-600"
+                      />
+                      <span className="flex-1">
+                        <span className="flex flex-wrap justify-between gap-2">
+                          <span className="font-medium text-stone-900 dark:text-stone-100">{o.title}</span>
+                          <span className="font-medium text-stone-900 dark:text-stone-100">{o.amount}</span>
+                        </span>
+                        <span className="block text-sm text-stone-500 mt-0.5">{o.note}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-stone-500 mt-3 leading-relaxed">
+                  Card payments are processed securely by Payments.lk; we never see your card number.{" "}
+                  {payment.freeCancelDays > 0
+                    ? `Free cancellation up to ${payment.freeCancelDays} day${payment.freeCancelDays === 1 ? "" : "s"} before arrival, with a full refund of what you paid. After that, online payments are non-refundable.`
+                    : "Online payments are non-refundable."}
+                  {payment.taxPercent ? ` Prices include ${payment.taxPercent}% tax.` : ""}
+                </p>
+              </fieldset>
+            )}
+
             <div className="flex gap-4">
               <button onClick={() => setStep(2)} className="w-full bg-stone-200 dark:bg-stone-800 hover:bg-stone-300 dark:hover:bg-stone-700 text-stone-900 dark:text-stone-100 py-4 rounded-lg font-medium transition-colors">
                 Back
               </button>
               <button 
-                onClick={handleBook}
+                onClick={effectiveChoice === "REQUEST" ? handleBook : handlePay}
                 disabled={loading || !firstName || !lastName || !email}
                 className="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-4 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
-                {loading ? "Confirming..." : "Confirm Booking"}
+                {effectiveChoice === "REQUEST"
+                  ? loading ? "Sending..." : "Send Booking Request"
+                  : loading ? "Opening secure payment..." : `Pay ${currency.format(effectiveChoice === "FULL" ? stayTotal : advance)} securely`}
               </button>
             </div>
           </div>

@@ -317,6 +317,7 @@ model Reservation {
 
   stays    Stay[]    @relation("ReservationStays")
   invoices Invoice[] @relation("ReservationInvoices")
+  onlinePayments OnlinePayment[] @relation("ReservationOnlinePayments")
 
   version Int @default(1) /// Optimistic locking
 
@@ -1241,4 +1242,91 @@ model DailyMenuItem {
 
   @@unique([propertyId, date, dishId])
   @@index([propertyId, date])
+}
+
+
+// ============================================================================
+// ONLINE PAYMENTS (Payments.lk card checkout for advances and full payment)
+// ============================================================================
+
+enum OnlinePaymentStatus {
+  /// Checkout made; the guest has not paid yet. The booking is a held draft.
+  PENDING
+  SUCCEEDED
+  FAILED
+  /// The checkout ran out of time unpaid; the hold was released.
+  EXPIRED
+  /// The guest left checkout and kept the booking as a pay-at-the-resort request,
+  /// or cancelled it. Nothing more happens to this attempt.
+  ABANDONED
+}
+
+enum OnlineRefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+/// One attempt to take money online for a reservation.
+model OnlinePayment {
+  id            String              @id @default(cuid())
+  propertyId    String
+  reservationId String
+  reservation   Reservation         @relation("ReservationOnlinePayments", fields: [reservationId], references: [id], onDelete: Cascade)
+  provider      String              @default("payments.lk")
+  /// "test" or "live", from the key in use.
+  mode          String
+  /// ADVANCE or FULL.
+  kind          String
+  /// Whole LKR cents, as the gateway counts them.
+  amountCents   Int
+  currency      String
+  status        OnlinePaymentStatus @default(PENDING)
+  checkoutId    String?             @unique
+  checkoutUrl   String?
+  paymentId     String?             @unique
+  cardBrand     String?
+  cardLast4     String?
+  refundedCents Int                 @default(0)
+  /// The folio Payment row this created, once paid.
+  folioPaymentId String?
+  /// Free-cancellation cut-off promised at the time of payment (null = none).
+  freeCancelUntil DateTime?
+  /// Set when something needs a person: paid after the hold lapsed, say.
+  attentionNote String?
+  expiresAt     DateTime
+  paidAt        DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  refunds OnlineRefund[] @relation("OnlinePaymentRefunds")
+
+  @@index([reservationId])
+  @@index([status, expiresAt])
+}
+
+model OnlineRefund {
+  id              String             @id @default(cuid())
+  onlinePaymentId String
+  onlinePayment   OnlinePayment      @relation("OnlinePaymentRefunds", fields: [onlinePaymentId], references: [id], onDelete: Cascade)
+  /// The gateway's refund id (re_...), once it has one.
+  refundId        String?            @unique
+  amountCents     Int
+  reason          String?
+  status          OnlineRefundStatus @default(PENDING)
+  failureMessage  String?
+  requestedById   String?
+  folioPaymentId  String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([onlinePaymentId])
+}
+
+/// Webhook deliveries already handled, so a repeat does nothing.
+model PaymentWebhookEvent {
+  id         String   @id
+  type       String
+  receivedAt DateTime @default(now())
 }

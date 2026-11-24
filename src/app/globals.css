@@ -210,3 +210,28 @@ body {
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Homepage hero: slide transitions (PowerPoint-style) and slow zoom.  */
+/* ------------------------------------------------------------------ */
+@keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hero-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes hero-iris { from { clip-path: circle(0% at 50% 55%); } to { clip-path: circle(85% at 50% 55%); } }
+@keyframes hero-split { from { clip-path: inset(0 50% 0 50%); } to { clip-path: inset(0 0 0 0); } }
+@keyframes hero-push-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes hero-push-out { from { transform: translateX(0); } to { transform: translateX(-35%); } }
+@keyframes hero-zoom { from { opacity: 0; transform: scale(1.25); } to { opacity: 1; transform: scale(1); } }
+@keyframes hero-kenburns { from { transform: scale(1); } to { transform: scale(1.12); } }
+
+.hero-enter-fade { animation: hero-fade 1.6s ease-in-out both; }
+.hero-enter-wipe { animation: hero-wipe 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.hero-enter-iris { animation: hero-iris 1.6s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.hero-enter-split { animation: hero-split 1.4s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.hero-enter-push { animation: hero-push-in 1.3s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.hero-exit-push { animation: hero-push-out 1.3s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.hero-enter-zoom { animation: hero-zoom 1.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-kenburns { animation: hero-kenburns 9s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="hero-enter-"], .hero-exit-push, .hero-kenburns { animation: none !important; }
+}

@@ -26,6 +26,17 @@ export const metadata: Metadata = {
   },
 };
 
+/** Real photographs from the kitchen (public/food). Captions say only what is in the picture. */
+const KITCHEN_PHOTOS = [
+  { src: "/food/food-string-hoppers.webp", w: 1000, h: 725, caption: "String hoppers and hoppers with curries", alt: "A platter of string hoppers, hoppers, rice and curries on banana leaf" },
+  { src: "/food/food-rice-curry-banana-leaf.webp", w: 900, h: 1200, caption: "Rice and curry, Sri Lankan style", alt: "Rice, hoppers and several curries in clay bowls on a banana leaf" },
+  { src: "/food/food-breakfast-table.webp", w: 1000, h: 750, caption: "Breakfast by the pool", alt: "Omelette, toast, fruit and tea on a wooden table" },
+  { src: "/food/food-curries-roti.webp", w: 900, h: 1200, caption: "Curries with roti and red rice", alt: "Curries in clay pots with roti and red rice" },
+  { src: "/food/food-kola-kanda.webp", w: 900, h: 1200, caption: "Kola kanda, a herbal porridge", alt: "A bowl of green kola kanda herbal porridge with curry leaves" },
+  { src: "/food/food-clay-pots.webp", w: 1000, h: 750, caption: "Rice and curries in clay pots", alt: "Rice and colourful curries served in clay pots" },
+  { src: "/food/food-curries-basket.webp", w: 900, h: 1200, caption: "A spread of curries", alt: "A woven basket of rice and curries in clay bowls" },
+];
+
 export default async function DiningPage() {
   const [{ contact }, menu] = await Promise.all([getSiteContent(), getTodaysMenu()]);
 
@@ -37,8 +48,8 @@ export default async function DiningPage() {
       {/* Hero Banner */}
       <section className="relative h-[65vh] flex items-center justify-center overflow-hidden border-b border-stone-850">
         <Image
-          src="/dining-rice-curry.webp"
-          alt="Sri Lankan rice and curry served at the house"
+          src="/food/food-hero-breakfast-pool.webp"
+          alt="Breakfast served at a table beside the pool"
           fill
           priority
           className="object-cover brightness-[0.4] scale-105 transition-transform duration-1000"
@@ -98,6 +109,39 @@ export default async function DiningPage() {
         </div>
       </section>
 
+      {/* Real dishes from the kitchen */}
+      <section className="py-20 px-6 sm:px-12 lg:px-24 border-b border-stone-850">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center space-y-3 mb-10">
+            <span className="text-xs font-mono uppercase tracking-widest text-emerald-400 block">From Our Kitchen</span>
+            <h2 className="text-3xl sm:text-4xl font-serif text-white">What Guests Sit Down To</h2>
+            <p className="text-stone-400 text-sm max-w-xl mx-auto">
+              Photographed at the house, not styled for a brochure. What is cooking changes day to day; see
+              today&apos;s menu below.
+            </p>
+          </div>
+          <div className="columns-2 md:columns-3 gap-4 [column-fill:_balance]">
+            {KITCHEN_PHOTOS.map((photo, i) => (
+              <ScrollReveal key={photo.src} direction="up" delay={0.05 * (i % 3)}>
+                <figure className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-stone-800 bg-stone-900">
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    width={photo.w}
+                    height={photo.h}
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="w-full h-auto transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-10 pb-3 text-sm text-white">
+                    {photo.caption}
+                  </figcaption>
+                </figure>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <TodaysMenu menu={menu} whatsapp={contact.phone} />
 
       {/* Early starts */}
@@ -105,8 +149,8 @@ export default async function DiningPage() {
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="relative h-[320px] sm:h-[420px] rounded-2xl overflow-hidden border border-stone-800 shadow-2xl">
             <Image
-              src="/property-verandah-day.webp"
-              alt="The verandah where breakfast is served"
+              src="/food/food-tea-garden.webp"
+              alt="Tea served at a table overlooking the garden and pool"
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"

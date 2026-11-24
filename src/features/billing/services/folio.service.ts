@@ -87,7 +87,7 @@ export async function getTaxPercent(propertyId: string, db: Db = prisma): Promis
 }
 
 /** Splits a gross-exclusive amount into subtotal / tax / total. */
-function applyTax(subtotal: Prisma.Decimal, taxPercent: Prisma.Decimal | null) {
+export function applyTax(subtotal: Prisma.Decimal, taxPercent: Prisma.Decimal | null) {
   const tax = taxPercent
     ? subtotal.times(taxPercent).dividedBy(100).toDecimalPlaces(4)
     : ZERO;

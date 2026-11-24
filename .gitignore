@@ -51,3 +51,7 @@ Claude outputs/
 # Explicit env patterns (already covered by .env* above)
 .env
 .env*.local
+
+# Raw photo dumps and old assets moved out of public/ (never publish these)
+public/drive/
+_to-delete/

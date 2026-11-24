@@ -246,6 +246,17 @@ export function BookingsBoard({
 
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatusBadge status={res.status} />
+                      {res.awaitingPayment && (
+                        <span className="block mt-1 text-[10px] font-semibold text-amber-600" title="The guest is on the card payment page. Don't confirm by hand; it confirms itself when paid, or frees the room after 30 minutes.">
+                          Paying online…
+                        </span>
+                      )}
+                      {res.paidOnline > 0 && (
+                        <span className="block mt-1 text-[10px] font-semibold text-emerald-600">
+                          Paid online{" "}
+                          {new Intl.NumberFormat(undefined, { style: "currency", currency: res.currencyCode, maximumFractionDigits: 0 }).format(res.paidOnline)}
+                        </span>
+                      )}
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">

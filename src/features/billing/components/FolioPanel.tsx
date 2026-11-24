@@ -323,8 +323,8 @@ export function FolioPanel({
               />
             </div>
             <p className="text-[11px] text-stone-500">
-              Recorded as money already received. There is no card gateway connected, so nothing is
-              charged to a card from here.
+              For money already received at the desk; nothing is charged to a card from here. Online
+              card payments made when booking appear on the bill by themselves.
             </p>
             <button
               type="submit"

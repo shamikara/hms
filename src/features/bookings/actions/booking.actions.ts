@@ -12,6 +12,9 @@ import {
 } from "@/core/security/rateLimit";
 import { toBookingReference } from "../lib/reference";
 import { notifyBookingRequest } from "@/features/notifications/services/booking-notifications";
+import { PAY_CHOICES } from "@/features/payments/validations/payment.schema";
+import { publicPaymentOptions } from "@/features/payments/services/payment-settings.service";
+import { OnlinePaymentError, startCheckout, sweepStaleAttempts } from "@/features/payments/services/online-payment.service";
 import {
   GuestFormValues,
   ReservationFormValues,
@@ -40,27 +43,33 @@ function firstIssue(error: z.ZodError): string {
   return error.issues?.[0]?.message ?? "Please check the details and try again.";
 }
 
-export async function createPublicBooking(
+type Placed = {
+  reservation: Awaited<ReturnType<typeof BookingService.createReservation>>;
+  guest: { id: string; firstName: string; lastName: string; email: string; phone: string | null };
+  reference: string;
+  roomTypeNames: string[];
+  guests: number | null;
+};
+
+/**
+ * Validates, rate-limits and stores a public booking as a held DRAFT. Shared
+ * by the request flow and the pay-now flow; sends nothing.
+ */
+async function placePublicBooking(
   guestData: GuestFormValues,
   reservationData: Omit<ReservationFormValues, "guestId" | "status">,
-  /** Party size from the booking form; only used in the alert email. */
-  partySize?: number
-): Promise<ActionResult<{ reference: string; checkInDate: Date; checkOutDate: Date }>> {
+  partySize?: number,
+): Promise<{ ok: true; placed: Placed } | { ok: false; error: string }> {
   // The same date rules the availability search applies. Without this a
   // hand-built request could book a stay in the past.
   const dates = AvailabilitySchema.safeParse({
     checkInDate: reservationData.checkInDate,
     checkOutDate: reservationData.checkOutDate,
   });
-  if (!dates.success) return { success: false, error: firstIssue(dates.error) };
+  if (!dates.success) return { ok: false, error: firstIssue(dates.error) };
 
-  let parsedGuest;
-  try {
-    parsedGuest = GuestSchema.parse(guestData);
-  } catch (error) {
-    if (error instanceof z.ZodError) return { success: false, error: firstIssue(error) };
-    throw error;
-  }
+  const parsedGuest = GuestSchema.safeParse(guestData);
+  if (!parsedGuest.success) return { ok: false, error: firstIssue(parsedGuest.error) };
 
   // A booking holds real inventory, so an unthrottled form can empty the
   // property. Checked after validation so malformed spam costs a database
@@ -68,7 +77,7 @@ export async function createPublicBooking(
   const limit = await consumeRateLimit(`booking:ip:${await callerAddress()}`, BOOKING_RULE);
   if (!limit.allowed) {
     return {
-      success: false,
+      ok: false,
       error: `That is a lot of requests from one place. Please wait ${describeWait(limit.retryAfterSeconds)}, or email us and we will book you in by hand.`,
     };
   }
@@ -77,23 +86,24 @@ export async function createPublicBooking(
     // One guest profile per email address. Upsert rather than find-then-create:
     // two tabs submitting at once would otherwise collide on the unique index.
     const guest = await prisma.guestProfile.upsert({
-      where: { email: parsedGuest.email },
+      where: { email: parsedGuest.data.email },
       update: {
-        firstName: parsedGuest.firstName,
-        lastName: parsedGuest.lastName,
-        ...(parsedGuest.phone ? { phone: parsedGuest.phone } : {}),
+        firstName: parsedGuest.data.firstName,
+        lastName: parsedGuest.data.lastName,
+        ...(parsedGuest.data.phone ? { phone: parsedGuest.data.phone } : {}),
       },
       create: {
-        email: parsedGuest.email,
-        firstName: parsedGuest.firstName,
-        lastName: parsedGuest.lastName,
-        phone: parsedGuest.phone ?? null,
+        email: parsedGuest.data.email,
+        firstName: parsedGuest.data.firstName,
+        lastName: parsedGuest.data.lastName,
+        phone: parsedGuest.data.phone ?? null,
       },
     });
 
-    // Status is set here, never taken from the browser: a public request is
-    // always a DRAFT until the desk confirms it. Spreading the client payload
-    // let anyone submit a CONFIRMED booking straight past the front desk.
+    // Status is set here, never taken from the browser: a public booking is
+    // always a DRAFT until the desk confirms it or the payment clears.
+    // Spreading the client payload let anyone submit a CONFIRMED booking
+    // straight past the front desk.
     const parsedReservation = ReservationSchema.parse({
       propertyId: reservationData.propertyId,
       roomTypeIds: reservationData.roomTypeIds,
@@ -104,53 +114,102 @@ export async function createPublicBooking(
     });
 
     const reservation = await BookingService.createReservation(parsedReservation);
-    const reference = toBookingReference(reservation.id);
-
-    // Sent after the response, so the guest is not kept waiting on the mail
-    // provider, and a send that fails cannot undo a booking already stored.
-    const roomTypeNames = reservation.stays.flatMap((stay) =>
-      stay.roomAssignments.map((a) => a.room.roomType.name),
-    );
-    const guests =
-      Number.isInteger(partySize) && partySize! >= 1 && partySize! <= 20 ? partySize! : null;
-    after(() =>
-      notifyBookingRequest({
-        reservationId: reservation.id,
-        reference,
-        checkInDate: reservation.checkInDate,
-        checkOutDate: reservation.checkOutDate,
-        roomTypeNames,
-        guests,
-        guest: {
-          firstName: guest.firstName,
-          lastName: guest.lastName,
-          email: guest.email,
-          phone: guest.phone,
-        },
-      }),
-    );
-
-    // Only what the confirmation screen needs. The full row carries the
-    // guest's record and the room ids, which the browser has no use for.
     return {
-      success: true,
-      data: {
-        // The short form, so the reference the guest is shown is the one the
-        // front desk can search for.
-        reference,
-        checkInDate: reservation.checkInDate,
-        checkOutDate: reservation.checkOutDate,
+      ok: true,
+      placed: {
+        reservation,
+        guest,
+        reference: toBookingReference(reservation.id),
+        roomTypeNames: reservation.stays.flatMap((stay) => stay.roomAssignments.map((a) => a.room.roomType.name)),
+        guests: Number.isInteger(partySize) && partySize! >= 1 && partySize! <= 20 ? partySize! : null,
       },
     };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: firstIssue(error) };
-    }
+    if (error instanceof z.ZodError) return { ok: false, error: firstIssue(error) };
     // Lost the race for the last room, or asked for a type that is gone.
-    if (error instanceof BookingError) {
-      return { success: false, error: error.message };
-    }
-    console.error("createPublicBooking failed:", error);
+    if (error instanceof BookingError) return { ok: false, error: error.message };
+    console.error("placePublicBooking failed:", error);
+    return { ok: false, error: UNAVAILABLE };
+  }
+}
+
+export async function createPublicBooking(
+  guestData: GuestFormValues,
+  reservationData: Omit<ReservationFormValues, "guestId" | "status">,
+  /** Party size from the booking form; only used in the alert email. */
+  partySize?: number
+): Promise<ActionResult<{ reference: string; checkInDate: Date; checkOutDate: Date }>> {
+  const result = await placePublicBooking(guestData, reservationData, partySize);
+  if (!result.ok) return { success: false, error: result.error };
+  const { reservation, guest, reference, roomTypeNames, guests } = result.placed;
+
+  // Sent after the response, so the guest is not kept waiting on the mail
+  // provider, and a send that fails cannot undo a booking already stored.
+  after(() =>
+    notifyBookingRequest({
+      reservationId: reservation.id,
+      reference,
+      checkInDate: reservation.checkInDate,
+      checkOutDate: reservation.checkOutDate,
+      roomTypeNames,
+      guests,
+      guest: { firstName: guest.firstName, lastName: guest.lastName, email: guest.email, phone: guest.phone },
+    }),
+  );
+
+  // Only what the confirmation screen needs. The full row carries the
+  // guest's record and the room ids, which the browser has no use for.
+  return {
+    success: true,
+    data: { reference, checkInDate: reservation.checkInDate, checkOutDate: reservation.checkOutDate },
+  };
+}
+
+/**
+ * Books and sends the guest to the Payments.lk card page.
+ *
+ * The room is held as a draft for the length of the checkout. Nothing is
+ * emailed yet: the confirmation goes out when the payment is verified, or the
+ * request emails if the guest backs out and keeps it as a request.
+ */
+export async function startPaidBooking(
+  guestData: GuestFormValues,
+  reservationData: Omit<ReservationFormValues, "guestId" | "status">,
+  partySize: number | undefined,
+  choice: unknown,
+): Promise<ActionResult<{ checkoutUrl: string }>> {
+  const payChoice = z.enum(PAY_CHOICES).safeParse(choice);
+  if (!payChoice.success) return { success: false, error: "Choose how much to pay now." };
+
+  const property = await prisma.property.findFirst({
+    where: { id: reservationData.propertyId, deletedAt: null },
+    select: { id: true, baseCurrency: true },
+  });
+  if (!property) return { success: false, error: UNAVAILABLE };
+  const options = await publicPaymentOptions(property.id);
+  if (!options.payNow) {
+    return { success: false, error: "Online payment isn't available at the moment. Please send your booking as a request." };
+  }
+
+  const result = await placePublicBooking(guestData, reservationData, partySize);
+  if (!result.ok) return { success: false, error: result.error };
+  const { reservation, guest } = result.placed;
+
+  try {
+    const { url } = await startCheckout({
+      reservationId: reservation.id,
+      propertyId: property.id,
+      checkInDate: reservation.checkInDate,
+      choice: payChoice.data,
+      advancePercent: options.advancePercent,
+      freeCancelDays: options.freeCancelDays,
+      currency: property.baseCurrency,
+      guest: { firstName: guest.firstName, lastName: guest.lastName, email: guest.email, phone: guest.phone },
+    });
+    return { success: true, data: { checkoutUrl: url } };
+  } catch (error) {
+    if (error instanceof OnlinePaymentError) return { success: false, error: error.message };
+    console.error("startPaidBooking failed:", error);
     return { success: false, error: UNAVAILABLE };
   }
 }
@@ -164,6 +223,10 @@ export async function checkAvailability(
   if (!parsed.success) {
     return { success: false, error: firstIssue(parsed.error) };
   }
+
+  // Lets go of rooms held by checkouts that were never paid and whose
+  // webhook went missing, so they show as free again. In the background.
+  after(() => sweepStaleAttempts().catch(() => undefined));
 
   try {
     const availability = await BookingService.getAvailability(

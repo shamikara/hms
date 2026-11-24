@@ -39,6 +39,10 @@ export interface DeskReservation {
    */
   estimatedTotal: number | null;
   currencyCode: string;
+  /** Paid by card online, less refunds, in the property currency. 0 when none. */
+  paidOnline: number;
+  /** A pay-now checkout is open: the guest may be on the card page right now. */
+  awaitingPayment: boolean;
 }
 
 /**
@@ -79,6 +83,10 @@ export async function getDeskReservations(propertyId?: string): Promise<{ succes
         where: { propertyId: propId },
         include: {
           guest: true,
+          onlinePayments: {
+            where: { status: { in: ["SUCCEEDED", "PENDING"] } },
+            select: { status: true, amountCents: true, refundedCents: true },
+          },
           stays: {
             orderBy: { createdAt: "asc" },
             include: {
@@ -133,6 +141,11 @@ export async function getDeskReservations(propertyId?: string): Promise<{ succes
         status,
         estimatedTotal,
         currencyCode,
+        paidOnline:
+          reservation.onlinePayments
+            .filter((p) => p.status === "SUCCEEDED")
+            .reduce((sum, p) => sum + p.amountCents - p.refundedCents, 0) / 100,
+        awaitingPayment: reservation.status === "DRAFT" && reservation.onlinePayments.some((p) => p.status === "PENDING"),
       };
     });
 

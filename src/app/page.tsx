@@ -16,16 +16,17 @@ import { getSiteContent } from "@/features/site/services/site.service";
 import { getPublicRooms } from "@/features/rooms/services/public-rooms.service";
 
 /**
- * Daylight first: the hero opens on the property as guests will find it, and
- * the dusk shots follow. These are the full-resolution originals; the newer
- * phone photos are used in the smaller sections below, where they stay sharp.
+ * Real photographs of the property, day into night. Each arrives with its own
+ * transition; see HeroGallery. To change the line-up, edit this list (files
+ * live in public/hero).
  */
 const heroSlides: HeroSlide[] = [
-  { src: "/property-verandah-day.webp", alt: "The guesthouse verandah by day" },
-  { src: "/pool-dusk.webp", alt: "The pool at dusk under the pergola" },
-  { src: "/safari-elephant-herd.webp", alt: "A herd of wild elephants at Udawalawe" },
-  { src: "/pool-loungers.webp", alt: "Loungers beside the pool" },
-  { src: "/property-verandah-dusk.webp", alt: "The verandah lit at dusk" },
+  { src: "/hero/hero-pool-pergola.webp", alt: "The pool and thatched pergola under a blue sky", transition: "fade", focus: "60% 60%" },
+  { src: "/hero/hero-garden-path.webp", alt: "The garden path leading down to the pool", transition: "wipe", focus: "30% 70%" },
+  { src: "/hero/hero-elephant-herd.webp", alt: "A herd of wild elephants grazing in Udawalawe National Park", transition: "iris", focus: "60% 55%" },
+  { src: "/hero/hero-pool-frangipani.webp", alt: "Frangipani in bloom beside the pool", transition: "push", focus: "75% 70%" },
+  { src: "/hero/hero-pool-above.webp", alt: "The pool and garden seen from above", transition: "split", focus: "45% 70%" },
+  { src: "/hero/hero-pool-night.webp", alt: "The pool lit up at night under the trees", transition: "zoom", focus: "55% 65%" },
 ];
 
 /** Rebuilt at least this often even if no admin change triggers it. */

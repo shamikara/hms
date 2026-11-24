@@ -5,6 +5,7 @@ import { getBookableProperty } from "@/features/bookings/actions/booking.actions
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
+import { publicPaymentOptions } from "@/features/payments/services/payment-settings.service";
 
 export const metadata: Metadata = {
   title: "Book Your Stay",
@@ -38,6 +39,7 @@ export default async function BookPage({
 
   const propertyResult = await getBookableProperty();
   const property = propertyResult.success ? propertyResult.data : null;
+  const payment = property ? await publicPaymentOptions(property.id).catch(() => null) : null;
 
   return (
     <div className="min-h-screen bg-stone-950 font-sans text-stone-100 flex flex-col">
@@ -66,6 +68,7 @@ export default async function BookPage({
               initialCheckIn={readDate(params.checkIn)}
               initialCheckOut={readDate(params.checkOut)}
               initialGuests={readGuests(params.guests)}
+              payment={payment}
             />
           ) : (
             <div className="text-center text-stone-500 py-12 bg-stone-900 rounded-2xl shadow-2xl max-w-4xl mx-auto border border-stone-800">
