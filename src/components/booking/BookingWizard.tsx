@@ -8,12 +8,14 @@ export function BookingWizard({
   currencyCode,
   initialCheckIn = "",
   initialCheckOut = "",
+  initialGuests = 2,
 }: {
   propertyId: string;
   /** The property's baseCurrency, so rates are shown in the money they are set in. */
   currencyCode: string;
   initialCheckIn?: string;
   initialCheckOut?: string;
+  initialGuests?: number;
 }) {
   // Rebuilt only when the property's currency changes, not on every render.
   const currency = useMemo(
@@ -33,6 +35,7 @@ export function BookingWizard({
   // Form State
   const [checkInDate, setCheckInDate] = useState(initialCheckIn);
   const [checkOutDate, setCheckOutDate] = useState(initialCheckOut);
+  const [guests, setGuests] = useState(initialGuests);
   const [availableRooms, setAvailableRooms] = useState<RoomAvailability[]>([]);
   const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
   
@@ -65,6 +68,13 @@ export function BookingWizard({
     }
   };
 
+  // Beds across the rooms picked so far, so the guest is told before they
+  // submit that two adults will not fit the party they searched for.
+  const selectedCapacity = availableRooms
+    .filter((r) => selectedRoomTypes.includes(r.roomType.id))
+    .reduce((sum, r) => sum + r.roomType.capacity, 0);
+  const tooSmall = selectedRoomTypes.length > 0 && selectedCapacity < guests;
+
   const handleBook = async () => {
     if (!firstName || !lastName || !email) {
       setError("Please fill out all guest details.");
@@ -80,8 +90,8 @@ export function BookingWizard({
         roomTypeIds: selectedRoomTypes,
         checkInDate: new Date(checkInDate),
         checkOutDate: new Date(checkOutDate),
-        status: "DRAFT"
-      }
+      },
+      guests
     );
 
     setLoading(false);
@@ -116,7 +126,7 @@ export function BookingWizard({
         {step === 1 && (
           <div>
             <h3 className="text-2xl font-serif mb-6 text-stone-900 dark:text-stone-100">Select Dates</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div>
                 <label className="block text-sm font-medium text-stone-500 mb-2">Check-In</label>
                 <input 
@@ -134,6 +144,19 @@ export function BookingWizard({
                   onChange={(e) => setCheckOutDate(e.target.value)}
                   className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
                 />
+              </div>
+              <div>
+                <label htmlFor="booking-guests" className="block text-sm font-medium text-stone-500 mb-2">Guests</label>
+                <select
+                  id="booking-guests"
+                  value={guests}
+                  onChange={(e) => setGuests(Number(e.target.value))}
+                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                >
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>{n} {n === 1 ? "Adult" : "Adults"}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <button 
@@ -192,13 +215,19 @@ export function BookingWizard({
               </div>
             )}
             
+            {tooSmall && (
+              <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">
+                The rooms you have picked sleep {selectedCapacity}, but you are booking for {guests}. Add another room, or email us and we will sort out the right fit.
+              </p>
+            )}
+
             <div className="flex gap-4">
               <button onClick={() => setStep(1)} className="w-full bg-stone-200 dark:bg-stone-800 hover:bg-stone-300 dark:hover:bg-stone-700 text-stone-900 dark:text-stone-100 py-4 rounded-lg font-medium transition-colors">
                 Back
               </button>
               <button 
                 onClick={() => setStep(3)}
-                disabled={selectedRoomTypes.length === 0}
+                disabled={selectedRoomTypes.length === 0 || tooSmall}
                 className="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-4 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 Continue to Details

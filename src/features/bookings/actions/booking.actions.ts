@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { after } from "next/server";
 import prisma from "@/core/db/prisma";
 import { BookingService, BookingError, RoomTypeAvailability } from "../services/booking.service";
 import {
@@ -10,6 +11,7 @@ import {
   describeWait,
 } from "@/core/security/rateLimit";
 import { toBookingReference } from "../lib/reference";
+import { notifyBookingRequest } from "@/features/notifications/services/booking-notifications";
 import {
   GuestFormValues,
   ReservationFormValues,
@@ -40,8 +42,18 @@ function firstIssue(error: z.ZodError): string {
 
 export async function createPublicBooking(
   guestData: GuestFormValues,
-  reservationData: Omit<ReservationFormValues, "guestId">
+  reservationData: Omit<ReservationFormValues, "guestId" | "status">,
+  /** Party size from the booking form; only used in the alert email. */
+  partySize?: number
 ): Promise<ActionResult<{ reference: string; checkInDate: Date; checkOutDate: Date }>> {
+  // The same date rules the availability search applies. Without this a
+  // hand-built request could book a stay in the past.
+  const dates = AvailabilitySchema.safeParse({
+    checkInDate: reservationData.checkInDate,
+    checkOutDate: reservationData.checkOutDate,
+  });
+  if (!dates.success) return { success: false, error: firstIssue(dates.error) };
+
   let parsedGuest;
   try {
     parsedGuest = GuestSchema.parse(guestData);
@@ -79,12 +91,44 @@ export async function createPublicBooking(
       },
     });
 
+    // Status is set here, never taken from the browser: a public request is
+    // always a DRAFT until the desk confirms it. Spreading the client payload
+    // let anyone submit a CONFIRMED booking straight past the front desk.
     const parsedReservation = ReservationSchema.parse({
-      ...reservationData,
+      propertyId: reservationData.propertyId,
+      roomTypeIds: reservationData.roomTypeIds,
+      checkInDate: reservationData.checkInDate,
+      checkOutDate: reservationData.checkOutDate,
       guestId: guest.id,
+      status: "DRAFT",
     });
 
     const reservation = await BookingService.createReservation(parsedReservation);
+    const reference = toBookingReference(reservation.id);
+
+    // Sent after the response, so the guest is not kept waiting on the mail
+    // provider, and a send that fails cannot undo a booking already stored.
+    const roomTypeNames = reservation.stays.flatMap((stay) =>
+      stay.roomAssignments.map((a) => a.room.roomType.name),
+    );
+    const guests =
+      Number.isInteger(partySize) && partySize! >= 1 && partySize! <= 20 ? partySize! : null;
+    after(() =>
+      notifyBookingRequest({
+        reservationId: reservation.id,
+        reference,
+        checkInDate: reservation.checkInDate,
+        checkOutDate: reservation.checkOutDate,
+        roomTypeNames,
+        guests,
+        guest: {
+          firstName: guest.firstName,
+          lastName: guest.lastName,
+          email: guest.email,
+          phone: guest.phone,
+        },
+      }),
+    );
 
     // Only what the confirmation screen needs. The full row carries the
     // guest's record and the room ids, which the browser has no use for.
@@ -93,7 +137,7 @@ export async function createPublicBooking(
       data: {
         // The short form, so the reference the guest is shown is the one the
         // front desk can search for.
-        reference: toBookingReference(reservation.id),
+        reference,
         checkInDate: reservation.checkInDate,
         checkOutDate: reservation.checkOutDate,
       },

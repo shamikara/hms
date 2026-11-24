@@ -23,6 +23,12 @@ function readDate(value: string | string[] | undefined) {
   return typeof value === "string" && ISO_DATE.test(value) ? value : "";
 }
 
+/** Adults from the home-page search; 1–6, otherwise the default of 2. */
+function readGuests(value: string | string[] | undefined) {
+  const n = typeof value === "string" ? Number.parseInt(value, 10) : NaN;
+  return Number.isInteger(n) && n >= 1 && n <= 6 ? n : 2;
+}
+
 export default async function BookPage({
   searchParams,
 }: {
@@ -59,6 +65,7 @@ export default async function BookPage({
               currencyCode={property.baseCurrency}
               initialCheckIn={readDate(params.checkIn)}
               initialCheckOut={readDate(params.checkOut)}
+              initialGuests={readGuests(params.guests)}
             />
           ) : (
             <div className="text-center text-stone-500 py-12 bg-stone-900 rounded-2xl shadow-2xl max-w-4xl mx-auto border border-stone-800">

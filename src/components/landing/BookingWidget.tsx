@@ -28,6 +28,7 @@ export function BookingWidget() {
   const bookQuery = new URLSearchParams();
   if (checkIn) bookQuery.set("checkIn", checkIn);
   if (checkOut) bookQuery.set("checkOut", checkOut);
+  bookQuery.set("guests", guests);
   const bookHref = bookQuery.toString() ? `/book?${bookQuery}` : "/book";
 
   return (
