@@ -132,6 +132,20 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         roles: ["SUPER_ADMIN", "FINANCE_OFFICER", "RESORT_MANAGER"],
         shortcut: "G F",
       },
+      {
+        title: "Staff & Access",
+        href: "/admin/staff",
+        icon: ShieldCheck,
+        roles: ["SUPER_ADMIN", "GENERAL_MANAGER", "RESORT_MANAGER"],
+        shortcut: "G S",
+      },
+      {
+        title: "Site Settings",
+        href: "/admin/settings",
+        icon: Settings,
+        roles: ["SUPER_ADMIN", "GENERAL_MANAGER", "RESORT_MANAGER"],
+        shortcut: "G T",
+      },
     ],
   },
 ];

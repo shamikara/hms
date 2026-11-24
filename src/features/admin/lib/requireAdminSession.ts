@@ -33,7 +33,11 @@ export type AdminPermission =
   /** Create and change inventory, including the rates charged for it. */
   | "rooms:manage"
   /** Set a room's housekeeping state. */
-  | "housekeeping:manage";
+  | "housekeeping:manage"
+  /** Edit the public contact details, guest ratings and the tax rate. */
+  | "settings:manage"
+  /** Add staff sign-ins, set their roles, reset passwords, deactivate. */
+  | "staff:manage";
 
 const ALL: AdminPermission[] = [
   "admin:access",
@@ -45,6 +49,8 @@ const ALL: AdminPermission[] = [
   "rooms:view",
   "rooms:manage",
   "housekeeping:manage",
+  "settings:manage",
+  "staff:manage",
 ];
 
 /**
