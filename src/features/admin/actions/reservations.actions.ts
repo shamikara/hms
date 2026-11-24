@@ -4,6 +4,8 @@ import prisma from "@/core/db/prisma";
 import { requireAdminPermission, resolveDefaultPropertyId, NO_PROPERTY } from "@/features/admin/lib/requireAdminSession";
 import { Reservation, ReservationStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { notifyBookingStatus } from "@/features/notifications/services/booking-status-notifications";
 import { z } from "zod";
 import { BookingService, BookingError, isRoomOverlapError } from "@/features/bookings/services/booking.service";
 import { GuestSchema, ReservationSchema } from "@/features/bookings/validations/booking.schema";
@@ -165,8 +167,12 @@ export async function updateReservationStatus(reservationId: string, status: Res
   try {
     // Goes through the same helper as confirm/cancel so a status set through
     // this route cannot leave `releasedAt` disagreeing with it.
+    const before = await prisma.reservation.findUnique({ where: { id: reservationId }, select: { status: true } });
     const result = await setReservationStatus(reservationId, status);
     if (!result.success) return result;
+    if (before && before.status !== status && (status === "CONFIRMED" || status === "CANCELLED")) {
+      after(() => notifyBookingStatus(reservationId, status));
+    }
 
     const updated = await prisma.reservation.findUnique({ where: { id: reservationId } });
     revalidatePath("/admin/bookings");
@@ -235,8 +241,11 @@ export async function confirmReservation(reservationId: string): Promise<{ succe
   if (!guard.ok) return guard.failure;
 
   try {
+    const before = await prisma.reservation.findUnique({ where: { id: reservationId }, select: { status: true } });
     const result = await setReservationStatus(reservationId, "CONFIRMED");
     if (!result.success) return result;
+    // Email the guest only on a real change, so a second click sends nothing.
+    if (before && before.status !== "CONFIRMED") after(() => notifyBookingStatus(reservationId, "CONFIRMED"));
     revalidatePath("/admin/bookings");
     return { success: true };
   } catch (error: any) {
@@ -250,8 +259,10 @@ export async function cancelReservation(reservationId: string): Promise<{ succes
   if (!guard.ok) return guard.failure;
 
   try {
+    const before = await prisma.reservation.findUnique({ where: { id: reservationId }, select: { status: true } });
     const result = await setReservationStatus(reservationId, "CANCELLED");
     if (!result.success) return result;
+    if (before && before.status !== "CANCELLED") after(() => notifyBookingStatus(reservationId, "CANCELLED"));
     revalidatePath("/admin/bookings");
     return { success: true };
   } catch (error: any) {
