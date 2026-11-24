@@ -47,7 +47,9 @@ export type AdminPermission =
   /** Remove spam and test messages for good. */
   | "enquiries:delete"
   /** Post the day's food menu and keep the dish list. */
-  | "menu:manage";
+  | "menu:manage"
+  /** Upload photos and choose which ones the website shows. */
+  | "media:manage";
 
 const ALL: AdminPermission[] = [
   "admin:access",
@@ -66,6 +68,7 @@ const ALL: AdminPermission[] = [
   "enquiries:manage",
   "enquiries:delete",
   "menu:manage",
+  "media:manage",
 ];
 
 /**

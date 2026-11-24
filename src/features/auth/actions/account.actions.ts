@@ -2,6 +2,9 @@
 
 import { z } from "zod";
 import { after } from "next/server";
+import { revalidatePath } from "next/cache";
+import { createSession, verifySession } from "@/core/lib/session";
+import { GUEST_ROLE } from "../types";
 import {
   REGISTER_RULE,
   RESET_REQUEST_RULE,
@@ -29,29 +32,65 @@ async function throttle(key: string, rule: typeof REGISTER_RULE): Promise<Result
 }
 
 /**
- * Guest sign-up. Always ends on the same "check your email" screen, whether
- * the address was new, waiting for confirmation, or already an account, so
- * the form cannot be used to find out who has an account here.
+ * Guest sign-up. Creates the account and signs the person straight in; no
+ * email step. Bookings stay hidden until they confirm the address with a
+ * code on the account page.
  */
-export async function registerAction(input: unknown): Promise<Result> {
+export async function registerAction(input: unknown): Promise<Result & { redirectTo?: string }> {
   const parsed = RegisterSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
-  if (parsed.data.website) return { success: true }; // honeypot: a bot
+  if (parsed.data.website) return { success: true, redirectTo: "/" }; // honeypot: a bot
 
   const limited = await throttle(`register:ip:${await callerAddress()}`, REGISTER_RULE);
   if (limited) return limited;
 
   try {
     const { firstName, lastName, email, password } = parsed.data;
-    const outcome = await AccountService.register({ firstName, lastName, email, password });
-    after(() =>
-      outcome.kind === "exists"
-        ? AccountEmails.sendAlreadyRegistered(email, outcome.firstName)
-        : AccountEmails.sendVerify(email, outcome.firstName, outcome.verifyToken),
-    );
+    const { userId } = await AccountService.register({ firstName, lastName, email, password });
+    await createSession({ userId, role: GUEST_ROLE, roles: [] });
+    return { success: true, redirectTo: "/account?welcome=1" };
+  } catch (error) {
+    if (error instanceof AccountError) return { success: false, error: error.message };
+    console.error("registerAction failed:", error instanceof Error ? error.message : error);
+    return { success: false, error: GENERIC };
+  }
+}
+
+/** Account page: email a 6-digit code that confirms the address. */
+export async function requestEmailCodeAction(): Promise<Result> {
+  const session = await verifySession();
+  if (!session) return { success: false, error: "Please sign in again." };
+  const limited =
+    (await throttle(`confirm-code:ip:${await callerAddress()}`, RESET_REQUEST_RULE)) ??
+    (await throttle(`confirm-code:user:${session.userId}`, RESET_REQUEST_RULE));
+  if (limited) return limited;
+  try {
+    const issued = await AccountService.requestEmailCode(session.userId);
+    if (issued) after(() => AccountEmails.sendConfirmCode(issued.email, issued.firstName, issued.code));
     return { success: true };
   } catch (error) {
-    console.error("registerAction failed:", error instanceof Error ? error.message : error);
+    console.error("requestEmailCodeAction failed:", error instanceof Error ? error.message : error);
+    return { success: false, error: GENERIC };
+  }
+}
+
+const ConfirmCodeSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code from the email.") });
+
+/** Account page: check the code; on success the bookings appear. */
+export async function confirmEmailCodeAction(input: unknown): Promise<Result> {
+  const session = await verifySession();
+  if (!session) return { success: false, error: "Please sign in again." };
+  const parsed = ConfirmCodeSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
+  const limited = await throttle(`confirm-verify:user:${session.userId}`, RESET_VERIFY_RULE);
+  if (limited) return limited;
+  try {
+    await AccountService.confirmEmailCode(session.userId, parsed.data.code);
+    revalidatePath("/account");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof AccountError) return { success: false, error: error.message };
+    console.error("confirmEmailCodeAction failed:", error instanceof Error ? error.message : error);
     return { success: false, error: GENERIC };
   }
 }

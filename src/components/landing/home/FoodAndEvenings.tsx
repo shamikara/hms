@@ -7,7 +7,7 @@ import { SectionHeading } from "./SectionHeading";
 /** The table and the garden after dark: what a day here ends with. */
 export function FoodAndEvenings() {
   return (
-    <section className="bg-[#f6f1e8] py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
+    <section className="bg-stone-900 py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <ScrollReveal className="lg:order-2">
           <SectionHeading eyebrow="Food & evenings" title="Rice and curry, then the fire">
@@ -19,7 +19,7 @@ export function FoodAndEvenings() {
           </SectionHeading>
           <Link
             href="/dining"
-            className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-emerald-800 hover:text-emerald-600 transition-colors"
+            className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 hover:text-emerald-300 transition-colors"
           >
             Food at the house <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>

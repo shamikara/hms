@@ -18,6 +18,8 @@ export interface GuestAccount {
   isStaff: boolean;
   bookings: GuestBooking[];
   reviewableTrips: number;
+  /** False until the email is confirmed with a code; bookings are hidden until then. */
+  emailConfirmed: boolean;
 }
 
 /** What a signed-in person sees on their account page. Only their own rows. */
@@ -26,6 +28,7 @@ export async function getGuestAccount(userId: string): Promise<GuestAccount | nu
     where: { id: userId },
     select: {
       email: true,
+      emailVerifiedAt: true,
       employee: { select: { firstName: true, lastName: true, deletedAt: true } },
       guestProfile: {
         select: {
@@ -52,7 +55,12 @@ export async function getGuestAccount(userId: string): Promise<GuestAccount | nu
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  const bookings: GuestBooking[] = (user.guestProfile?.reservations ?? []).map((r) => {
+  // Until the address is proven, show nothing tied to it: someone could
+  // sign up with another person's email.
+  const emailConfirmed = Boolean(user.emailVerifiedAt);
+  const visible = emailConfirmed ? (user.guestProfile?.reservations ?? []) : [];
+
+  const bookings: GuestBooking[] = visible.map((r) => {
     const stay = r.stays[0]?.status;
     const status: GuestBooking["status"] =
       r.status === "CANCELLED" ? "Cancelled"
@@ -73,7 +81,7 @@ export async function getGuestAccount(userId: string): Promise<GuestAccount | nu
   });
 
   let reviewableTrips = 0;
-  if (user.guestProfile) {
+  if (user.guestProfile && emailConfirmed) {
     reviewableTrips = await prisma.safariTrip.count({
       where: { guestId: user.guestProfile.id, status: "COMPLETED", review: null },
     }).catch(() => 0);
@@ -86,5 +94,6 @@ export async function getGuestAccount(userId: string): Promise<GuestAccount | nu
     isStaff: Boolean(user.employee && !user.employee.deletedAt),
     bookings,
     reviewableTrips,
+    emailConfirmed,
   };
 }

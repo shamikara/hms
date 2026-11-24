@@ -20,8 +20,15 @@ export function AuthShell({
 }) {
   return (
     <main className="min-h-screen grid lg:grid-cols-2 bg-[#f6f1e8]">
-      <div className="relative h-48 sm:h-64 lg:h-auto">
-        <Image src="/property-verandah-day.webp" alt="" fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+      <div className="relative h-40 sm:h-64 lg:h-auto">
+        <Image
+          src="/hero/hero-pool-frangipani.webp"
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="object-cover object-[35%_55%]"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f2219]/80 via-[#0f2219]/30 to-transparent" />
         <div className="absolute bottom-6 left-6 right-6 lg:bottom-10 lg:left-10 text-white">
           <p className="font-serif text-2xl lg:text-4xl">{SITE.name}</p>

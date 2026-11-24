@@ -9,6 +9,7 @@ import { Utensils, Coffee, Clock } from "lucide-react";
 import { getSiteContent } from "@/features/site/services/site.service";
 import { getTodaysMenu } from "@/features/menu/services/menu.service";
 import { TodaysMenu } from "@/features/menu/components/TodaysMenu";
+import { getMediaContent } from "@/features/media/services/media.service";
 
 // Today's menu changes daily and on every save; re-check at least every 10 min.
 export const revalidate = 600;
@@ -26,19 +27,10 @@ export const metadata: Metadata = {
   },
 };
 
-/** Real photographs from the kitchen (public/food). Captions say only what is in the picture. */
-const KITCHEN_PHOTOS = [
-  { src: "/food/food-string-hoppers.webp", w: 1000, h: 725, caption: "String hoppers and hoppers with curries", alt: "A platter of string hoppers, hoppers, rice and curries on banana leaf" },
-  { src: "/food/food-rice-curry-banana-leaf.webp", w: 900, h: 1200, caption: "Rice and curry, Sri Lankan style", alt: "Rice, hoppers and several curries in clay bowls on a banana leaf" },
-  { src: "/food/food-breakfast-table.webp", w: 1000, h: 750, caption: "Breakfast by the pool", alt: "Omelette, toast, fruit and tea on a wooden table" },
-  { src: "/food/food-curries-roti.webp", w: 900, h: 1200, caption: "Curries with roti and red rice", alt: "Curries in clay pots with roti and red rice" },
-  { src: "/food/food-kola-kanda.webp", w: 900, h: 1200, caption: "Kola kanda, a herbal porridge", alt: "A bowl of green kola kanda herbal porridge with curry leaves" },
-  { src: "/food/food-clay-pots.webp", w: 1000, h: 750, caption: "Rice and curries in clay pots", alt: "Rice and colourful curries served in clay pots" },
-  { src: "/food/food-curries-basket.webp", w: 900, h: 1200, caption: "A spread of curries", alt: "A woven basket of rice and curries in clay bowls" },
-];
-
 export default async function DiningPage() {
-  const [{ contact }, menu] = await Promise.all([getSiteContent(), getTodaysMenu()]);
+  const [{ contact }, menu, media] = await Promise.all([getSiteContent(), getTodaysMenu(), getMediaContent()]);
+  // Chosen in Admin > Photos; an empty list hides the photo wall.
+  const kitchenPhotos = media.foodPhotos;
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 selection:bg-emerald-800 selection:text-stone-100">
@@ -110,6 +102,7 @@ export default async function DiningPage() {
       </section>
 
       {/* Real dishes from the kitchen */}
+      {kitchenPhotos.length > 0 && (
       <section className="py-20 px-6 sm:px-12 lg:px-24 border-b border-stone-850">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-3 mb-10">
@@ -121,26 +114,29 @@ export default async function DiningPage() {
             </p>
           </div>
           <div className="columns-2 md:columns-3 gap-4 [column-fill:_balance]">
-            {KITCHEN_PHOTOS.map((photo, i) => (
+            {kitchenPhotos.map((photo, i) => (
               <ScrollReveal key={photo.src} direction="up" delay={0.05 * (i % 3)}>
                 <figure className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-stone-800 bg-stone-900">
                   <Image
                     src={photo.src}
                     alt={photo.alt}
-                    width={photo.w}
-                    height={photo.h}
+                    width={photo.width}
+                    height={photo.height}
                     sizes="(max-width: 768px) 50vw, 33vw"
                     className="w-full h-auto transition-transform duration-700 group-hover:scale-105"
                   />
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-10 pb-3 text-sm text-white">
-                    {photo.caption}
-                  </figcaption>
+                  {photo.caption && (
+                    <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-10 pb-3 text-sm text-white">
+                      {photo.caption}
+                    </figcaption>
+                  )}
                 </figure>
               </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
+      )}
 
       <TodaysMenu menu={menu} whatsapp={contact.phone} />
 

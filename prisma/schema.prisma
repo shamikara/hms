@@ -1330,3 +1330,25 @@ model PaymentWebhookEvent {
   type       String
   receivedAt DateTime @default(now())
 }
+
+// ============================================================================
+// MEDIA LIBRARY (photos uploaded from admin, stored in Supabase Storage)
+// ============================================================================
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  propertyId  String
+  /// Object path inside the storage bucket, e.g. uploads/2026/11/abc.webp
+  path        String   @unique
+  /// Public URL the site loads it from.
+  url         String
+  width       Int
+  height      Int
+  bytes       Int
+  /// Describes the photo for screen readers and search engines.
+  alt         String   @default("")
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([propertyId, createdAt])
+}

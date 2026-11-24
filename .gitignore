@@ -55,3 +55,6 @@ Claude outputs/
 # Raw photo dumps and old assets moved out of public/ (never publish these)
 public/drive/
 _to-delete/
+
+# Raw phone videos; the web copies live in public/tour
+/public/video/

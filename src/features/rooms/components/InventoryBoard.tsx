@@ -52,11 +52,14 @@ export function InventoryBoard({
   inventory,
   loadError,
   canManage,
+  uploadedPhotos = [],
 }: {
   inventory: Inventory | null;
   loadError?: string;
   /** False for housekeeping-only roles, who may still mark rooms made up. */
   canManage: boolean;
+  /** Photos uploaded in Admin > Photos, offered alongside the built-in ones. */
+  uploadedPhotos?: { src: string; alt: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -168,6 +171,7 @@ export function InventoryBoard({
             key={editingType?.id ?? "new"}
             initial={editingType}
             currency={inventory.currencyCode}
+            uploadedPhotos={uploadedPhotos}
             busy={isPending}
             onCancel={() => {
               setShowTypeForm(false);
@@ -443,12 +447,14 @@ export function InventoryBoard({
 function RoomTypeForm({
   initial,
   currency,
+  uploadedPhotos,
   busy,
   onSubmit,
   onCancel,
 }: {
   initial: InventoryRoomType | null;
   currency: string;
+  uploadedPhotos: { src: string; alt: string }[];
   busy: boolean;
   onSubmit: (values: Record<string, unknown>) => void;
   onCancel: () => void;
@@ -509,9 +515,18 @@ function RoomTypeForm({
           onChange={(e) => setValues({ ...values, imageUrl: e.target.value })}
         >
           <option value="">Generic room photo</option>
-          {ROOM_PHOTOS.map((photo) => (
-            <option key={photo.src} value={photo.src}>{photo.label}</option>
-          ))}
+          {uploadedPhotos.length > 0 && (
+            <optgroup label="Uploaded in Admin › Photos">
+              {uploadedPhotos.map((photo, i) => (
+                <option key={photo.src} value={photo.src}>{photo.alt || `Uploaded photo ${i + 1}`}</option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label="Built-in">
+            {ROOM_PHOTOS.map((photo) => (
+              <option key={photo.src} value={photo.src}>{photo.label}</option>
+            ))}
+          </optgroup>
         </select>
       </div>
       <div className="sm:col-span-2">

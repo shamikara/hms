@@ -28,7 +28,7 @@ const HIGHLIGHTS = [
 /** Why stay here: four reasons, plainly put. */
 export function Highlights() {
   return (
-    <section className="bg-[#f6f1e8] py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
+    <section className="bg-stone-900 py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
         <ScrollReveal className="lg:col-span-4">
           <SectionHeading eyebrow="Why stay with us" title="Small, friendly and right by the park">
@@ -42,12 +42,12 @@ export function Highlights() {
         <div className="lg:col-span-8 grid sm:grid-cols-2 gap-4 sm:gap-5">
           {HIGHLIGHTS.map((item, i) => (
             <ScrollReveal key={item.title} delay={i * 0.08}>
-              <div className="h-full rounded-2xl bg-white p-6 sm:p-7 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-12px_rgba(28,25,23,0.12)] ring-1 ring-stone-900/5">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <div className="h-full rounded-2xl bg-stone-950 p-6 sm:p-7 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-12px_rgba(28,25,23,0.12)] ring-1 ring-white/10">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-950 text-emerald-400">
                   <item.icon className="h-5 w-5" aria-hidden />
                 </span>
-                <h3 className="mt-5 text-lg font-semibold text-stone-900">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.text}</p>
+                <h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-stone-400">{item.text}</p>
               </div>
             </ScrollReveal>
           ))}

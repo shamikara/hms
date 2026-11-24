@@ -4,43 +4,32 @@ import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { BookingWidget } from "@/components/landing/BookingWidget";
 import { LocationSection } from "@/components/landing/LocationSection";
-import { HeroGallery, type HeroSlide } from "@/components/landing/HeroGallery";
+import { HeroGallery } from "@/components/landing/HeroGallery";
 import { Highlights } from "@/components/landing/home/Highlights";
 import { RoomsGrid } from "@/components/landing/home/RoomsGrid";
 import { SafariFeature } from "@/components/landing/home/SafariFeature";
 import { FoodAndEvenings } from "@/components/landing/home/FoodAndEvenings";
+import { WalkAround } from "@/components/landing/home/WalkAround";
 import { PhotoStrip } from "@/components/landing/home/PhotoStrip";
 import { RatingsBand } from "@/components/landing/home/RatingsBand";
 import { ClosingCta } from "@/components/landing/home/ClosingCta";
 import { getSiteContent } from "@/features/site/services/site.service";
+import { getMediaContent } from "@/features/media/services/media.service";
 import { getPublicRooms } from "@/features/rooms/services/public-rooms.service";
-
-/**
- * Real photographs of the property, day into night. Each arrives with its own
- * transition; see HeroGallery. To change the line-up, edit this list (files
- * live in public/hero).
- */
-const heroSlides: HeroSlide[] = [
-  { src: "/hero/hero-pool-pergola.webp", alt: "The pool and thatched pergola under a blue sky", transition: "fade", focus: "60% 60%" },
-  { src: "/hero/hero-garden-path.webp", alt: "The garden path leading down to the pool", transition: "wipe", focus: "30% 70%" },
-  { src: "/hero/hero-elephant-herd.webp", alt: "A herd of wild elephants grazing in Udawalawe National Park", transition: "iris", focus: "60% 55%" },
-  { src: "/hero/hero-pool-frangipani.webp", alt: "Frangipani in bloom beside the pool", transition: "push", focus: "75% 70%" },
-  { src: "/hero/hero-pool-above.webp", alt: "The pool and garden seen from above", transition: "split", focus: "45% 70%" },
-  { src: "/hero/hero-pool-night.webp", alt: "The pool lit up at night under the trees", transition: "zoom", focus: "55% 65%" },
-];
 
 /** Rebuilt at least this often even if no admin change triggers it. */
 export const revalidate = 3600;
 
 export default async function Home() {
-  const [{ contact, ratings, aggregate }, rooms] = await Promise.all([getSiteContent(), getPublicRooms()]);
+  // Slideshow photos are chosen in Admin > Photos (built-in photos until then).
+  const [{ contact, ratings, aggregate }, rooms, media] = await Promise.all([getSiteContent(), getPublicRooms(), getMediaContent()]);
 
   return (
-    <div className="min-h-screen bg-white font-sans selection:bg-emerald-200 selection:text-emerald-900 flex flex-col">
+    <div className="min-h-screen bg-stone-950 text-stone-100 font-sans selection:bg-emerald-800 selection:text-stone-100 flex flex-col">
       <PublicHeader />
 
       <main className="flex-1">
-        <HeroGallery slides={heroSlides}>
+        <HeroGallery slides={media.heroSlides}>
           <ScrollReveal delay={0.4}>
             <p className="mb-5 text-xs sm:text-sm font-semibold uppercase tracking-[0.3em] text-emerald-200">
               Udawalawe · Sri Lanka
@@ -67,6 +56,7 @@ export default async function Home() {
         </HeroGallery>
 
         <Highlights />
+        <WalkAround />
         {rooms && rooms.roomTypes.length > 0 && <RoomsGrid rooms={rooms} />}
         <SafariFeature />
         <FoodAndEvenings />

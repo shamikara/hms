@@ -47,11 +47,9 @@ export const AuthService = {
       throw new Error("Account is disabled.");
     }
 
-    // Checked after the password, so this answer is only ever given to the
-    // person who knows it, and reveals nothing to someone guessing emails.
-    if (!user.emailVerifiedAt) {
-      throw new Error(EMAIL_NOT_CONFIRMED);
-    }
+    // An unconfirmed email no longer blocks sign-in: guests get in straight
+    // away, and their bookings stay hidden until they confirm the address
+    // with a code on the account page.
 
     // Resolve the real role from the database. A user without an employee
     // record — a guest, say — gets GUEST and no staff privileges. Returning a

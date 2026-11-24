@@ -71,9 +71,29 @@ ${FOOT}`,
   };
 }
 
+export function confirmCode(to: string, firstName: string, code: string) {
+  const name = oneLine(firstName) || "there";
+  const spaced = `${code.slice(0, 3)} ${code.slice(3)}`;
+  return {
+    to,
+    subject: `${code} is your ${SITE.name} confirmation code`,
+    html: shell(
+      `Your email confirmation code: ${spaced}. It works for 15 minutes.`,
+      `${header(`Confirm your email`, `Hello ${e(name)}, enter this code on your account page to see your bookings. It works for 15 minutes.`)}
+<tr><td align="center" style="padding:20px 32px 8px;">
+  <div style="display:inline-block;background:${C.sand};border-radius:16px;padding:18px 28px;font-family:'Courier New',monospace;font-size:36px;font-weight:700;letter-spacing:8px;color:${C.forest};">${e(spaced)}</div>
+</td></tr>
+<tr><td style="padding:10px 32px 4px;font-family:${FONT};font-size:13px;color:${C.muted};text-align:center;">Never share this code. Our team will never ask you for it.</td></tr>
+${FOOT}`,
+    ),
+    text: `Hello ${name},\n\nYour ${SITE.name} email confirmation code is: ${spaced}\nEnter it on your account page. It works for 15 minutes. Never share it.\n\nDidn't ask for this? Ignore this email.`,
+  };
+}
+
 /** Fire-and-forget wrappers; sendEmail already never throws. */
 export const AccountEmails = {
   sendVerify: (to: string, firstName: string, token: string) => sendEmail(verifyEmail(to, firstName, token)),
   sendAlreadyRegistered: (to: string, firstName: string) => sendEmail(alreadyRegistered(to, firstName)),
   sendResetCode: (to: string, firstName: string, code: string) => sendEmail(resetCode(to, firstName, code)),
+  sendConfirmCode: (to: string, firstName: string, code: string) => sendEmail(confirmCode(to, firstName, code)),
 };

@@ -5,6 +5,7 @@ import { CalendarDays, Compass, LogOut, Phone, ShieldCheck, Star } from "lucide-
 import { verifySession } from "@/core/lib/session";
 import { logoutAction } from "@/features/auth/actions/auth.actions";
 import { getGuestAccount, type GuestBooking } from "@/features/auth/services/guest-account.service";
+import { ConfirmEmailCard } from "@/features/auth/components/ConfirmEmailCard";
 import { getSiteContent } from "@/features/site/services/site.service";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
@@ -62,7 +63,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           {welcome && (
             <div role="status" className="rounded-2xl bg-emerald-800 px-6 py-5 text-white">
               <p className="font-serif text-2xl">Welcome, {account.firstName || "and thank you"}! &#x1F33F;</p>
-              <p className="mt-1 text-sm text-emerald-100">Your email is confirmed and your account is ready.</p>
+              <p className="mt-1 text-sm text-emerald-100">Your account is ready. Book your next stay any time.</p>
             </div>
           )}
 
@@ -80,6 +81,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               </button>
             </form>
           </div>
+
+          {!account.emailConfirmed && <ConfirmEmailCard email={account.email} />}
 
           {account.isStaff && (
             <Link href="/admin/dashboard" className="flex items-center gap-3 rounded-2xl bg-[#13291f] px-6 py-4 text-white hover:bg-[#1a3a2b]">

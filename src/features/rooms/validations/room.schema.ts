@@ -32,7 +32,7 @@ export const RoomTypeSchema = z.object({
   description: z.string().trim().max(500).optional().or(z.literal("").transform(() => undefined)),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1").max(20),
   basePrice,
-  /** One of ROOM_PHOTOS, or blank for the generic image. */
+  /** One of ROOM_PHOTOS, an uploaded photo, or blank for the generic image. */
   imageUrl: z
     .string()
     .optional()

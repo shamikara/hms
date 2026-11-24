@@ -15,6 +15,7 @@ import {
   Truck,
   Mail,
   ChefHat,
+  Image as ImageIcon,
 } from "lucide-react";
 
 export interface Property {
@@ -83,8 +84,6 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         title: "Bookings & Check-in",
         href: "/admin/bookings",
         icon: CalendarCheck,
-        badge: "12 Today",
-        badgeVariant: "emerald",
         shortcut: "G B",
       },
       {
@@ -159,6 +158,13 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         icon: ShieldCheck,
         roles: ["SUPER_ADMIN", "GENERAL_MANAGER", "RESORT_MANAGER"],
         shortcut: "G S",
+      },
+      {
+        title: "Photos",
+        href: "/admin/media",
+        icon: ImageIcon,
+        roles: ["SUPER_ADMIN", "GENERAL_MANAGER", "RESORT_MANAGER"],
+        shortcut: "G I",
       },
       {
         title: "Site Settings",

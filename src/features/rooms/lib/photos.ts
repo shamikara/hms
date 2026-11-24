@@ -1,3 +1,5 @@
+import { isUploadedMediaUrl } from "@/features/media/lib/media-url";
+
 /**
  * Photos a room type can use on the public site, from the /public folder.
  *
@@ -27,6 +29,7 @@ export const ROOM_PHOTO_FALLBACK: RoomPhoto = "/room-detail.webp";
 
 const ALLOWED = new Set<string>(ROOM_PHOTOS.map((p) => p.src));
 
-export function isRoomPhoto(value: unknown): value is RoomPhoto {
-  return typeof value === "string" && ALLOWED.has(value);
+/** A built-in room photo, or one uploaded in Admin > Photos. */
+export function isRoomPhoto(value: unknown): value is string {
+  return typeof value === "string" && (ALLOWED.has(value) || isUploadedMediaUrl(value));
 }

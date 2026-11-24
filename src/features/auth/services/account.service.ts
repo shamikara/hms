@@ -26,6 +26,26 @@ function hashLinkToken(token: string): string {
  * with the server secret: a copied database row alone cannot be brute-forced.
  * The user id is mixed in so two people's codes never share a hash.
  */
+/**
+ * The inbox is proven: mark the email confirmed and attach the account to the
+ * guest profile for that address (taking it over from an unproven sign-up if
+ * one had claimed it), so bookings made with the email appear.
+ */
+async function markVerifiedAndLink(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  email: string,
+  names: { firstName?: string; lastName?: string } = {},
+) {
+  await tx.user.updateMany({ where: { id: userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } });
+  const profile = await tx.guestProfile.findUnique({ where: { email }, select: { id: true, userId: true } });
+  if (!profile) {
+    await tx.guestProfile.create({ data: { email, firstName: names.firstName || "Guest", lastName: names.lastName || "", userId } });
+  } else if (profile.userId !== userId) {
+    await tx.guestProfile.update({ where: { id: profile.id }, data: { userId } });
+  }
+}
+
 function hashResetCode(userId: string, code: string): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET is not set.");
@@ -38,50 +58,107 @@ function sameHash(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-export type RegisterOutcome =
-  | { kind: "created"; userId: string; verifyToken: string; firstName: string }
-  | { kind: "resent"; userId: string; verifyToken: string; firstName: string }
-  | { kind: "exists"; firstName: string };
+export type RegisterOutcome = { userId: string };
+
+const CODE_TTL_MS = 15 * 60 * 1000;
+
+/** Keyed hash for 6-digit codes; the purpose is mixed in so codes never cross over. */
+function hashCode(purpose: "reset" | "verify", userId: string, code: string): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET is not set.");
+  return createHmac("sha256", secret).update(`${purpose}:${userId}:${code}`).digest("hex");
+}
 
 export const AccountService = {
   /**
-   * Starts a guest sign-up. Never says whether the email was already known:
-   * the caller shows the same "check your email" screen in every case, and
-   * the email itself tells the real owner what happened.
+   * Guest sign-up: creates the account and the caller signs the person in
+   * straight away. No email step.
+   *
+   * Bookings stay private until the email is proven: a new account is only
+   * attached to a guest profile here when no one has booked with that email
+   * before, and the account page shows bookings only once the email is
+   * confirmed with a 6-digit code. So signing up with someone else's address
+   * shows nothing of theirs.
    */
   async register(input: { firstName: string; lastName: string; email: string; password: string }): Promise<RegisterOutcome> {
-    const existing = await prisma.user.findUnique({
-      where: { email: input.email },
-      select: { id: true, emailVerifiedAt: true, employee: { select: { id: true } } },
-    });
-
-    const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
-
-    if (existing) {
-      // Unconfirmed guest sign-up being tried again (lost the email, typo in
-      // the password): take the new password and send a fresh link.
-      if (!existing.emailVerifiedAt && !existing.employee) {
-        await prisma.user.update({ where: { id: existing.id }, data: { passwordHash } });
-        const verifyToken = await this.issueVerifyToken(existing.id, input);
-        return { kind: "resent", userId: existing.id, verifyToken, firstName: input.firstName };
-      }
-      return { kind: "exists", firstName: input.firstName };
+    const taken = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+    if (taken) {
+      throw new AccountError("There is already an account with this email. Sign in instead, or use “Forgot password”.");
     }
-
+    const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
     try {
-      const user = await prisma.user.create({
-        data: { email: input.email, passwordHash, isActive: true, emailVerifiedAt: null },
-        select: { id: true },
+      return await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: { email: input.email, passwordHash, isActive: true, emailVerifiedAt: null },
+          select: { id: true },
+        });
+        const profile = await tx.guestProfile.findUnique({ where: { email: input.email }, select: { id: true } });
+        if (!profile) {
+          await tx.guestProfile.create({
+            data: { email: input.email, firstName: input.firstName, lastName: input.lastName, userId: user.id },
+          });
+        }
+        return { userId: user.id };
       });
-      const verifyToken = await this.issueVerifyToken(user.id, input);
-      return { kind: "created", userId: user.id, verifyToken, firstName: input.firstName };
     } catch (error) {
-      // Two sign-ups for one address at the same moment.
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        return { kind: "exists", firstName: input.firstName };
+        throw new AccountError("There is already an account with this email. Sign in instead, or use “Forgot password”.");
       }
       throw error;
     }
+  },
+
+  /** Emails a 6-digit code that confirms the address. Null when already confirmed. */
+  async requestEmailCode(userId: string): Promise<{ email: string; code: string; firstName: string } | null> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, isActive: true, emailVerifiedAt: true, guestProfile: { select: { firstName: true } } },
+    });
+    if (!user || !user.isActive || user.emailVerifiedAt) return null;
+    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const salt = randomBytes(8).toString("hex");
+    await prisma.$transaction([
+      prisma.authToken.updateMany({ where: { userId, purpose: "VERIFY_EMAIL", usedAt: null }, data: { usedAt: new Date() } }),
+      prisma.authToken.create({
+        data: {
+          userId,
+          purpose: "VERIFY_EMAIL",
+          tokenHash: hashCode("verify", userId, `${code}:${salt}`),
+          meta: { salt, kind: "code" },
+          expiresAt: new Date(Date.now() + CODE_TTL_MS),
+        },
+      }),
+    ]);
+    return { email: user.email, code, firstName: user.guestProfile?.firstName ?? "" };
+  },
+
+  /** Checks the code; on success the email is confirmed and earlier bookings appear. */
+  async confirmEmailCode(userId: string, code: string): Promise<void> {
+    const generic = new AccountError("That code is not right, or it has expired. Ask for a new one.");
+    const row = await prisma.authToken.findFirst({
+      where: { userId, purpose: "VERIFY_EMAIL", usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, tokenHash: true, attempts: true, meta: true, user: { select: { email: true, isActive: true } } },
+    });
+    if (!row || !row.user.isActive) throw generic;
+    if (row.attempts >= RESET_MAX_ATTEMPTS) {
+      await prisma.authToken.update({ where: { id: row.id }, data: { usedAt: new Date() } });
+      throw new AccountError("Too many wrong codes. Ask for a new one.");
+    }
+    const salt = ((row.meta ?? {}) as { salt?: string }).salt ?? "";
+    if (!sameHash(row.tokenHash, hashCode("verify", userId, `${code}:${salt}`))) {
+      const attempts = row.attempts + 1;
+      await prisma.authToken.update({
+        where: { id: row.id },
+        data: { attempts, ...(attempts >= RESET_MAX_ATTEMPTS ? { usedAt: new Date() } : {}) },
+      });
+      const left = RESET_MAX_ATTEMPTS - attempts;
+      throw new AccountError(left > 0 ? `That code is not right. ${left} ${left === 1 ? "try" : "tries"} left.` : "Too many wrong codes. Ask for a new one.");
+    }
+    await prisma.$transaction(async (tx) => {
+      await tx.authToken.update({ where: { id: row.id }, data: { usedAt: new Date() } });
+      await markVerifiedAndLink(tx, userId, row.user.email);
+    });
   },
 
   async issueVerifyToken(userId: string, names: { firstName: string; lastName: string }) {
@@ -139,16 +216,7 @@ export const AccountService = {
 
     await prisma.$transaction(async (tx) => {
       await tx.authToken.update({ where: { id: row.id }, data: { usedAt: new Date() } });
-      await tx.user.update({ where: { id: row.userId }, data: { emailVerifiedAt: new Date() } });
-
-      const profile = await tx.guestProfile.findUnique({ where: { email: row.user.email }, select: { id: true, userId: true } });
-      if (!profile) {
-        await tx.guestProfile.create({
-          data: { email: row.user.email, firstName: meta.firstName || "Guest", lastName: meta.lastName || "", userId: row.userId },
-        });
-      } else if (!profile.userId) {
-        await tx.guestProfile.update({ where: { id: profile.id }, data: { userId: row.userId } });
-      }
+      await markVerifiedAndLink(tx, row.userId, row.user.email, meta);
     });
     return row.userId;
   },
@@ -219,10 +287,10 @@ export const AccountService = {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-    await prisma.$transaction([
-      prisma.authToken.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
-      prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
-      prisma.user.updateMany({ where: { id: user.id, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      await tx.authToken.update({ where: { id: row.id }, data: { usedAt: new Date() } });
+      await tx.user.update({ where: { id: user.id }, data: { passwordHash } });
+      await markVerifiedAndLink(tx, user.id, email);
+    });
   },
 };

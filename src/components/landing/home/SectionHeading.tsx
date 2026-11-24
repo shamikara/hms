@@ -8,7 +8,7 @@ export function SectionHeading({
   eyebrow,
   title,
   children,
-  tone = "light",
+  tone = "dark",
   align = "left",
 }: {
   eyebrow: string;

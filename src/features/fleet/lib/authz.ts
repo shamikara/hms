@@ -143,9 +143,10 @@ export async function getGuestProfileForSession(): Promise<{
 
   const profile = await prisma.guestProfile.findUnique({
     where: { userId: session.userId },
-    select: { id: true },
+    select: { id: true, user: { select: { emailVerifiedAt: true } } },
   });
 
-  if (!profile) return null;
+  // Trips stay private until the account has proven it owns the email.
+  if (!profile || !profile.user?.emailVerifiedAt) return null;
   return { userId: session.userId, guestProfileId: profile.id };
 }

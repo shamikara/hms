@@ -66,6 +66,16 @@ const securityHeaders = [
       ]),
 ];
 
+function supabaseImageHost() {
+  try {
+    const u = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    if (u.hostname.endsWith(".supabase.co")) return [];
+    return [{ protocol: u.protocol.replace(":", "") as "http" | "https", hostname: u.hostname, port: u.port, pathname: "/storage/v1/object/public/**" }];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   // Announcing the framework and its version tells an attacker which
   // advisories to try. It buys nothing in return.
@@ -92,6 +102,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       // Supabase Storage — public bucket URLs.
       { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+      // The project's own Supabase URL, in case it is a custom domain.
+      ...supabaseImageHost(),
       // Generated initials avatars used by the sample driver seed.
       { protocol: "https", hostname: "ui-avatars.com", pathname: "/api/**" },
     ],

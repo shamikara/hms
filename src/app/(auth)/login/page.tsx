@@ -32,7 +32,7 @@ export default async function LoginPage({
   return (
     <AuthShell
       title="Welcome back"
-      intro="Sign in to see your bookings and rate your safari driver. Staff sign in here too."
+      intro="Sign in to see your bookings and rate your safari driver."
       footer={
         <>
           New here?{" "}

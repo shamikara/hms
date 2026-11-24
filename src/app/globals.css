@@ -235,3 +235,23 @@ body {
 @media (prefers-reduced-motion: reduce) {
   [class*="hero-enter-"], .hero-exit-push, .hero-kenburns { animation: none !important; }
 }
+
+/* ------------------------------------------------------------------ */
+/* Homepage photo strip: endless, seamless drift. The track holds two  */
+/* identical copies, so sliding by exactly half lands back at start.   */
+/* ------------------------------------------------------------------ */
+@keyframes marquee-x { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+
+.marquee-track { animation: marquee-x var(--marquee-duration, 70s) linear infinite; will-change: transform; }
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track { animation-play-state: paused; }
+.marquee-fade {
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee { overflow-x: auto; }
+  .marquee-track { animation: none; }
+  .marquee-copy { display: none; }
+}
