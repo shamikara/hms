@@ -1,73 +1,73 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { LoginSchema, LoginFormValues } from "../validations/auth.schema";
-import { loginAction } from "../actions/auth.actions";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { loginAction } from "../actions/auth.actions";
+import { resendVerificationAction } from "../actions/account.actions";
+import { Notice, authButton, authInput, authLabel } from "./AuthShell";
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(LoginSchema),
-  });
-
-  const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
     setError(null);
-    const result = await loginAction(data);
-    
-    if (result?.success) {
-      router.push("/admin/dashboard"); // Default redirect for now
-    } else {
-      setError(result?.error || "An error occurred");
-      setIsLoading(false);
+    setResent(false);
+    const result = await loginAction({ email: email.trim(), password }, next);
+    if (result?.success && "redirectTo" in result && result.redirectTo) {
+      router.push(result.redirectTo);
+      router.refresh();
+      return;
     }
+    setError(result?.error ?? "We could not sign you in just now. Please try again.");
+    setNeedsConfirmation(Boolean(result && "needsConfirmation" in result && result.needsConfirmation));
+    setBusy(false);
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    const result = await resendVerificationAction({ email: email.trim() });
+    setBusy(false);
+    if (result.success) {
+      setResent(true);
+      setError(null);
+    } else setError(result.error ?? "Could not send the link.");
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 w-full max-w-sm mx-auto">
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-stone-700 dark:text-stone-300">Email Address</label>
-        <input
-          {...register("email")}
-          type="email"
-          disabled={isLoading}
-          className="w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 focus:ring-2 focus:ring-emerald-600 outline-none transition-all duration-300"
-          placeholder="admin@safariresort.com"
-        />
-        {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>}
+    <form onSubmit={submit} className="space-y-5">
+      {error && <Notice tone="error">{error}</Notice>}
+      {resent && <Notice tone="success">We&apos;ve sent a new confirmation link. Check your inbox (and spam folder).</Notice>}
+
+      <div>
+        <label htmlFor="login-email" className={authLabel}>Email</label>
+        <input id="login-email" type="email" autoComplete="email" required disabled={busy} value={email} onChange={(e) => setEmail(e.target.value)} className={authInput} placeholder="you@example.com" />
+      </div>
+      <div>
+        <div className="flex items-baseline justify-between">
+          <label htmlFor="login-password" className={authLabel}>Password</label>
+          <Link href="/forgot-password" className="text-xs font-medium text-emerald-700 hover:text-emerald-600">Forgot password?</Link>
+        </div>
+        <input id="login-password" type="password" autoComplete="current-password" required disabled={busy} value={password} onChange={(e) => setPassword(e.target.value)} className={authInput} />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-stone-700 dark:text-stone-300">Password</label>
-        <input
-          {...register("password")}
-          type="password"
-          disabled={isLoading}
-          className="w-full px-4 py-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 focus:ring-2 focus:ring-emerald-600 outline-none transition-all duration-300"
-          placeholder="••••••••"
-        />
-        {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>}
-      </div>
-
-      {error && <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">{error}</div>}
-
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full py-3 px-4 bg-emerald-800 hover:bg-emerald-900 text-white font-medium rounded-lg shadow-md transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
-      >
-        {isLoading ? "Signing in..." : "Sign In"}
+      <button type="submit" disabled={busy || !email || !password} className={authButton}>
+        {busy ? "Signing in..." : "Sign in"}
       </button>
+
+      {needsConfirmation && !resent && (
+        <button type="button" onClick={resend} disabled={busy || !email} className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm font-semibold text-stone-700 hover:border-emerald-600 hover:text-emerald-700">
+          Send the confirmation link again
+        </button>
+      )}
     </form>
   );
 }

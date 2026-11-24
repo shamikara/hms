@@ -7,6 +7,11 @@ import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Utensils, Coffee, Clock } from "lucide-react";
 import { getSiteContent } from "@/features/site/services/site.service";
+import { getTodaysMenu } from "@/features/menu/services/menu.service";
+import { TodaysMenu } from "@/features/menu/components/TodaysMenu";
+
+// Today's menu changes daily and on every save; re-check at least every 10 min.
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Food & Breakfast",
@@ -22,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DiningPage() {
-  const { contact } = await getSiteContent();
+  const [{ contact }, menu] = await Promise.all([getSiteContent(), getTodaysMenu()]);
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 selection:bg-emerald-800 selection:text-stone-100">
@@ -92,6 +97,8 @@ export default async function DiningPage() {
           </div>
         </div>
       </section>
+
+      <TodaysMenu menu={menu} whatsapp={contact.phone} />
 
       {/* Early starts */}
       <section className="py-20 px-6 sm:px-12 lg:px-24">

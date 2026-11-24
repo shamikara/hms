@@ -16,7 +16,7 @@ import { jwtVerify } from "jose";
  */
 
 /** Needs a signed-in user of any kind — guests included. */
-const SIGNED_IN_PREFIXES = ["/safari/review"];
+const SIGNED_IN_PREFIXES = ["/safari/review", "/account"];
 
 /**
  * Front-of-house and management roles: everything in the operations area that

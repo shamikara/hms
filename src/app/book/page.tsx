@@ -8,11 +8,11 @@ import { PublicFooter } from "@/components/navigation/PublicFooter";
 
 export const metadata: Metadata = {
   title: "Book Your Stay",
-  description: "Check availability and request a room at Wildlily Safari Resort, Udawalawe.",
+  description: "Check availability and request a room at Lily Safari Resort, Udawalawe.",
   alternates: { canonical: "/book" },
   openGraph: {
     title: "Book Your Stay",
-    description: "Check availability and request a room at Wildlily Safari Resort, Udawalawe.",
+    description: "Check availability and request a room at Lily Safari Resort, Udawalawe.",
     url: "/book",
   },
 };

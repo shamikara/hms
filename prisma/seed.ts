@@ -67,19 +67,21 @@ async function main() {
   const organization = await prisma.organization.upsert({
     where: { taxId: "WLSR-001" },
     update: {},
-    create: { name: "Wildlily Safari Resort", taxId: "WLSR-001" },
+    create: { name: "Lily Safari Resort", taxId: "WLSR-001" },
   });
 
   // Property has no natural unique key, so look it up by name within the org.
   const existingProperty = await prisma.property.findFirst({
-    where: { organizationId: organization.id, name: "Wildlily Safari Resort" },
+    // By organisation rather than name, so renaming the property in the
+    // database does not make a re-run create a second one.
+    where: { organizationId: organization.id, deletedAt: null },
   });
   const property =
     existingProperty ??
     (await prisma.property.create({
       data: {
         organizationId: organization.id,
-        name: "Wildlily Safari Resort",
+        name: "Lily Safari Resort",
         timezone: "Asia/Colombo",
         baseCurrency: "LKR",
       },
@@ -95,8 +97,8 @@ async function main() {
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.upsert({
     where: { email },
-    update: { passwordHash, isActive: true },
-    create: { email, passwordHash, isActive: true },
+    update: { passwordHash, isActive: true, emailVerifiedAt: new Date() },
+    create: { email, passwordHash, isActive: true, emailVerifiedAt: new Date() },
   });
 
   // Derived from the email so re-running is idempotent and a second admin

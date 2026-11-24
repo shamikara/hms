@@ -86,7 +86,7 @@ export const StaffRepository = {
     db: Db = prisma,
   ) {
     const user = await db.user.create({
-      data: { email: input.email, passwordHash: input.passwordHash, isActive: true },
+      data: { email: input.email, passwordHash: input.passwordHash, isActive: true, emailVerifiedAt: new Date() },
     });
     const employee = await db.employee.create({
       data: {

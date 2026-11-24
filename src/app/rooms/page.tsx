@@ -112,6 +112,9 @@ export default async function RoomsPage() {
                         <Users className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Sleeps {room.capacity}</span>
                       </span>
+                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-400">
+                        {room.sellableRooms} {room.sellableRooms === 1 ? "room" : "rooms"} of this type
+                      </span>
                     </div>
                     <h2 className="text-2xl sm:text-3xl font-serif text-white">{room.name}</h2>
                     {room.description && (

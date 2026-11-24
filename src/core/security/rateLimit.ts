@@ -22,6 +22,12 @@ export const LOGIN_RULE: RateLimitRule = { limit: 10, windowMs: 15 * 60 * 1000 }
 
 /** Booking submissions per address per hour. */
 export const BOOKING_RULE: RateLimitRule = { limit: 12, windowMs: 60 * 60 * 1000 };
+/** Guest sign-ups per address per hour. */
+export const REGISTER_RULE: RateLimitRule = { limit: 5, windowMs: 60 * 60 * 1000 };
+/** Reset-code emails per address, and per account, per hour. */
+export const RESET_REQUEST_RULE: RateLimitRule = { limit: 5, windowMs: 60 * 60 * 1000 };
+/** Reset-code entries per address per hour, on top of the five-tries-per-code lock. */
+export const RESET_VERIFY_RULE: RateLimitRule = { limit: 20, windowMs: 60 * 60 * 1000 };
 /** Contact-form messages per address per hour: plenty for a person, not for a bot. */
 export const ENQUIRY_RULE: RateLimitRule = { limit: 5, windowMs: 60 * 60 * 1000 };
 

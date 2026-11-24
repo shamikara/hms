@@ -45,7 +45,7 @@ export function MasonryGallery() {
           Wilderness Photography & Estate Gallery
         </span>
         <h3 className="text-4xl md:text-5xl font-serif text-white">
-          Moments at Wildlily Safari Resort
+          Moments at Lily Safari Resort
         </h3>
         <p className="text-stone-400 text-sm max-w-xl mx-auto pt-2 font-light">
           The pool and verandah, our rooms, home-cooked Sri Lankan food, and the elephant herds of Udawalawe National Park.

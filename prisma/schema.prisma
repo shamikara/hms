@@ -46,6 +46,8 @@ model Property {
   trips        SafariTrip[]         @relation("PropertyTrips")
   fleetAlerts  FleetAlert[]         @relation("PropertyFleetAlerts")
   enquiries    Enquiry[]            @relation("PropertyEnquiries")
+  dishes       Dish[]               @relation("PropertyDishes")
+  dailyMenu    DailyMenuItem[]      @relation("PropertyDailyMenu")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -180,6 +182,13 @@ model User {
   /// Nullable because OAuth users do not have a password hash.
   passwordHash String?
   isActive     Boolean @default(true) /// Global kill-switch
+  /// When the owner proved they control the email address. Null means not
+  /// yet: such an account cannot sign in. Staff created by a manager are
+  /// confirmed on creation; accounts that existed before this column was
+  /// added were backfilled as confirmed.
+  emailVerifiedAt DateTime?
+
+  authTokens AuthToken[] @relation("UserAuthTokens")
 
   employee     Employee?     @relation("UserEmployee")
   guestProfile GuestProfile? @relation("UserGuestProfile")
@@ -1145,4 +1154,91 @@ model Enquiry {
   updatedAt DateTime @updatedAt
 
   @@index([propertyId, status, createdAt])
+}
+
+
+// ============================================================================
+// ACCOUNT TOKENS (email confirmation links, password reset codes)
+// ============================================================================
+
+enum AuthTokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+/// A one-time secret sent by email. Only a hash is stored: a leaked database
+/// row cannot be turned back into a working link or code.
+model AuthToken {
+  id      String           @id @default(cuid())
+  userId  String
+  user    User             @relation("UserAuthTokens", fields: [userId], references: [id], onDelete: Cascade)
+  purpose AuthTokenPurpose
+
+  /// SHA-256 of the link token, or HMAC of the reset code.
+  tokenHash String @unique
+  /// Wrong guesses so far; reset codes lock after five.
+  attempts  Int    @default(0)
+  /// Details carried to the moment of confirmation (the name given at
+  /// sign-up, used to create the guest profile once the email is proven).
+  meta      Json?
+
+  expiresAt DateTime
+  /// Set once used, or when superseded by a newer token. Never reused.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, purpose])
+}
+
+
+// ============================================================================
+// FOOD MENU (dish list, and what is on today)
+// ============================================================================
+
+enum MealPeriod {
+  BREAKFAST
+  LUNCH
+  DINNER
+  ALL_DAY
+}
+
+/// A dish the kitchen can make. Set up once; ticked onto a day's menu.
+model Dish {
+  id          String     @id @default(cuid())
+  propertyId  String
+  property    Property   @relation("PropertyDishes", fields: [propertyId], references: [id], onDelete: Restrict)
+  name        String
+  description String?
+  meal        MealPeriod
+  /// Nullable: most dishes are part of the board or priced on request.
+  price       Decimal?   @db.Decimal(19, 4)
+  vegetarian  Boolean    @default(false)
+  spicy       Boolean    @default(false)
+  sortOrder   Int        @default(0)
+
+  menuDays DailyMenuItem[] @relation("DishMenuDays")
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  /// Archived dishes leave the list but stay on past menus.
+  archivedAt DateTime?
+
+  @@index([propertyId, meal])
+}
+
+/// "This dish is on the menu on this day."
+model DailyMenuItem {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyDailyMenu", fields: [propertyId], references: [id], onDelete: Restrict)
+  /// The calendar day in Sri Lanka, stored as a date with no time.
+  date       DateTime @db.Date
+  dishId     String
+  dish       Dish     @relation("DishMenuDays", fields: [dishId], references: [id], onDelete: Cascade)
+  soldOut    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([propertyId, date, dishId])
+  @@index([propertyId, date])
 }

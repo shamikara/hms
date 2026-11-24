@@ -64,8 +64,8 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
               className="h-10 w-10 lg:h-12 lg:w-12 shrink-0 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.35)]"
             />
             <span className="font-serif tracking-widest uppercase text-white drop-shadow-md text-base sm:text-xl lg:text-2xl font-medium">
-              <span className="inline sm:hidden">Wildlily</span>
-              <span className="hidden sm:inline">Wildlily Safari Resort</span>
+              <span className="inline sm:hidden">Lily Safari</span>
+              <span className="hidden sm:inline">Lily Safari Resort</span>
             </span>
           </Link>
         </ScrollReveal>
@@ -102,7 +102,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
               className="hidden sm:inline-flex items-center space-x-1.5 px-4 sm:px-5 py-2 border border-white/30 hover:bg-white hover:text-stone-900 rounded-full text-xs sm:text-sm font-medium transition-all backdrop-blur-sm shadow-sm"
             >
               <User className="w-3.5 h-3.5" />
-              <span>Guest Portal</span>
+              <span>Account</span>
             </Link>
           </ScrollReveal>
 
@@ -129,7 +129,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
             >
               <Image src="/brand/logo-128.png" alt="" width={128} height={128} className="h-9 w-9 rounded-full" />
               <span className="font-serif tracking-widest uppercase text-white text-base font-semibold">
-                Wildlily Safari Resort
+                Lily Safari Resort
               </span>
             </Link>
 
@@ -193,7 +193,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
                 className="w-full py-3.5 text-center bg-stone-900 border border-stone-800 hover:bg-stone-850 rounded-xl font-sans text-sm font-medium text-stone-200 transition-colors flex items-center justify-center space-x-2"
               >
                 <User className="w-4 h-4 text-emerald-400" />
-                <span>Guest Portal Sign In</span>
+                <span>Sign in or create an account</span>
               </Link>
 
               {/* Mobile Footer Meta */}

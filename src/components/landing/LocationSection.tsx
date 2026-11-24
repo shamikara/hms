@@ -54,7 +54,7 @@ export function LocationSection({ contact }: { contact: ContactValues }) {
         <ScrollReveal delay={0.1} className="lg:col-span-7 min-h-[380px] lg:min-h-[520px]">
           <div className="relative h-full min-h-[380px] lg:min-h-[520px] overflow-hidden rounded-3xl ring-1 ring-stone-900/10">
             <iframe
-              title="Map showing the location of Wildlily Safari Resort"
+              title="Map showing the location of Lily Safari Resort"
               src={`https://maps.google.com/maps?q=${SITE.geo.latitude},${SITE.geo.longitude}&z=14&output=embed`}
               className="absolute inset-0 h-full w-full border-0"
               allowFullScreen

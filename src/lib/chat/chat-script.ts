@@ -238,7 +238,7 @@ export function greeting(context: ChatContext): ChatAnswer {
   const guests = context.enquiry.guests;
   const opener = guests
     ? `Hello. I see you're looking for ${guests} ${guests === 1 ? "guest" : "guests"} — how can I help?`
-    : "Hello, and welcome to Wildlily Safari Resort. I can answer questions about the rooms, the park and getting here. What would you like to know?";
+    : "Hello, and welcome to Lily Safari Resort. I can answer questions about the rooms, the park and getting here. What would you like to know?";
   return { text: opener, options: MAIN_MENU };
 }
 
@@ -380,7 +380,7 @@ export const WHATSAPP_NUMBER = "94777320237";
  * instead of "hi".
  */
 export function handoffMessage(topics: string[], enquiry: Enquiry): string {
-  const lines = ["Hello — I was just on the Wildlily Safari Resort website."];
+  const lines = ["Hello — I was just on the Lily Safari Resort website."];
 
   if (topics.length > 0) {
     lines.push("", `I was looking at: ${topics.join(", ")}.`);

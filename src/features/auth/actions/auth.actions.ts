@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { AuthService } from "../services/auth.service";
+import { AuthService, EMAIL_NOT_CONFIRMED } from "../services/auth.service";
 import { LoginSchema, LoginFormValues } from "../validations/auth.schema";
 import { createSession, deleteSession } from "@/core/lib/session";
 import {
@@ -19,10 +19,23 @@ import { redirect } from "next/navigation";
  * Anything else — a Prisma failure, a bad connection string — becomes the
  * generic message, because those name tables, columns and hosts.
  */
-const SAFE_MESSAGES = new Set(["Invalid credentials.", "Account is disabled."]);
+const SAFE_MESSAGES = new Set(["Invalid credentials.", "Account is disabled.", EMAIL_NOT_CONFIRMED]);
 const GENERIC = "We could not sign you in just now. Please try again.";
 
-export async function loginAction(data: LoginFormValues) {
+/**
+ * Where to go after signing in. Staff land in the admin panel, guests on
+ * their account page. A `next` from the sign-in redirect is honoured only if
+ * it is a path on this site the person can actually open: never an absolute
+ * URL (an open redirect) and never /admin for a guest.
+ */
+function destinationFor(roles: string[], next?: string | null): string {
+  const isStaff = roles.length > 0;
+  const safe = typeof next === "string" && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\");
+  if (safe && (isStaff || !next.startsWith("/admin"))) return next;
+  return isStaff ? "/admin/dashboard" : "/account";
+}
+
+export async function loginAction(data: LoginFormValues, next?: string | null) {
   let parsedData;
   try {
     parsedData = LoginSchema.parse(data);
@@ -55,10 +68,10 @@ export async function loginAction(data: LoginFormValues) {
 
     await createSession({ userId: user.id, role: user.role, roles: user.roles });
 
-    return { success: true, user };
+    return { success: true, user, redirectTo: destinationFor(user.roles, next) };
   } catch (error) {
     if (error instanceof Error && SAFE_MESSAGES.has(error.message)) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, needsConfirmation: error.message === EMAIL_NOT_CONFIRMED };
     }
     console.error("loginAction failed:", error);
     return { success: false, error: GENERIC };

@@ -45,7 +45,9 @@ export type AdminPermission =
   /** Mark messages replied or closed. */
   | "enquiries:manage"
   /** Remove spam and test messages for good. */
-  | "enquiries:delete";
+  | "enquiries:delete"
+  /** Post the day's food menu and keep the dish list. */
+  | "menu:manage";
 
 const ALL: AdminPermission[] = [
   "admin:access",
@@ -63,6 +65,7 @@ const ALL: AdminPermission[] = [
   "enquiries:view",
   "enquiries:manage",
   "enquiries:delete",
+  "menu:manage",
 ];
 
 /**
@@ -98,6 +101,7 @@ const ROLE_PERMISSIONS: Record<string, AdminPermission[]> = {
     "housekeeping:manage",
     "enquiries:view",
     "enquiries:manage",
+    "menu:manage",
   ],
   SAFARI_COORDINATOR: ["admin:access", "reservations:view", "guests:view"],
   HOUSEKEEPER: ["admin:access", "rooms:view", "housekeeping:manage"],

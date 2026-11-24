@@ -19,7 +19,10 @@ export function RoomsGrid({ rooms }: { rooms: PublicRooms }) {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12">
           <ScrollReveal>
             <SectionHeading eyebrow="Rooms" title="Somewhere cool to come back to">
-              <p>Air-conditioned, spotless, each with its own bathroom.</p>
+              <p>
+                {rooms.totalSellableRooms} air-conditioned {rooms.totalSellableRooms === 1 ? "room" : "rooms"}, spotless,
+                each with its own bathroom.
+              </p>
             </SectionHeading>
           </ScrollReveal>
           <Link
@@ -42,9 +45,14 @@ export function RoomsGrid({ rooms }: { rooms: PublicRooms }) {
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-stone-800 shadow-sm">
-                    <Users className="h-3.5 w-3.5 text-emerald-700" aria-hidden /> Sleeps {room.capacity}
-                  </span>
+                  <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-stone-800 shadow-sm">
+                      <Users className="h-3.5 w-3.5 text-emerald-700" aria-hidden /> Sleeps {room.capacity}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-emerald-800/90 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+                      {room.sellableRooms} {room.sellableRooms === 1 ? "room" : "rooms"}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex flex-1 flex-col gap-0 p-6 sm:p-7 [&>*:last-child]:mt-6">
                   <h3 className="font-serif text-2xl text-stone-900">{room.name}</h3>

@@ -14,7 +14,7 @@ export async function PublicFooter() {
         <div className="space-y-4">
           <Link href="/" className="flex items-center gap-3 text-white">
             <Image src="/brand/logo-128.png" alt="Lily Resort Udawalawe logo" width={128} height={128} className="h-14 w-14 rounded-full" />
-            <span className="text-lg font-serif tracking-widest uppercase leading-tight">Wildlily Safari Resort</span>
+            <span className="text-lg font-serif tracking-widest uppercase leading-tight">Lily Safari Resort</span>
           </Link>
           <p className="text-xs leading-relaxed text-stone-400">
             A small guesthouse beside Udawalawe National Park with air-conditioned rooms, an outdoor
@@ -74,9 +74,9 @@ export async function PublicFooter() {
 
         {/* Guest Experience */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold text-stone-200 uppercase tracking-widest font-mono">Guest Sign-In</h4>
+          <h4 className="text-xs font-semibold text-stone-200 uppercase tracking-widest font-mono">Your Account</h4>
           <p className="text-xs text-stone-400">
-            If you have been on a safari drive with us, sign in to rate your driver.
+            See your bookings in one place, and rate your safari driver after a drive.
           </p>
           <Link
             href="/login"
@@ -84,12 +84,15 @@ export async function PublicFooter() {
           >
             Sign In &rarr;
           </Link>
+          <Link href="/register" className="block text-center text-xs text-stone-400 hover:text-emerald-400 transition-colors">
+            New here? Create an account
+          </Link>
         </div>
       </div>
 
       {/* Clean & Minimal Bottom Attribution */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 pt-8 border-t border-stone-850 flex flex-col sm:flex-row justify-between items-center text-[11px] text-stone-400 space-y-3 sm:space-y-0 font-mono">
-        <p>&copy; {new Date().getFullYear()} Wildlily Safari Resort. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Lily Safari Resort. All rights reserved.</p>
         <p className="text-stone-400">
           Built with <span className="text-stone-300 font-semibold">Platform OS</span> by{" "}
           <a

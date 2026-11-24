@@ -47,7 +47,7 @@ export default async function Home() {
           </ScrollReveal>
           <ScrollReveal delay={0.6}>
             <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl leading-[1.05] text-white drop-shadow-[0_2px_20px_rgba(0,0,0,0.35)]">
-              Wildlily Safari Resort
+              Lily Safari Resort
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-white/90">
               A small, family-run guesthouse beside Udawalawe National Park, with a pool in the garden,

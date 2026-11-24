@@ -14,6 +14,7 @@ import {
   Tent,
   Truck,
   Mail,
+  ChefHat,
 } from "lucide-react";
 
 export interface Property {
@@ -28,7 +29,7 @@ export interface Property {
 export const HMS_PROPERTIES: Property[] = [
   {
     id: "prop-1",
-    name: "Wildlily Safari Resort",
+    name: "Lily Safari Resort",
     code: "LIL-01",
     location: "Udawalawe, Sri Lanka",
     status: "PEAK",
@@ -120,6 +121,13 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         href: "/admin/safari/fleet",
         icon: Truck,
         shortcut: "G V",
+      },
+      {
+        title: "Today's Menu",
+        href: "/admin/menu",
+        icon: ChefHat,
+        roles: ["SUPER_ADMIN", "GENERAL_MANAGER", "RESORT_MANAGER", "RECEPTIONIST"],
+        shortcut: "G M",
       },
       {
         title: "Dining & Bar",

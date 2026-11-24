@@ -4,11 +4,11 @@
  * Metadata, structured data and the sitemap all read from here, so the name,
  * address and contact details are stated once.
  *
- * NAMING: the site brand is "Wildlily Safari Resort", matching the registered
- * domain. The booking platforms still file this property under its earlier
- * names — "Lily Resort Udawalawe", latterly "Lily Safari Resort Udawalwa" —
- * and every review and citation it has sits under those. They are carried in
- * `alternateName` so a search for the old name can still resolve here.
+ * NAMING: the brand is "Lily Safari Resort", matching the logo ("Lily Resort
+ * Udawalawe"). The site briefly traded as "Wildlily Safari Resort", which is
+ * still the registered domain, and the booking platforms file the property
+ * under "Lily Resort Udawalawe" / "Lily Safari Resort Udawalwa". All of those
+ * are carried in `alternateName` so a search for any of them resolves here.
  */
 
 /**
@@ -20,9 +20,10 @@ export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.wildlilysafariresort.com";
 
 export const SITE = {
-  name: "Wildlily Safari Resort",
+  name: "Lily Safari Resort",
   /** Earlier/platform names, surfaced to search engines for continuity. */
   alternateNames: [
+    "Wildlily Safari Resort",
     "Lily Safari Resort Udawalwa",
     "Lily Resort Udawalawe",
   ],

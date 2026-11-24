@@ -8,12 +8,12 @@ import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 export const metadata: Metadata = {
   title: "Contact & Directions",
   description:
-    "Find Wildlily Safari Resort on Old Deewara Road, Udawalawa — phone, email, map and directions from the national park entrance.",
+    "Find Lily Safari Resort on Old Deewara Road, Udawalawa — phone, email, map and directions from the national park entrance.",
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact & Directions",
     description:
-      "Find Wildlily Safari Resort on Old Deewara Road, Udawalawa — phone, email, map and directions.",
+      "Find Lily Safari Resort on Old Deewara Road, Udawalawa — phone, email, map and directions.",
     url: "/contact",
   },
 };

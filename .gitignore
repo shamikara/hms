@@ -47,3 +47,7 @@ incoming-photos/
 
 # Preview screenshots, not part of the site
 Claude outputs/
+
+# Explicit env patterns (already covered by .env* above)
+.env
+.env*.local

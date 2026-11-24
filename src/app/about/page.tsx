@@ -153,7 +153,7 @@ export default async function AboutPage() {
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-stone-800 h-[450px]">
               <Image
                 src="/property-verandah-dusk.webp"
-                alt="Wildlily Safari Resort Sanctuary"
+                alt="Lily Safari Resort Sanctuary"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"

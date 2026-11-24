@@ -3,6 +3,8 @@ import { AuthRepository } from "../repositories/auth.repository";
 import { LoginFormValues, RegisterFormValues } from "../validations/auth.schema";
 import { AuthUser, GUEST_ROLE } from "../types";
 
+export const EMAIL_NOT_CONFIRMED = "Please confirm your email first. Check your inbox for the link, or send it again below.";
+
 export const AuthService = {
   async register(data: RegisterFormValues, roleId: string): Promise<AuthUser> {
     const existingUser = await AuthRepository.findUserByEmail(data.email);
@@ -43,6 +45,12 @@ export const AuthService = {
 
     if (!user.isActive) {
       throw new Error("Account is disabled.");
+    }
+
+    // Checked after the password, so this answer is only ever given to the
+    // person who knows it, and reveals nothing to someone guessing emails.
+    if (!user.emailVerifiedAt) {
+      throw new Error(EMAIL_NOT_CONFIRMED);
     }
 
     // Resolve the real role from the database. A user without an employee

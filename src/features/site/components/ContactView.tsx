@@ -300,7 +300,7 @@ export function ContactView({ contact }: { contact: ContactValues }) {
         {/* Map Section */}
         <section className="h-[400px] w-full border-t border-stone-800 relative">
           <iframe
-            title="Map showing the location of Wildlily Safari Resort"
+            title="Map showing the location of Lily Safari Resort"
             src={`https://maps.google.com/maps?q=${SITE.geo.latitude},${SITE.geo.longitude}&z=15&output=embed`}
             className="w-full h-full border-0"
             style={{ filter: "grayscale(80%) contrast(120%) opacity(90%)" }}
