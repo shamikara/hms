@@ -6,7 +6,25 @@ import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Home, Waves, Utensils, Compass } from "lucide-react";
-import { SITE } from "@/lib/seo/site";
+import { getSiteContent } from "@/features/site/services/site.service";
+import { getPublicRooms } from "@/features/rooms/services/public-rooms.service";
+
+const NUMBER_WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+/** "three" for prose; digits once the words stop reading naturally. */
+function inWords(n: number): string {
+  return NUMBER_WORDS[n] ?? String(n);
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** "A, B and C" */
+function listOf(items: string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
 
 export const metadata: Metadata = {
   title: "About the Resort",
@@ -19,14 +37,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AboutPage() {
+/** Rebuilt at least this often even if no admin change triggers it. */
+export const revalidate = 3600;
+
+export default async function AboutPage() {
+  const [{ aggregate }, rooms] = await Promise.all([getSiteContent(), getPublicRooms()]);
+
+  // Counts and room names come from the admin panel, so a room taken off sale
+  // for renovation, or a new one added, changes this page too. If the rooms
+  // could not be read, the page keeps to wording that does not need a number.
+  const roomCount = rooms?.totalSellableRooms ?? 0;
+  const roomsPhrase = roomCount > 0 ? `${inWords(roomCount)} air-conditioned rooms` : "Air-conditioned rooms";
+  const roomTypesText =
+    rooms && rooms.roomTypes.length > 0
+      ? `${listOf(rooms.roomTypes.map((t) => t.name))}. All air-conditioned, all with private bathrooms. Small enough that the team knows who you are by the second morning.`
+      : "All air-conditioned, all with private bathrooms. Small enough that the team knows who you are by the second morning.";
+
   /** What the house actually offers, as listed on the booking platforms. */
   const pillars = [
     {
       icon: Home,
-      title: "Three Rooms",
-      description:
-        "A double, a quadruple and a family junior suite. All air-conditioned, all with private bathrooms. Small enough that the team knows who you are by the second morning.",
+      title: roomCount > 0 ? `${capitalise(inWords(roomCount))} ${roomCount === 1 ? "Room" : "Rooms"}` : "The Rooms",
+      description: roomTypesText,
     },
     {
       icon: Waves,
@@ -69,7 +101,7 @@ export default function AboutPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-stone-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-                Three air-conditioned rooms, an outdoor pool and a kitchen that cooks to order, a
+                {capitalise(roomsPhrase)}, an outdoor pool and a kitchen that cooks to order, a
                 short drive from the Udawalawe National Park entrance.
               </p>
             </ScrollReveal>
@@ -87,7 +119,7 @@ export default function AboutPage() {
                 Small, and Not Pretending Otherwise
               </h2>
               <p className="text-stone-300 text-sm sm:text-base leading-relaxed">
-                This is a guesthouse with three rooms, not a resort with a wing. What that buys you is
+                This is a small guesthouse, not a resort with a wing. What that buys you is
                 a team that can be flexible about dinner times and early safari starts, and what it
                 costs you is the things a large hotel has — there is no spa, no gym and no second
                 restaurant.
@@ -99,16 +131,20 @@ export default function AboutPage() {
               </p>
 
               <div className="pt-4 grid grid-cols-2 gap-6 border-t border-stone-850">
-                <div>
-                  <span className="text-3xl font-serif text-emerald-400 block">3</span>
-                  <span className="text-xs text-stone-400 font-mono">Guest Rooms</span>
-                </div>
-                <div>
-                  <span className="text-3xl font-serif text-emerald-400 block">{SITE.rating.value}</span>
-                  <span className="text-xs text-stone-400 font-mono">
-                    Average Across {SITE.rating.count} Platform Reviews
-                  </span>
-                </div>
+                {roomCount > 0 && (
+                  <div>
+                    <span className="text-3xl font-serif text-emerald-400 block">{roomCount}</span>
+                    <span className="text-xs text-stone-400 font-mono">Guest Rooms</span>
+                  </div>
+                )}
+                {aggregate && (
+                  <div>
+                    <span className="text-3xl font-serif text-emerald-400 block">{aggregate.value}</span>
+                    <span className="text-xs text-stone-400 font-mono">
+                      Average Across {aggregate.count} Platform Reviews
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </ScrollReveal>

@@ -28,7 +28,7 @@ export const SITE = {
   ],
   url: SITE_URL,
   description:
-    "A small guesthouse beside Udawalawe National Park with three air-conditioned rooms, an outdoor pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.",
+    "A small guesthouse beside Udawalawe National Park with air-conditioned rooms, an outdoor pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.",
   email: "reservations@wildlilysafariresort.com",
   phone: "+94777320237",
   phoneDisplay: "+94 77 732 0237",

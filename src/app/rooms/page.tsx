@@ -5,79 +5,30 @@ import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
-import { Users, Maximize2, Sparkles, Check, ArrowRight } from "lucide-react";
+import { Users, Sparkles, Check, ArrowRight } from "lucide-react";
+import { getPublicRooms } from "@/features/rooms/services/public-rooms.service";
 
 export const metadata: Metadata = {
   title: "Rooms & Rates",
-  description: "Three air-conditioned rooms with private bathrooms, free Wi-Fi and pool or garden views.",
+  description: "Air-conditioned rooms with private bathrooms, free Wi-Fi and pool or garden views, a short drive from Udawalawe National Park.",
   alternates: { canonical: "/rooms" },
   openGraph: {
     title: "Rooms & Rates",
-    description: "Three air-conditioned rooms with private bathrooms, free Wi-Fi and pool or garden views.",
+    description: "Air-conditioned rooms with private bathrooms, free Wi-Fi and pool or garden views, a short drive from Udawalawe National Park.",
     url: "/rooms",
   },
 };
 
-export default function RoomsPage() {
-  const roomTypes = [
-    {
-      id: "deluxe-double",
-      name: "Deluxe Double Room",
-      price: "Rates on request",
-      per: "",
-      capacity: "2 Guests",
-      size: "",
-      image: "/room-deluxe-double.webp",
-      description:
-        "A comfortable air-conditioned double with one queen bed, a private bathroom and a desk. Quiet, spotless and a short drive from the Udawalawe National Park entrance.",
-      features: [
-        "One Queen Bed",
-        "Air Conditioning",
-        "Private Bathroom",
-        "Desk & Seating Area",
-        "Electric Kettle",
-        "Free Wi-Fi",
-      ],
-    },
-    {
-      id: "deluxe-quadruple",
-      name: "Deluxe Quadruple Room",
-      price: "Rates on request",
-      per: "",
-      capacity: "4 Guests",
-      size: "",
-      image: "/room-quadruple.webp",
-      description:
-        "Our largest double-bed room, with two queen beds and a view over the pool. Well suited to friends travelling together or a family of four.",
-      features: [
-        "Two Queen Beds",
-        "Pool View",
-        "Air Conditioning",
-        "Private Bathroom",
-        "Electric Kettle",
-        "Free Wi-Fi",
-      ],
-    },
-    {
-      id: "family-junior-suite",
-      name: "Family Junior Suite",
-      price: "Rates on request",
-      per: "",
-      capacity: "Up to 6 Guests",
-      size: "",
-      image: "/room-twin-yellow.webp",
-      description:
-        "Our most spacious option, with two queen beds and room for up to six. Opens onto the garden and the verandah where breakfast is served.",
-      features: [
-        "Two Queen Beds",
-        "Sleeps Up To Six",
-        "Garden View",
-        "Air Conditioning",
-        "Private Bathroom",
-        "Free Wi-Fi",
-      ],
-    },
-  ];
+/** Rebuilt at least this often even if no admin change triggers it. */
+export const revalidate = 3600;
+
+export default async function RoomsPage() {
+  const rooms = await getPublicRooms();
+  const money = new Intl.NumberFormat("en-LK", {
+    style: "currency",
+    currency: rooms?.currencyCode ?? "LKR",
+    maximumFractionDigits: 0,
+  });
 
   const amenities = [
     "Outdoor Swimming Pool",
@@ -111,7 +62,7 @@ export default function RoomsPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-stone-400 text-sm sm:text-base max-w-xl mx-auto">
-                Three air-conditioned rooms a short drive from the Udawalawe National Park entrance, with an outdoor pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.
+                Air-conditioned rooms a short drive from the Udawalawe National Park entrance, with an outdoor pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.
               </p>
             </ScrollReveal>
           </div>
@@ -119,20 +70,37 @@ export default function RoomsPage() {
 
         {/* Room Showcase List */}
         <section className="py-20 px-6 sm:px-8 lg:px-16 max-w-7xl mx-auto space-y-20">
-          {roomTypes.map((room, index) => (
+          {rooms === null && (
+            <p className="text-center text-stone-400 text-sm">
+              We could not load the rooms just now. Please refresh, or contact us and we will tell you what is free.
+            </p>
+          )}
+          {rooms?.roomTypes.length === 0 && (
+            <p className="text-center text-stone-400 text-sm">
+              No rooms are open for booking at the moment. Please contact us about your dates.
+            </p>
+          )}
+          {rooms?.roomTypes.map((room, index) => (
             <ScrollReveal key={room.id} delay={index * 0.1}>
               <div className="bg-stone-900/40 rounded-3xl border border-stone-800 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center p-6 sm:p-8 hover:border-stone-700 transition-all shadow-2xl">
                 {/* Image */}
                 <div className={`lg:col-span-6 relative h-[350px] sm:h-[420px] rounded-2xl overflow-hidden ${index % 2 === 1 ? 'lg:order-2' : ''}`}>
                   <Image
-                    src={room.image}
+                    src={room.imageUrl}
                     alt={room.name}
                     fill
                     sizes="(max-width: 1024px) 100vw, 50vw"
                     className="object-cover hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4 bg-stone-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs font-mono text-emerald-400">
-                    {room.price}{room.per && <span className="text-stone-400">/ {room.per}</span>}
+                    {room.basePrice === null ? (
+                      "Rates on request"
+                    ) : (
+                      <>
+                        {money.format(room.basePrice)}
+                        <span className="text-stone-400"> / night</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -142,22 +110,19 @@ export default function RoomsPage() {
                     <div className="flex items-center space-x-4 text-xs font-mono text-stone-400">
                       <span className="flex items-center space-x-1">
                         <Users className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>{room.capacity}</span>
+                        <span>Sleeps {room.capacity}</span>
                       </span>
-                      {room.size && (
-                        <span className="flex items-center space-x-1">
-                          <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{room.size}</span>
-                        </span>
-                      )}
                     </div>
                     <h2 className="text-2xl sm:text-3xl font-serif text-white">{room.name}</h2>
-                    <p className="text-stone-300 text-xs sm:text-sm leading-relaxed">
-                      {room.description}
-                    </p>
+                    {room.description && (
+                      <p className="text-stone-300 text-xs sm:text-sm leading-relaxed">
+                        {room.description}
+                      </p>
+                    )}
                   </div>
 
                   {/* Highlights Grid */}
+                  {room.features.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
                     {room.features.map((feature, fIdx) => (
                       <div key={fIdx} className="flex items-center space-x-2 text-xs text-stone-300">
@@ -166,6 +131,7 @@ export default function RoomsPage() {
                       </div>
                     ))}
                   </div>
+                  )}
 
                   <div className="pt-4 flex items-center space-x-4">
                     <Link

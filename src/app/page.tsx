@@ -7,6 +7,8 @@ import { MasonryGallery } from "@/components/landing/MasonryGallery";
 import { LocationSection } from "@/components/landing/LocationSection";
 import { HeroGallery, type HeroSlide } from "@/components/landing/HeroGallery";
 import { GuestReviews } from "@/components/landing/GuestReviews";
+import { getSiteContent } from "@/features/site/services/site.service";
+import { getPublicRooms } from "@/features/rooms/services/public-rooms.service";
 
 const heroSlides: HeroSlide[] = [
   { src: "/pool-dusk.webp", alt: "The pool at dusk, lit under the pergola" },
@@ -17,7 +19,24 @@ const heroSlides: HeroSlide[] = [
   { src: "/dining-rice-curry.webp", alt: "Sri Lankan rice and curry" },
 ];
 
-export default function Home() {
+/** Rebuilt at least this often even if no admin change triggers it. */
+export const revalidate = 3600;
+
+export default async function Home() {
+  const [{ contact }, rooms] = await Promise.all([getSiteContent(), getPublicRooms()]);
+  const money = new Intl.NumberFormat("en-LK", {
+    style: "currency",
+    currency: rooms?.currencyCode ?? "LKR",
+    maximumFractionDigits: 0,
+  });
+  const carouselRooms = (rooms?.roomTypes ?? []).map((room) => ({
+    id: room.id,
+    title: room.name,
+    description: room.description,
+    price: room.basePrice === null ? "Rates on request" : `${money.format(room.basePrice)} / night`,
+    image: room.imageUrl,
+  }));
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 font-sans selection:bg-emerald-200 selection:text-emerald-900 flex flex-col">
       <PublicHeader />
@@ -37,11 +56,13 @@ export default function Home() {
         </HeroGallery>
 
         {/* Accommodation Carousel Section */}
+        {carouselRooms.length > 0 && (
         <section className="py-12 sm:py-24 px-4 sm:px-8 lg:px-16 bg-stone-950 text-stone-100 relative z-20 overflow-hidden">
           <div className="max-w-7xl mx-auto">
-            <RoomCarousel />
+            <RoomCarousel rooms={carouselRooms} />
           </div>
         </section>
+        )}
 
         {/* Photo Gallery Section */}
         <section className="py-24 bg-stone-900 text-stone-100 overflow-hidden">
@@ -56,7 +77,7 @@ export default function Home() {
         </section>
 
         {/* Location & Map Section */}
-        <LocationSection />
+        <LocationSection contact={contact} />
       </main>
 
       <PublicFooter />

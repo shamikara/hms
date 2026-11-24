@@ -1,9 +1,9 @@
 "use client";
 
 import { ScrollReveal } from "../ui/ScrollReveal";
-import { SITE } from "@/lib/seo/site";
+import type { ContactValues } from "@/features/site/validations/site.schema";
 
-export function LocationSection() {
+export function LocationSection({ contact }: { contact: ContactValues }) {
   return (
     <div className="w-full bg-stone-900 py-24 px-8 lg:px-16 text-stone-100">
       <div className="max-w-7xl mx-auto">
@@ -26,16 +26,16 @@ export function LocationSection() {
                 <li className="flex items-start gap-4">
                   <span className="text-emerald-400 text-xl mt-1">📍</span>
                   <span>
-                    {SITE.address.street}, {SITE.address.locality} {SITE.address.postalCode}, Sri Lanka
+                    {contact.street}, {contact.locality} {contact.postalCode}, Sri Lanka
                   </span>
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="text-emerald-400 text-xl">📞</span>
-                  <span>{SITE.phoneDisplay}</span>
+                  <span>{contact.phoneDisplay}</span>
                 </li>
                 <li className="flex items-center gap-4">
                   <span className="text-emerald-400 text-xl">✉️</span>
-                  <span>{SITE.email}</span>
+                  <span>{contact.email}</span>
                 </li>
               </ul>
             </div>
@@ -48,7 +48,7 @@ export function LocationSection() {
                 reach us from wherever you are starting.
               </p>
               <a
-                href={`tel:${SITE.phone}`}
+                href={`tel:${contact.phone}`}
                 className="text-emerald-400 hover:text-emerald-300 font-medium text-sm tracking-wide uppercase transition-colors group flex items-center gap-2"
               >
                 Call Us <span className="group-hover:translate-x-1 transition-transform">→</span>

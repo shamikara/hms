@@ -1,4 +1,6 @@
 import { SITE, SITE_URL } from "@/lib/seo/site";
+import { getSiteContent } from "@/features/site/services/site.service";
+import { getPublicRooms } from "@/features/rooms/services/public-rooms.service";
 
 /**
  * schema.org structured data for the property.
@@ -7,11 +9,14 @@ import { SITE, SITE_URL } from "@/lib/seo/site";
  * address, geo point, star rating and contact details into the knowledge panel
  * and makes the property eligible for rich results.
  *
- * Every value here is a verified fact. aggregateRating pools the four booking
- * platforms' published scores — inventing or inflating it is a manual-action
- * risk, not just bad manners.
+ * Every value here is a verified fact. Contact details and aggregateRating
+ * come from Site Settings; the rating pools the booking platforms' published
+ * scores — inventing or inflating it is a manual-action risk, not just bad
+ * manners.
  */
-export function OrganizationJsonLd() {
+export async function OrganizationJsonLd() {
+  const [{ contact, aggregate }, rooms] = await Promise.all([getSiteContent(), getPublicRooms()]);
+
   const data = {
     "@context": "https://schema.org",
     "@type": "LodgingBusiness",
@@ -20,17 +25,17 @@ export function OrganizationJsonLd() {
     alternateName: [...SITE.alternateNames],
     description: SITE.description,
     url: SITE_URL,
-    telephone: SITE.phone,
-    email: SITE.email,
+    telephone: contact.phone,
+    email: contact.email,
     image: `${SITE_URL}${SITE.ogImage}`,
     priceRange: "$$",
     currenciesAccepted: "LKR",
     address: {
       "@type": "PostalAddress",
-      streetAddress: SITE.address.street,
-      addressLocality: SITE.address.locality,
-      addressRegion: SITE.address.region,
-      postalCode: SITE.address.postalCode,
+      streetAddress: contact.street,
+      addressLocality: contact.locality,
+      addressRegion: contact.region,
+      postalCode: contact.postalCode,
       addressCountry: SITE.address.country,
     },
     geo: {
@@ -38,18 +43,20 @@ export function OrganizationJsonLd() {
       latitude: SITE.geo.latitude,
       longitude: SITE.geo.longitude,
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: SITE.rating.value,
-      reviewCount: SITE.rating.count,
-      bestRating: SITE.rating.best,
-    },
+    ...(aggregate && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: aggregate.value,
+        reviewCount: aggregate.count,
+        bestRating: 5,
+      },
+    }),
     amenityFeature: SITE.amenities.map((name) => ({
       "@type": "LocationFeatureSpecification",
       name,
       value: true,
     })),
-    numberOfRooms: 3,
+    ...(rooms && rooms.totalSellableRooms > 0 && { numberOfRooms: rooms.totalSellableRooms }),
     petsAllowed: false,
     nearbyAttractions: {
       "@type": "TouristAttraction",
@@ -60,8 +67,9 @@ export function OrganizationJsonLd() {
   return (
     <script
       type="application/ld+json"
-      // Values come from a local constant, never user input.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // Values come from validated settings, and JSON.stringify output is
+      // escaped below so a stray "</script>" in a field cannot end the tag.
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
     />
   );
 }

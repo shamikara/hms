@@ -4,31 +4,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
 
-const rooms = [
-  {
-    id: 1,
-    title: "Deluxe Double Room",
-    description: "An air-conditioned double with one queen bed, a private bathroom and a desk.",
-    price: "Rates on request",
-    image: "/room-deluxe-double.webp",
-  },
-  {
-    id: 2,
-    title: "Deluxe Quadruple Room",
-    description: "Two queen beds and a view over the pool — room for four.",
-    price: "Rates on request",
-    image: "/room-twin-purple.webp",
-  },
-  {
-    id: 3,
-    title: "Family Junior Suite",
-    description: "Our most spacious room, with two queen beds and space for up to six.",
-    price: "Rates on request",
-    image: "/room-quadruple.webp", 
-  }
-];
+export interface CarouselRoom {
+  id: string;
+  title: string;
+  description: string | null;
+  /** Already formatted: a rate per night, or "Rates on request". */
+  price: string;
+  image: string;
+}
 
-export function RoomCarousel() {
+/** Room types from the admin panel, passed in by the home page. */
+export function RoomCarousel({ rooms }: { rooms: CarouselRoom[] }) {
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const scrollLeft = () => {
@@ -84,7 +70,7 @@ export function RoomCarousel() {
                 <h4 className="text-2xl font-serif text-white mb-2">{room.title}</h4>
               </div>
             </div>
-            <p className="text-stone-400 leading-relaxed mb-4">{room.description}</p>
+            {room.description && <p className="text-stone-400 leading-relaxed mb-4">{room.description}</p>}
             <Link href="/rooms" className="text-emerald-400 text-sm font-medium uppercase tracking-widest hover:text-emerald-300 transition-colors flex items-center gap-2 group/link">
               Explore Room <span className="group-hover/link:translate-x-2 transition-transform">→</span>
             </Link>

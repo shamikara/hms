@@ -49,7 +49,7 @@ export function MasonryGallery() {
           Moments at Wildlily Safari Resort
         </h3>
         <p className="text-stone-400 text-sm max-w-xl mx-auto pt-2 font-light">
-          Photorealistic captures of our sanctuary architecture, wild elephant herds, Sri Lankan leopards, and candlelit bush gastronomy.
+          The pool and verandah, our rooms, home-cooked Sri Lankan food, and the elephant herds of Udawalawe National Park.
         </p>
       </div>
       

@@ -1,17 +1,16 @@
 import { Star } from "lucide-react";
+import { getSiteContent } from "@/features/site/services/site.service";
 
 /**
- * Aggregate guest ratings as published by each booking platform.
- * Scores only — no review text is reproduced here.
+ * Aggregate guest ratings as published by each booking platform, as entered
+ * in Site Settings. Scores only — no review text is reproduced here.
  */
-const ratings = [
-  { platform: "Booking.com", score: "8.9", outOf: "10", count: 39, label: "Fabulous" },
-  { platform: "Google", score: "4.7", outOf: "5", count: 126, label: "Excellent" },
-  { platform: "Hotels.com", score: "9.1", outOf: "10", count: 45, label: "Wonderful" },
-  { platform: "Expedia", score: "9.2", outOf: "10", count: 38, label: "Wonderful" },
-];
 
-export function GuestReviews() {
+
+export async function GuestReviews() {
+  const { ratings } = await getSiteContent();
+  if (ratings.length === 0) return null;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="text-center mb-14 space-y-2">
@@ -24,7 +23,7 @@ export function GuestReviews() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 justify-center gap-4 sm:gap-6">
         {ratings.map((r) => (
           <div
             key={r.platform}

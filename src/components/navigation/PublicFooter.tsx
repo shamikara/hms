@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { getSiteContent } from "@/features/site/services/site.service";
 
-export function PublicFooter() {
+export async function PublicFooter() {
+  const { contact } = await getSiteContent();
+
   return (
     <footer className="bg-stone-950 text-stone-400 border-t border-stone-850 pt-16 pb-12 font-sans select-none">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
@@ -12,8 +15,8 @@ export function PublicFooter() {
             Wildlily Safari Resort
           </Link>
           <p className="text-xs leading-relaxed text-stone-400">
-            A small guesthouse beside Udawalawe National Park with three air-conditioned rooms, an
-            outdoor pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.
+            A small guesthouse beside Udawalawe National Park with air-conditioned rooms, an outdoor
+            pool, home-cooked Sri Lankan food and safari jeeps arranged by the house.
           </p>
         </div>
 
@@ -48,15 +51,21 @@ export function PublicFooter() {
           <ul className="space-y-2.5 text-xs">
             <li className="flex items-start space-x-2.5">
               <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <span>South Canal, Old Deewara Road, Udawalawa 70190, Sri Lanka</span>
+              <span>
+                {contact.street}, {contact.locality} {contact.postalCode}, Sri Lanka
+              </span>
             </li>
             <li className="flex items-center space-x-2.5">
               <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>+94 77 732 0237</span>
+              <a href={`tel:${contact.phone}`} className="hover:text-emerald-400 transition-colors">
+                {contact.phoneDisplay}
+              </a>
             </li>
             <li className="flex items-center space-x-2.5">
               <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>reservations@wildlilysafariresort.com</span>
+              <a href={`mailto:${contact.email}`} className="hover:text-emerald-400 transition-colors">
+                {contact.email}
+              </a>
             </li>
           </ul>
         </div>

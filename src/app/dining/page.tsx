@@ -6,7 +6,7 @@ import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Utensils, Coffee, Clock } from "lucide-react";
-import { SITE } from "@/lib/seo/site";
+import { getSiteContent } from "@/features/site/services/site.service";
 
 export const metadata: Metadata = {
   title: "Food & Breakfast",
@@ -21,7 +21,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DiningPage() {
+export default async function DiningPage() {
+  const { contact } = await getSiteContent();
+
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 selection:bg-emerald-800 selection:text-stone-100">
       <BreadcrumbJsonLd trail={[{ name: "Home", path: "/" }, { name: "Dining", path: "/dining" }]} />
@@ -128,10 +130,10 @@ export default function DiningPage() {
                 <span>Ask the Kitchen</span>
               </Link>
               <a
-                href={`tel:${SITE.phone}`}
+                href={`tel:${contact.phone}`}
                 className="inline-flex items-center px-6 py-3 border border-stone-700 hover:border-emerald-600 text-stone-300 hover:text-emerald-400 rounded-full text-xs font-mono uppercase tracking-wider transition-colors"
               >
-                {SITE.phoneDisplay}
+                {contact.phoneDisplay}
               </a>
             </div>
           </div>
