@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import prisma from "@/core/db/prisma";
 import {
@@ -16,6 +16,7 @@ import {
   RoomSchema,
   RoomTypeSchema,
 } from "../validations/room.schema";
+import { PUBLIC_ROOMS_TAG } from "../services/public-rooms.service";
 
 type Result<T = undefined> = { success: boolean; data?: T; error?: string };
 
@@ -29,6 +30,20 @@ function firstIssue(error: z.ZodError): string {
   return error.issues?.[0]?.message ?? "Please check the details and try again.";
 }
 
+/**
+ * Every page that shows rooms: the admin list, the booking search, and the
+ * public pages that list types or count rooms. Called after any inventory
+ * change, so taking a room off sale shows on the website straight away.
+ */
+function refreshRoomPages() {
+  updateTag(PUBLIC_ROOMS_TAG);
+  revalidatePath("/admin/rooms");
+  revalidatePath("/book");
+  revalidatePath("/rooms");
+  revalidatePath("/about");
+  revalidatePath("/");
+}
+
 /* ------------------------------------------------------------------ read */
 
 export interface InventoryRoomType {
@@ -38,6 +53,8 @@ export interface InventoryRoomType {
   capacity: number;
   /** Null means no rate is set, which reads as rate-on-request, not free. */
   basePrice: number | null;
+  imageUrl: string | null;
+  features: string[];
   roomCount: number;
 }
 
@@ -133,6 +150,8 @@ export async function getInventory(propertyId?: string): Promise<Result<Inventor
           description: rt.description,
           capacity: rt.capacity,
           basePrice: rt.basePrice === null ? null : Number(rt.basePrice),
+          imageUrl: rt.imageUrl,
+          features: rt.features,
           roomCount: rt._count.rooms,
         })),
         rooms: rooms.map((room) => ({
@@ -175,11 +194,13 @@ export async function createRoomType(input: unknown): Promise<Result<{ id: strin
         description: parsed.data.description ?? null,
         capacity: parsed.data.capacity,
         basePrice: parsed.data.basePrice ?? null,
+        imageUrl: parsed.data.imageUrl,
+        features: parsed.data.features,
       },
       select: { id: true },
     });
 
-    revalidatePath("/admin/rooms");
+    refreshRoomPages();
     return { success: true, data: created };
   } catch (error) {
     return fail("createRoomType", error);
@@ -201,12 +222,13 @@ export async function updateRoomType(id: string, input: unknown): Promise<Result
         description: parsed.data.description ?? null,
         capacity: parsed.data.capacity,
         basePrice: parsed.data.basePrice ?? null,
+        imageUrl: parsed.data.imageUrl,
+        features: parsed.data.features,
       },
     });
 
-    // Rates show on the public booking screen, so it has to be rebuilt too.
-    revalidatePath("/admin/rooms");
-    revalidatePath("/book");
+    // Rates and copy show on the public pages, so they are rebuilt too.
+    refreshRoomPages();
     return { success: true };
   } catch (error) {
     return fail("updateRoomType", error);
@@ -229,8 +251,7 @@ export async function archiveRoomType(id: string): Promise<Result> {
     // Soft delete, following the convention used across this schema: a type
     // that historic reservations point at must still resolve.
     await prisma.roomType.update({ where: { id }, data: { deletedAt: new Date() } });
-    revalidatePath("/admin/rooms");
-    revalidatePath("/book");
+    refreshRoomPages();
     return { success: true };
   } catch (error) {
     return fail("archiveRoomType", error);
@@ -299,8 +320,7 @@ export async function createRoom(input: unknown): Promise<Result<{ id: string }>
       },
       select: { id: true },
     });
-    revalidatePath("/admin/rooms");
-    revalidatePath("/book");
+    refreshRoomPages();
     return { success: true, data: created };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -318,6 +338,21 @@ export async function updateRoom(id: string, input: unknown): Promise<Result> {
   if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
 
   try {
+    // Taking a room off sale (renovation, repairs) only stops new bookings.
+    // Guests already holding it would still be expected, so refuse until
+    // they have been moved or cancelled, the same rule archiving applies.
+    if (parsed.data.status !== "AVAILABLE") {
+      const held = await prisma.roomAssignment.count({
+        where: { roomId: id, releasedAt: null, endDate: { gt: new Date() } },
+      });
+      if (held > 0) {
+        return {
+          success: false,
+          error: `This room has ${held} current or future booking${held === 1 ? "" : "s"}. Move or cancel ${held === 1 ? "it" : "them"} before taking the room off sale.`,
+        };
+      }
+    }
+
     await prisma.room.update({
       where: { id },
       data: {
@@ -327,8 +362,7 @@ export async function updateRoom(id: string, input: unknown): Promise<Result> {
         status: parsed.data.status,
       },
     });
-    revalidatePath("/admin/rooms");
-    revalidatePath("/book");
+    refreshRoomPages();
     return { success: true };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -360,8 +394,7 @@ export async function archiveRoom(id: string): Promise<Result> {
     }
 
     await prisma.room.update({ where: { id }, data: { deletedAt: new Date() } });
-    revalidatePath("/admin/rooms");
-    revalidatePath("/book");
+    refreshRoomPages();
     return { success: true };
   } catch (error) {
     return fail("archiveRoom", error);

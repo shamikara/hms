@@ -26,6 +26,7 @@ import {
   updateRoom,
   updateRoomType,
 } from "@/features/rooms/actions/inventory.actions";
+import { ROOM_PHOTOS } from "@/features/rooms/lib/photos";
 
 type Action = () => Promise<{ success: boolean; error?: string }>;
 
@@ -457,6 +458,8 @@ function RoomTypeForm({
     description: initial?.description ?? "",
     capacity: String(initial?.capacity ?? 2),
     basePrice: initial?.basePrice === null || initial?.basePrice === undefined ? "" : String(initial.basePrice),
+    imageUrl: initial?.imageUrl ?? "",
+    features: (initial?.features ?? []).join("\n"),
   });
 
   return (
@@ -498,13 +501,53 @@ function RoomTypeForm({
         />
       </div>
       <div className="sm:col-span-2 lg:col-span-1">
-        <label className={label}>Description</label>
-        <input
+        <label htmlFor="type-photo" className={label}>Website photo</label>
+        <select
+          id="type-photo"
           className={input}
+          value={values.imageUrl}
+          onChange={(e) => setValues({ ...values, imageUrl: e.target.value })}
+        >
+          <option value="">Generic room photo</option>
+          {ROOM_PHOTOS.map((photo) => (
+            <option key={photo.src} value={photo.src}>{photo.label}</option>
+          ))}
+        </select>
+      </div>
+      <div className="sm:col-span-2">
+        <label htmlFor="type-description" className={label}>Description (shown on the website)</label>
+        <textarea
+          id="type-description"
+          className={`${input} min-h-[96px]`}
+          maxLength={500}
           value={values.description}
           onChange={(e) => setValues({ ...values, description: e.target.value })}
-          placeholder="Shown on the website"
+          placeholder="A comfortable air-conditioned double with one queen bed…"
         />
+      </div>
+      <div className="sm:col-span-1">
+        <label htmlFor="type-features" className={label}>Highlights, one per line</label>
+        <textarea
+          id="type-features"
+          className={`${input} min-h-[96px]`}
+          value={values.features}
+          onChange={(e) => setValues({ ...values, features: e.target.value })}
+          placeholder={"One Queen Bed\nAir Conditioning\nFree Wi-Fi"}
+        />
+      </div>
+      <div className="sm:col-span-1">
+        {values.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- small admin preview; next/image adds nothing here
+          <img
+            src={values.imageUrl}
+            alt="Selected website photo"
+            className="w-full h-[96px] object-cover rounded-xl border border-stone-200 dark:border-stone-800"
+          />
+        ) : (
+          <div className="w-full h-[96px] rounded-xl border border-dashed border-stone-300 dark:border-stone-700 flex items-center justify-center text-xs text-stone-500">
+            No photo chosen
+          </div>
+        )}
       </div>
       <div className="flex gap-2 sm:col-span-2 lg:col-span-4 justify-end">
         <button

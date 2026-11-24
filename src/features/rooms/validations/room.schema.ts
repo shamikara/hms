@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { HousekeepingStatus, RoomStatus } from "@prisma/client";
+import { isRoomPhoto } from "../lib/photos";
 
 /**
  * Nightly rate.
@@ -31,6 +32,32 @@ export const RoomTypeSchema = z.object({
   description: z.string().trim().max(500).optional().or(z.literal("").transform(() => undefined)),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1").max(20),
   basePrice,
+  /** One of ROOM_PHOTOS, or blank for the generic image. */
+  imageUrl: z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+      if (!value) return null;
+      if (!isRoomPhoto(value)) {
+        ctx.addIssue({ code: "custom", message: "Choose a photo from the list" });
+        return z.NEVER;
+      }
+      return value;
+    }),
+  /** Accepts a list, or text with one highlight per line. */
+  features: z
+    .union([z.array(z.string()), z.string()])
+    .optional()
+    .transform((value) =>
+      (Array.isArray(value) ? value : (value ?? "").split(/\r?\n/))
+        .map((f) => f.trim())
+        .filter(Boolean),
+    )
+    .pipe(
+      z
+        .array(z.string().max(60, "Keep each highlight under 60 characters"))
+        .max(12, "Up to twelve highlights"),
+    ),
 });
 
 export const RoomSchema = z.object({

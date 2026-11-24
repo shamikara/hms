@@ -107,6 +107,12 @@ model RoomType {
   /// rather than silently becoming a number the guest is then quoted.
   basePrice   Decimal? @db.Decimal(19, 4)
 
+  /// Photo shown on the public rooms pages: a path under /public, chosen from
+  /// a fixed list in the admin panel. Nullable: falls back to a generic image.
+  imageUrl String?
+  /// Short highlights listed on the public rooms page ("Two Queen Beds").
+  features String[] @default([])
+
   rooms Room[] @relation("RoomTypeClassification")
 
   createdAt DateTime  @default(now())
