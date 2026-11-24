@@ -13,6 +13,7 @@ import {
   TreePine,
   Tent,
   Truck,
+  Mail,
 } from "lucide-react";
 
 export interface Property {
@@ -96,6 +97,12 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         href: "/admin/rooms",
         icon: BedDouble,
         shortcut: "G R",
+      },
+      {
+        title: "Enquiries",
+        href: "/admin/enquiries",
+        icon: Mail,
+        shortcut: "G Q",
       },
       {
         title: "Guest CRM",

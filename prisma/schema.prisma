@@ -45,6 +45,7 @@ model Property {
   reservations Reservation[]        @relation("PropertyReservations")
   trips        SafariTrip[]         @relation("PropertyTrips")
   fleetAlerts  FleetAlert[]         @relation("PropertyFleetAlerts")
+  enquiries    Enquiry[]            @relation("PropertyEnquiries")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1107,4 +1108,41 @@ model RateLimitHit {
 
   @@id([key, windowStart])
   @@index([windowStart])
+}
+
+
+// ============================================================================
+// ENQUIRIES (contact form)
+// ============================================================================
+
+enum EnquiryStatus {
+  NEW
+  REPLIED
+  CLOSED
+}
+
+/// A message sent from the website's contact form.
+///
+/// Kept separate from GuestProfile on purpose: most people who ask a question
+/// never book, and an enquiry must not create a guest record as a side effect.
+model Enquiry {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation("PropertyEnquiries", fields: [propertyId], references: [id], onDelete: Restrict)
+
+  name        String
+  email       String
+  /// Nullable: phone or WhatsApp is optional on the form.
+  phone       String?
+  subject     String
+  /// Free text as the guest typed it ("15 - 22 October"); not parsed.
+  travelDates String?
+  message     String
+
+  status EnquiryStatus @default(NEW)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId, status, createdAt])
 }

@@ -22,6 +22,8 @@ export const LOGIN_RULE: RateLimitRule = { limit: 10, windowMs: 15 * 60 * 1000 }
 
 /** Booking submissions per address per hour. */
 export const BOOKING_RULE: RateLimitRule = { limit: 12, windowMs: 60 * 60 * 1000 };
+/** Contact-form messages per address per hour: plenty for a person, not for a bot. */
+export const ENQUIRY_RULE: RateLimitRule = { limit: 5, windowMs: 60 * 60 * 1000 };
 
 /**
  * The caller's address, as far as the platform will tell us.

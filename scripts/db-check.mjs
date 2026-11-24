@@ -2,7 +2,7 @@
 // and optionally applies the hand-run migrations that are missing.
 //
 //   node scripts/db-check.mjs            read-only report
-//   node scripts/db-check.mjs --apply    also run missing migrations 03-08
+//   node scripts/db-check.mjs --apply    also run missing migrations 03-09
 //
 // Uses the `pg` package and `.env` already in the repo; no psql or Supabase
 // dashboard needed. Never prints the password.
@@ -37,6 +37,7 @@ const MIGRATIONS = [
   { file: "06_housekeeping_and_tax.sql", checks: [["column", "Room", "housekeeping"]] },
   { file: "07_assignment_rate_snapshot.sql", checks: [["column", "RoomAssignment", "ratePerNight"]] },
   { file: "08_room_type_public_content.sql", checks: [["column", "RoomType", "imageUrl"], ["column", "RoomType", "features"]] },
+  { file: "09_enquiries.sql", checks: [["table", "Enquiry"]] },
 ];
 
 // Same connection settings as src/core/db/prisma.ts, so if the site connects

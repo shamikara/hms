@@ -1,50 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
-import { Mail, Phone, MapPin, Clock, Car } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, Car, CheckCircle2, Send, AlertTriangle } from "lucide-react";
 import { SITE } from "@/lib/seo/site";
 import type { ContactValues } from "@/features/site/validations/site.schema";
+import { ENQUIRY_SUBJECTS } from "@/features/enquiries/validations/enquiry.schema";
+import { submitEnquiry } from "@/features/enquiries/actions/enquiry.actions";
 
-const SUBJECTS = [
-  "Room enquiry",
-  "Safari drive",
-  "Food or dietary requirements",
-  "Something else",
-];
+const EMPTY = {
+  name: "",
+  email: "",
+  phone: "",
+  subject: ENQUIRY_SUBJECTS[0] as string,
+  travelDates: "",
+  message: "",
+  /** Honeypot: hidden from people; bots fill it in. */
+  website: "",
+};
 
-/** The contact page body. Interactive because the form builds a mailto link. */
+/** The contact page body: the message form and the house's details. */
 export function ContactView({ contact }: { contact: ContactValues }) {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    subject: SUBJECTS[0],
-    travelDates: "",
-    message: "",
-  });
+  const [formData, setFormData] = useState(EMPTY);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
-  /**
-   * Hands the message to the guest's own email client.
-   *
-   * There is no mail service wired up yet, so a form that posted somewhere
-   * would be a form that silently dropped what people wrote. A mailto at least
-   * ends with the message in a place a person reads — and the guest can see
-   * for themselves that it was sent.
-   */
-  const mailtoHref = () => {
-    const lines: string[] = [];
-    if (formData.travelDates.trim()) lines.push(`Dates: ${formData.travelDates}`);
-    if (formData.phone.trim()) lines.push(`Phone: ${formData.phone}`);
-    if (lines.length > 0) lines.push("");
-    lines.push(formData.message);
+  const canSend =
+    formData.name.trim() !== "" && formData.email.trim() !== "" && formData.message.trim() !== "";
 
-    return `mailto:${contact.email}?subject=${encodeURIComponent(
-      `${formData.subject}${formData.fullName ? ` — ${formData.fullName}` : ""}`,
-    )}&body=${encodeURIComponent(lines.join("\n"))}`;
+  const send = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await submitEnquiry(formData);
+      if (result.success) {
+        setSentTo(formData.email.trim());
+        setFormData(EMPTY);
+      } else {
+        setError(result.error ?? "Your message could not be sent. Please try again.");
+      }
+    });
   };
-
-  const canSend = formData.fullName.trim() !== "" && formData.message.trim() !== "";
 
   const inputClass =
     "w-full px-4 py-3 rounded-xl bg-stone-950 border border-stone-800 focus:border-emerald-500 focus:outline-none text-sm text-stone-100 placeholder:text-stone-600 transition-colors";
@@ -74,48 +70,111 @@ export function ContactView({ contact }: { contact: ContactValues }) {
 
         <section className="py-20 px-6 sm:px-8 lg:px-16 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Message composer */}
-          <div className="lg:col-span-7 bg-stone-900/60 p-8 sm:p-10 rounded-2xl border border-stone-800 shadow-2xl">
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+          <div className="relative lg:col-span-7 bg-stone-900/60 p-8 sm:p-10 rounded-2xl border border-stone-800 shadow-2xl">
+            {sentTo ? (
+              <div className="py-10 text-center space-y-4" role="status">
+                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+                <h2 className="text-2xl font-serif text-white">Thank you, your message is on its way</h2>
+                <p className="text-sm text-stone-400 max-w-md mx-auto">
+                  We usually reply within a day. A copy is on its way to <span className="text-stone-200">{sentTo}</span>{" "}
+                  (check the spam folder if you don&apos;t see it). For anything urgent, call or WhatsApp{" "}
+                  <a href={`tel:${contact.phone}`} className="text-emerald-400 hover:underline">{contact.phoneDisplay}</a>.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSentTo(null)}
+                  className="mt-2 px-5 py-2.5 rounded-xl border border-stone-700 text-xs font-medium text-stone-300 hover:border-emerald-600 hover:text-emerald-400 transition-colors"
+                >
+                  Write another message
+                </button>
+              </div>
+            ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (canSend && !isPending) send();
+              }}
+              className="space-y-6"
+              noValidate
+            >
               <div>
                 <h2 className="text-2xl font-serif text-white">Write Us a Message</h2>
                 <p className="text-xs text-stone-400 mt-1">
-                  Filling this in opens the message in your own email app, addressed to us. Nothing is
-                  sent until you press send there.
+                  It goes straight to the team at the house, and we&apos;ll reply by email.
                 </p>
+              </div>
+
+              {error && (
+                <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-sm text-red-300">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Honeypot: off-screen and skipped by keyboard and screen readers. */}
+              <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                <label>
+                  Website
+                  <input
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  />
+                </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-mono uppercase text-stone-400 mb-2">Your Name *</label>
+                  <label htmlFor="contact-name" className="block text-xs font-mono uppercase text-stone-400 mb-2">Your Name *</label>
                   <input
+                    id="contact-name"
                     type="text"
                     required
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    autoComplete="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-mono uppercase text-stone-400 mb-2">Phone / WhatsApp</label>
+                  <label htmlFor="contact-email" className="block text-xs font-mono uppercase text-stone-400 mb-2">Email *</label>
                   <input
+                    id="contact-email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="So we can reply"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="contact-phone" className="block text-xs font-mono uppercase text-stone-400 mb-2">Phone / WhatsApp</label>
+                  <input
+                    id="contact-phone"
                     type="tel"
+                    autoComplete="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+94 77 123 4567"
                     className={inputClass}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-mono uppercase text-stone-400 mb-2">What About?</label>
+                  <label htmlFor="contact-subject" className="block text-xs font-mono uppercase text-stone-400 mb-2">What About?</label>
                   <select
+                    id="contact-subject"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className={`${inputClass} cursor-pointer`}
                   >
-                    {SUBJECTS.map((subject) => (
+                    {ENQUIRY_SUBJECTS.map((subject) => (
                       <option key={subject} value={subject}>
                         {subject}
                       </option>
@@ -123,8 +182,9 @@ export function ContactView({ contact }: { contact: ContactValues }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-mono uppercase text-stone-400 mb-2">Your Dates</label>
+                  <label htmlFor="contact-dates" className="block text-xs font-mono uppercase text-stone-400 mb-2">Your Dates</label>
                   <input
+                    id="contact-dates"
                     type="text"
                     value={formData.travelDates}
                     onChange={(e) => setFormData({ ...formData, travelDates: e.target.value })}
@@ -135,8 +195,9 @@ export function ContactView({ contact }: { contact: ContactValues }) {
               </div>
 
               <div>
-                <label className="block text-xs font-mono uppercase text-stone-400 mb-2">Message *</label>
+                <label htmlFor="contact-message" className="block text-xs font-mono uppercase text-stone-400 mb-2">Message *</label>
                 <textarea
+                  id="contact-message"
                   rows={5}
                   required
                   value={formData.message}
@@ -146,27 +207,24 @@ export function ContactView({ contact }: { contact: ContactValues }) {
                 />
               </div>
 
-              <a
-                href={canSend ? mailtoHref() : undefined}
-                aria-disabled={!canSend}
-                className={`w-full py-4 rounded-xl text-white font-medium text-xs uppercase tracking-widest transition-colors shadow-lg flex items-center justify-center gap-2 ${
-                  canSend
-                    ? "bg-emerald-700 hover:bg-emerald-600"
-                    : "bg-emerald-900/50 opacity-50 cursor-not-allowed pointer-events-none"
-                }`}
+              <button
+                type="submit"
+                disabled={!canSend || isPending}
+                className="w-full py-4 rounded-xl text-white font-medium text-xs uppercase tracking-widest transition-colors shadow-lg flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:bg-emerald-900/50 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Mail className="w-4 h-4" />
-                <span>Open in Your Email App</span>
-              </a>
+                <Send className="w-4 h-4" />
+                <span>{isPending ? "Sending..." : "Send Message"}</span>
+              </button>
 
               <p className="text-[11px] text-stone-500 text-center">
-                No email app on this device? Write to{" "}
+                Prefer email? Write to{" "}
                 <a href={`mailto:${contact.email}`} className="text-emerald-400 hover:underline">
                   {contact.email}
                 </a>{" "}
                 or call {contact.phoneDisplay}.
               </p>
             </form>
+            )}
           </div>
 
           {/* Direct details */}

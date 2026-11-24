@@ -39,7 +39,13 @@ export type AdminPermission =
   /** Edit the public contact details, guest ratings and the tax rate. */
   | "settings:manage"
   /** Add staff sign-ins, set their roles, reset passwords, deactivate. */
-  | "staff:manage";
+  | "staff:manage"
+  /** Read contact-form messages. */
+  | "enquiries:view"
+  /** Mark messages replied or closed. */
+  | "enquiries:manage"
+  /** Remove spam and test messages for good. */
+  | "enquiries:delete";
 
 const ALL: AdminPermission[] = [
   "admin:access",
@@ -54,6 +60,9 @@ const ALL: AdminPermission[] = [
   "housekeeping:manage",
   "settings:manage",
   "staff:manage",
+  "enquiries:view",
+  "enquiries:manage",
+  "enquiries:delete",
 ];
 
 /**
@@ -87,6 +96,8 @@ const ROLE_PERMISSIONS: Record<string, AdminPermission[]> = {
     "billing:manage",
     "rooms:view",
     "housekeeping:manage",
+    "enquiries:view",
+    "enquiries:manage",
   ],
   SAFARI_COORDINATOR: ["admin:access", "reservations:view", "guests:view"],
   HOUSEKEEPER: ["admin:access", "rooms:view", "housekeeping:manage"],
