@@ -14,11 +14,13 @@ import {
   Clock,
   Ban,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { DeskReservation, DeskStatus } from "@/features/admin/actions/reservations.actions";
 import {
   cancelReservation,
+  deleteReservation,
   checkInReservation,
   checkOutReservation,
   confirmReservation,
@@ -45,8 +47,11 @@ export function BookingsBoard({
   reservations,
   propertyId,
   loadError,
+  canDelete = false,
 }: {
   reservations: DeskReservation[];
+  /** Managers only: permanently remove test or mistaken bookings. */
+  canDelete?: boolean;
   /** Null when the install has no property yet; the walk-in form needs one. */
   propertyId: string | null;
   loadError?: string;
@@ -59,6 +64,8 @@ export function BookingsBoard({
   const [toast, setToast] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
+  /** The row whose delete is waiting for a second click, if any. */
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -289,6 +296,40 @@ export function BookingsBoard({
                         {res.status === "CHECKED_OUT" && (
                           <span className="text-xs font-mono text-stone-400 italic">Departed</span>
                         )}
+
+                        {canDelete &&
+                          (res.status === "PENDING" || res.status === "CANCELLED" || res.status === "NO_SHOW") &&
+                          (confirmDeleteId === res.id ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 pl-2.5 pr-1 py-1 ring-1 ring-red-500/30">
+                              <span className="text-xs font-medium text-red-600 dark:text-red-400">Delete for good?</span>
+                              <button
+                                onClick={() => {
+                                  setConfirmDeleteId(null);
+                                  run(() => deleteReservation(res.id), `Deleted ${res.reference} (${res.guestName}).`);
+                                }}
+                                disabled={isPending}
+                                className="px-2.5 py-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-md text-xs font-semibold"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="px-2 py-1 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 rounded-md text-xs font-medium"
+                              >
+                                Keep
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteId(res.id)}
+                              disabled={isPending}
+                              aria-label={`Delete booking ${res.reference} for ${res.guestName}`}
+                              title="Delete permanently (test or mistaken bookings)"
+                              className="p-1.5 border border-stone-200 dark:border-stone-800 hover:border-red-500/50 hover:text-red-500 disabled:opacity-50 text-stone-400 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ))}
                       </div>
                     </td>
                   </tr>

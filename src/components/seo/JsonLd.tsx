@@ -28,6 +28,7 @@ export async function OrganizationJsonLd() {
     telephone: contact.phone,
     email: contact.email,
     image: `${SITE_URL}${SITE.ogImage}`,
+    logo: `${SITE_URL}/brand/logo-512.png`,
     priceRange: "$$",
     currenciesAccepted: "LKR",
     address: {

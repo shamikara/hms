@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { getSiteContent } from "@/features/site/services/site.service";
@@ -11,8 +12,9 @@ export async function PublicFooter() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
         {/* Brand Column */}
         <div className="space-y-4">
-          <Link href="/" className="text-xl font-serif tracking-widest uppercase text-white block">
-            Wildlily Safari Resort
+          <Link href="/" className="flex items-center gap-3 text-white">
+            <Image src="/brand/logo-128.png" alt="Lily Resort Udawalawe logo" width={128} height={128} className="h-14 w-14 rounded-full" />
+            <span className="text-lg font-serif tracking-widest uppercase leading-tight">Wildlily Safari Resort</span>
           </Link>
           <p className="text-xs leading-relaxed text-stone-400">
             A small guesthouse beside Udawalawe National Park with air-conditioned rooms, an outdoor

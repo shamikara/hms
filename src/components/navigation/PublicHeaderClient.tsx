@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X, ChevronRight, Phone, Mail, User, Shield } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
@@ -53,10 +54,15 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
       >
         {/* Brand Logo & Name */}
         <ScrollReveal direction="down" delay={0.1} width="w-auto">
-          <Link href="/" className="site-header__brand flex items-center space-x-2 group">
-            <div className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-serif font-bold text-sm shrink-0">
-              W
-            </div>
+          <Link href="/" className="site-header__brand flex items-center gap-3 group">
+            <Image
+              src="/brand/logo-128.png"
+              alt="Lily Resort Udawalawe logo"
+              width={128}
+              height={128}
+              priority
+              className="h-10 w-10 lg:h-12 lg:w-12 shrink-0 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.35)]"
+            />
             <span className="font-serif tracking-widest uppercase text-white drop-shadow-md text-base sm:text-xl lg:text-2xl font-medium">
               <span className="inline sm:hidden">Wildlily</span>
               <span className="hidden sm:inline">Wildlily Safari Resort</span>
@@ -121,9 +127,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center space-x-2"
             >
-              <div className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-serif font-bold text-sm">
-                W
-              </div>
+              <Image src="/brand/logo-128.png" alt="" width={128} height={128} className="h-9 w-9 rounded-full" />
               <span className="font-serif tracking-widest uppercase text-white text-base font-semibold">
                 Wildlily Safari Resort
               </span>

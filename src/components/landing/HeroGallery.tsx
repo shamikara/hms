@@ -1,8 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, ReactNode } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
+import { gsap, useGSAP } from "@/lib/motion/gsap";
 import { DISTANCE, DURATION, EASE } from "@/lib/motion/motionTokens";
 
 export interface HeroSlide {
@@ -82,7 +81,7 @@ export function HeroGallery({ slides, children }: { slides: HeroSlide[]; childre
             alt={slide.alt}
             aria-hidden={i !== active}
             className="absolute w-full h-full object-cover transition-opacity duration-[1600ms] ease-in-out motion-reduce:transition-none"
-            style={{ opacity: i === active ? 0.8 : 0 }}
+            style={{ opacity: i === active ? 1 : 0 }}
           />
         ))}
       </div>
@@ -91,9 +90,9 @@ export function HeroGallery({ slides, children }: { slides: HeroSlide[]; childre
       <div ref={overlayRef} className="absolute inset-0 bg-stone-950 z-10" />
 
       {/* Permanent gradient overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-stone-950 z-10" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/60 z-10" />
 
-      <div ref={contentRef} className="relative z-20 text-center px-4 max-w-4xl mx-auto mt-20">
+      <div ref={contentRef} className="relative z-20 text-center px-4 max-w-5xl w-full mx-auto mt-16">
         {children}
       </div>
 

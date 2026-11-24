@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileDown } from "lucide-react";
 import { getDeskReservation } from "@/features/admin/actions/reservations.actions";
 import { loadFolio } from "@/features/billing/actions/folio.actions";
 import { getAdminActor } from "@/features/admin/lib/requireAdminSession";
@@ -35,7 +35,15 @@ export default async function ReservationDetailPage({
         </div>
       ) : (
         <>
-          <header className="space-y-1.5">
+          <header className="space-y-1.5 relative">
+            {actor?.permissions.includes("finance:view") && (
+              <a
+                href={`/admin/bookings/${id}/bill`}
+                className="sm:absolute sm:right-0 sm:top-0 mb-3 sm:mb-0 inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-mono uppercase tracking-wider rounded-xl transition-colors"
+              >
+                <FileDown className="w-3.5 h-3.5" /> Download bill (PDF)
+              </a>
+            )}
             <p className="font-mono text-xs text-stone-500">{reservation.reference}</p>
             <h1 className="text-3xl font-serif text-stone-900 dark:text-white tracking-tight">
               {reservation.guestName}

@@ -1,76 +1,69 @@
-"use client";
-
+import { Car, Mail, MapPin, Phone } from "lucide-react";
 import { ScrollReveal } from "../ui/ScrollReveal";
+import { SITE } from "@/lib/seo/site";
 import type { ContactValues } from "@/features/site/validations/site.schema";
+import { SectionHeading } from "./home/SectionHeading";
 
 export function LocationSection({ contact }: { contact: ContactValues }) {
+  const rows = [
+    { icon: MapPin, text: `${contact.street}, ${contact.locality} ${contact.postalCode}, Sri Lanka` },
+    { icon: Phone, text: contact.phoneDisplay, href: `tel:${contact.phone}` },
+    { icon: Mail, text: contact.email, href: `mailto:${contact.email}` },
+  ];
+
   return (
-    <div className="w-full bg-stone-900 py-24 px-8 lg:px-16 text-stone-100">
-      <div className="max-w-7xl mx-auto">
-        <ScrollReveal>
-          <div className="text-center mb-16">
-            <span className="text-emerald-400 font-medium tracking-widest uppercase text-sm mb-4 block">Location</span>
-            <h3 className="text-4xl md:text-5xl font-serif text-white">Find Us in Udawalawe</h3>
-            <p className="mt-6 text-stone-400 max-w-2xl mx-auto text-lg leading-relaxed">
-              We are a short drive from the Udawalawe National Park entrance, so a morning drive means
-              an early start rather than a long one.
+    <section className="bg-white py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-10 lg:gap-14 items-stretch">
+        <ScrollReveal className="lg:col-span-5">
+          <SectionHeading eyebrow="Location" title="Find us in Udawalawe">
+            <p>
+              A short drive from the national park entrance, so a morning drive means an early start
+              rather than a long one.
+            </p>
+          </SectionHeading>
+
+          <ul className="mt-8 space-y-4">
+            {rows.map((row) => (
+              <li key={row.text} className="flex items-start gap-3">
+                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                  <row.icon className="h-4 w-4" aria-hidden />
+                </span>
+                {row.href ? (
+                  <a href={row.href} className="pt-1.5 text-stone-800 hover:text-emerald-700 transition-colors">
+                    {row.text}
+                  </a>
+                ) : (
+                  <span className="pt-1.5 text-stone-800">{row.text}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-8 rounded-2xl bg-[#f6f1e8] p-6">
+            <p className="flex items-center gap-2 font-semibold text-stone-900">
+              <Car className="h-4 w-4 text-emerald-700" aria-hidden /> Getting here
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-stone-600">
+              Roughly four to five hours by road from Bandaranaike International Airport (CMB),
+              depending on traffic. Ask us and we will tell you the best route, or help you find a
+              driver.
             </p>
           </div>
         </ScrollReveal>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
-          <ScrollReveal direction="right" delay={0.2} className="lg:col-span-1 space-y-8">
-            <div className="bg-stone-800/50 p-8 rounded-2xl border border-stone-700/50 backdrop-blur-sm">
-              <h4 className="text-xl font-serif text-white mb-4">Contact Details</h4>
-              <ul className="space-y-4 text-stone-300">
-                <li className="flex items-start gap-4">
-                  <span className="text-emerald-400 text-xl mt-1">📍</span>
-                  <span>
-                    {contact.street}, {contact.locality} {contact.postalCode}, Sri Lanka
-                  </span>
-                </li>
-                <li className="flex items-center gap-4">
-                  <span className="text-emerald-400 text-xl">📞</span>
-                  <span>{contact.phoneDisplay}</span>
-                </li>
-                <li className="flex items-center gap-4">
-                  <span className="text-emerald-400 text-xl">✉️</span>
-                  <span>{contact.email}</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-stone-800/50 p-8 rounded-2xl border border-stone-700/50 backdrop-blur-sm">
-              <h4 className="text-xl font-serif text-white mb-4">How to Get Here</h4>
-              <p className="text-stone-300 text-sm leading-relaxed mb-4">
-                Udawalawa is roughly a four to five hour drive from Bandaranaike International Airport
-                (CMB), depending on traffic. Call or email us and we will tell you the best way to
-                reach us from wherever you are starting.
-              </p>
-              <a
-                href={`tel:${contact.phone}`}
-                className="text-emerald-400 hover:text-emerald-300 font-medium text-sm tracking-wide uppercase transition-colors group flex items-center gap-2"
-              >
-                Call Us <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </a>
-            </div>
-          </ScrollReveal>
-          
-          <ScrollReveal direction="left" delay={0.4} className="lg:col-span-2 h-[500px] lg:h-[600px] w-full">
-            <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-stone-800 relative">
-              <iframe 
-                src="https://maps.google.com/maps?q=6.420229,80.83551&z=15&output=embed" 
-                className="absolute inset-0 w-full h-full"
-                style={{ border: 0, filter: "grayscale(80%) contrast(120%) opacity(90%)" }}
-                allowFullScreen={true} 
-                loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
-              <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/10 rounded-2xl"></div>
-            </div>
-          </ScrollReveal>
-        </div>
+
+        <ScrollReveal delay={0.1} className="lg:col-span-7 min-h-[380px] lg:min-h-[520px]">
+          <div className="relative h-full min-h-[380px] lg:min-h-[520px] overflow-hidden rounded-3xl ring-1 ring-stone-900/10">
+            <iframe
+              title="Map showing the location of Wildlily Safari Resort"
+              src={`https://maps.google.com/maps?q=${SITE.geo.latitude},${SITE.geo.longitude}&z=14&output=embed`}
+              className="absolute inset-0 h-full w-full border-0"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        </ScrollReveal>
       </div>
-    </div>
+    </section>
   );
 }

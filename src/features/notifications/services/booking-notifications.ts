@@ -1,5 +1,6 @@
 import { SITE, SITE_URL } from "@/lib/seo/site";
 import { getSiteContent } from "@/features/site/services/site.service";
+import type { ContactValues } from "@/features/site/validations/site.schema";
 import { escapeHtml, sendEmail } from "./email.service";
 
 export interface BookingRequestDetails {
@@ -12,17 +13,19 @@ export interface BookingRequestDetails {
   guest: { firstName: string; lastName: string; email: string; phone: string | null };
 }
 
+/* ------------------------------------------------------------- helpers */
+
 /**
  * Stay dates are stored as UTC midnight of the calendar day the guest picked,
  * so they are formatted in UTC: formatting in a local zone west of UTC would
  * show every date a day early.
  */
-function formatDate(date: Date): string {
+function formatDate(date: Date, style: "long" | "short" = "long"): string {
   return new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
     day: "numeric",
-    month: "short",
-    year: "numeric",
+    month: style === "long" ? "long" : "short",
+    year: style === "long" ? "numeric" : undefined,
     timeZone: "UTC",
   }).format(date);
 }
@@ -36,20 +39,271 @@ function oneLine(value: string): string {
   return value.replace(/[\r\n]+/g, " ").trim();
 }
 
-function rows(pairs: [string, string][]): { html: string; text: string } {
+/** Digits only, for wa.me links, which take no "+" or spaces. */
+function digits(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+const e = escapeHtml;
+
+/* --------------------------------------------------------------- design */
+
+const C = {
+  forest: "#13291f",
+  emerald: "#047857",
+  emeraldLight: "#d1fae5",
+  sand: "#f6f1e8",
+  ink: "#1c1917",
+  muted: "#78716c",
+  line: "#e7e5e4",
+  amber: "#b45309",
+  amberLight: "#fef3c7",
+};
+
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+const SERIF = "Georgia,'Times New Roman',serif";
+
+/**
+ * Email-safe page shell: tables and inline styles, because Outlook and Gmail
+ * ignore most modern CSS. `preheader` is the grey preview line inbox lists
+ * show next to the subject.
+ */
+function shell(preheader: string, body: string): string {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${e(SITE.name)}</title></head>
+<body style="margin:0;padding:0;background:${C.sand};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${e(preheader)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.sand};">
+<tr><td align="center" style="padding:28px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(28,25,23,0.08);">
+${body}
+</table>
+<p style="margin:18px 0 0;font-family:${FONT};font-size:12px;color:${C.muted};">${e(SITE.name)} · Udawalawe, Sri Lanka</p>
+</td></tr></table>
+</body></html>`;
+}
+
+function button(href: string, label: string, kind: "primary" | "ghost" = "primary"): string {
+  const style =
+    kind === "primary"
+      ? `background:${C.emerald};color:#ffffff;border:1px solid ${C.emerald};`
+      : `background:#ffffff;color:${C.ink};border:1px solid ${C.line};`;
+  return `<a href="${e(href)}" style="${style}display:inline-block;padding:12px 20px;border-radius:999px;font-family:${FONT};font-size:14px;font-weight:600;text-decoration:none;margin:0 6px 8px 0;">${label}</a>`;
+}
+
+/** Check-in → check-out as two boxes with the nights between, like a ticket. */
+function stayTicket(d: BookingRequestDetails): string {
+  const n = nights(d.checkInDate, d.checkOutDate);
+  const box = (label: string, date: Date) => `
+    <td width="42%" style="background:${C.sand};border-radius:14px;padding:14px 16px;">
+      <div style="font-family:${FONT};font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${C.muted};">${label}</div>
+      <div style="font-family:${SERIF};font-size:20px;color:${C.ink};margin-top:4px;">${e(formatDate(date, "short"))}</div>
+      <div style="font-family:${FONT};font-size:12px;color:${C.muted};">${date.getUTCFullYear()}</div>
+    </td>`;
+  return `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+    ${box("Check in", d.checkInDate)}
+    <td width="16%" align="center" style="font-family:${FONT};font-size:12px;color:${C.emerald};font-weight:700;">
+      &rarr;<br>${n} night${n === 1 ? "" : "s"}
+    </td>
+    ${box("Check out", d.checkOutDate)}
+  </tr></table>`;
+}
+
+function detailRows(pairs: [string, string][]): string {
+  return pairs
+    .map(
+      ([k, v]) => `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:${FONT};font-size:13px;color:${C.muted};width:38%;">${e(k)}</td>
+        <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:${FONT};font-size:14px;color:${C.ink};font-weight:600;">${e(v)}</td>
+      </tr>`,
+    )
+    .join("");
+}
+
+/* ---------------------------------------------------------- guest email */
+
+function guestEmail(d: BookingRequestDetails, contact: ContactValues) {
+  const first = oneLine(d.guest.firstName);
+  const rooms = d.roomTypeNames.join(", ");
+  const n = nights(d.checkInDate, d.checkOutDate);
+  const wa = `https://wa.me/${digits(contact.phone)}?text=${encodeURIComponent(`Hello! About my booking request ${d.reference}`)}`;
+
+  const step = (num: number, title: string, text: string) => `
+    <tr>
+      <td width="40" valign="top" style="padding:0 0 16px;">
+        <div style="width:28px;height:28px;border-radius:999px;background:${C.emeraldLight};color:${C.emerald};font-family:${FONT};font-size:13px;font-weight:700;text-align:center;line-height:28px;">${num}</div>
+      </td>
+      <td valign="top" style="padding:3px 0 16px;font-family:${FONT};">
+        <div style="font-size:14px;font-weight:600;color:${C.ink};">${title}</div>
+        <div style="font-size:13px;color:${C.muted};line-height:1.5;margin-top:2px;">${text}</div>
+      </td>
+    </tr>`;
+
+  const html = shell(
+    `Your request ${d.reference} for ${formatDate(d.checkInDate, "short")} is in. We'll confirm with you shortly.`,
+    `
+<tr><td style="padding:0;">
+  <img src="${SITE_URL}/email/banner.jpg" width="600" alt="${e(SITE.name)}, the verandah at dusk" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
+</td></tr>
+<tr><td style="padding:0 32px;">
+  <img src="${SITE_URL}/email/logo.png" width="72" height="72" alt="Lily Resort Udawalawe" style="display:block;width:72px;height:72px;margin-top:-36px;border-radius:999px;border:4px solid #ffffff;background:#ffffff;">
+</td></tr>
+<tr><td style="padding:14px 32px 8px;font-family:${FONT};">
+  <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${C.emerald};font-weight:700;">${e(SITE.name)}</div>
+  <h1 style="margin:10px 0 0;font-family:${SERIF};font-weight:normal;font-size:30px;line-height:1.2;color:${C.ink};">Ayubowan, ${e(first)}! &#x1F418;</h1>
+  <p style="margin:14px 0 0;font-size:15px;line-height:1.6;color:#44403c;">
+    Thank you for choosing us. Your request is in and we are holding the room while we check
+    the details. The elephants have been told. &#x1F33F;
+  </p>
+  <div style="margin-top:16px;display:inline-block;background:${C.amberLight};color:${C.amber};border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;">
+    &#x23F3; Request received &middot; not confirmed yet
+  </div>
+</td></tr>
+
+<tr><td style="padding:22px 32px 4px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px dashed #d6d3d1;border-radius:18px;">
+    <tr><td style="padding:20px 20px 6px;font-family:${FONT};">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${C.muted};">Your reference</div>
+      <div style="font-family:'Courier New',monospace;font-size:26px;font-weight:700;letter-spacing:3px;color:${C.forest};margin-top:2px;">${e(d.reference)}</div>
+    </td></tr>
+    <tr><td style="padding:12px 20px;">${stayTicket(d)}</td></tr>
+    <tr><td style="padding:4px 20px 14px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${detailRows([
+          ["Room" + (d.roomTypeNames.length > 1 ? "s" : ""), rooms],
+          ...(d.guests ? ([["Guests", `${d.guests} adult${d.guests === 1 ? "" : "s"}`]] as [string, string][]) : []),
+          ["Stay", `${n} night${n === 1 ? "" : "s"}`],
+        ])}
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<tr><td style="padding:24px 32px 4px;">
+  <div style="font-family:${SERIF};font-size:20px;color:${C.ink};margin-bottom:14px;">What happens next</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    ${step(1, "We check the details", "Someone from the house looks over your dates and rooms.")}
+    ${step(2, "We confirm with you", "By email or phone. Your booking is only confirmed once we have.")}
+    ${step(3, "Pack the binoculars", "Udawalawe's elephants are waiting. Ask us about a safari drive.")}
+  </table>
+</td></tr>
+
+<tr><td style="padding:8px 32px 30px;font-family:${FONT};">
+  <p style="margin:0 0 14px;font-size:14px;color:#44403c;">Questions, or need to change something? We're happy to help.</p>
+  ${button(wa, "&#x1F4AC; WhatsApp us")}
+  ${button(`tel:${contact.phone}`, `&#x1F4DE; ${e(contact.phoneDisplay)}`, "ghost")}
+</td></tr>
+
+<tr><td style="background:${C.forest};padding:20px 32px;font-family:${FONT};font-size:12px;line-height:1.6;color:#a8a29e;">
+  <strong style="color:#ffffff;">${e(SITE.name)}</strong><br>
+  ${e(contact.street)}, ${e(contact.locality)} ${e(contact.postalCode)}, Sri Lanka<br>
+  <a href="${SITE_URL}" style="color:#6ee7b7;text-decoration:none;">${e(SITE_URL.replace(/^https?:\/\//, ""))}</a>
+</td></tr>`,
+  );
+
+  const text = [
+    `Ayubowan, ${first}!`,
+    "",
+    "Thank you for choosing us. Your request is in and we are holding the room while we check the details.",
+    "It is NOT confirmed yet. We will be in touch to confirm it with you.",
+    "",
+    `Reference: ${d.reference}`,
+    `Check in:  ${formatDate(d.checkInDate)}`,
+    `Check out: ${formatDate(d.checkOutDate)} (${n} night${n === 1 ? "" : "s"})`,
+    `Rooms:     ${rooms}`,
+    ...(d.guests ? [`Guests:    ${d.guests}`] : []),
+    "",
+    `Questions? Reply to this email, call ${contact.phoneDisplay}, or WhatsApp ${wa}`,
+    "",
+    `${SITE.name}, ${contact.street}, ${contact.locality}`,
+  ].join("\n");
+
   return {
-    html: pairs
-      .map(
-        ([k, v]) =>
-          `<tr><td style="padding:4px 16px 4px 0;color:#78716c;vertical-align:top">${escapeHtml(k)}</td><td style="padding:4px 0;color:#1c1917">${escapeHtml(v)}</td></tr>`,
-      )
-      .join(""),
-    text: pairs.map(([k, v]) => `${k}: ${v}`).join("\n"),
+    to: d.guest.email,
+    replyTo: contact.email,
+    subject: `We've got your booking request, ${first}! 🐘 (${d.reference})`,
+    html,
+    text,
   };
 }
 
-function wrap(body: string): string {
-  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f5f5f4;font-family:Georgia,serif"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#1c1917">${body}</div></body></html>`;
+/* ---------------------------------------------------------- staff email */
+
+function staffEmail(d: BookingRequestDetails, contact: ContactValues) {
+  const guestName = oneLine(`${d.guest.firstName} ${d.guest.lastName}`);
+  const rooms = d.roomTypeNames.join(", ");
+  const adminUrl = `${SITE_URL}/admin/bookings/${encodeURIComponent(d.reservationId)}`;
+  const n = nights(d.checkInDate, d.checkOutDate);
+
+  const html = shell(
+    `${guestName} · ${formatDate(d.checkInDate, "short")} · ${n} night${n === 1 ? "" : "s"} · ${rooms}`,
+    `
+<tr><td style="background:${C.forest};padding:26px 32px;font-family:${FONT};">
+  <img src="${SITE_URL}/email/logo.png" width="44" height="44" alt="Lily Resort Udawalawe" style="display:block;width:44px;height:44px;border-radius:999px;margin-bottom:14px;">
+  <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#6ee7b7;font-weight:700;">&#x1F514; New booking request</div>
+  <div style="font-family:${SERIF};font-size:28px;color:#ffffff;margin-top:8px;">${e(guestName)}</div>
+  <div style="font-size:14px;color:#d6d3d1;margin-top:4px;">${e(formatDate(d.checkInDate, "short"))} &rarr; ${e(formatDate(d.checkOutDate, "short"))} &middot; ${n} night${n === 1 ? "" : "s"}</div>
+</td></tr>
+
+<tr><td style="padding:22px 32px 0;font-family:${FONT};">
+  <div style="background:${C.amberLight};color:${C.amber};border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;">
+    <strong>Held as a draft.</strong> The room is blocked until you confirm or cancel it, so please reply to the guest soon.
+  </div>
+</td></tr>
+
+<tr><td style="padding:18px 32px 4px;">${stayTicket(d)}</td></tr>
+
+<tr><td style="padding:8px 32px 6px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    ${detailRows([
+      ["Reference", d.reference],
+      ["Rooms", rooms],
+      ...(d.guests ? ([["Guests", String(d.guests)]] as [string, string][]) : []),
+      ["Email", d.guest.email],
+      ["Phone", d.guest.phone ?? "Not given"],
+    ])}
+  </table>
+</td></tr>
+
+<tr><td style="padding:20px 32px 30px;font-family:${FONT};">
+  ${button(adminUrl, "Open booking &rarr;")}
+  ${button(`mailto:${d.guest.email}?subject=${encodeURIComponent(`Your booking request ${d.reference}`)}`, "&#x2709;&#xFE0F; Email guest", "ghost")}
+  ${d.guest.phone ? button(`tel:${d.guest.phone.replace(/[^\d+]/g, "")}`, "&#x1F4DE; Call", "ghost") : ""}
+  ${d.guest.phone ? button(`https://wa.me/${digits(d.guest.phone)}`, "&#x1F4AC; WhatsApp", "ghost") : ""}
+  <p style="margin:10px 0 0;font-size:12px;color:${C.muted};">Or just hit reply: it goes straight to the guest.</p>
+</td></tr>`,
+  );
+
+  const text = [
+    "NEW BOOKING REQUEST (held as a draft until you confirm it)",
+    "",
+    `Guest:     ${guestName}`,
+    `Email:     ${d.guest.email}`,
+    `Phone:     ${d.guest.phone ?? "Not given"}`,
+    `Reference: ${d.reference}`,
+    `Stay:      ${formatDate(d.checkInDate)} to ${formatDate(d.checkOutDate)} (${n} nights)`,
+    `Rooms:     ${rooms}`,
+    ...(d.guests ? [`Guests:    ${d.guests}`] : []),
+    "",
+    `Open: ${adminUrl}`,
+    "Reply to this email to write to the guest.",
+  ].join("\n");
+
+  return {
+    to: contact.alertEmail ?? contact.email,
+    replyTo: d.guest.email,
+    subject: oneLine(`🔔 New booking: ${guestName}, ${formatDate(d.checkInDate, "short")} (${n}n) · ${d.reference}`),
+    html,
+    text,
+  };
+}
+
+/* ---------------------------------------------------------------- send */
+
+/** Exposed so the templates can be previewed without sending anything. */
+export function renderBookingEmails(details: BookingRequestDetails, contact: ContactValues) {
+  return { guest: guestEmail(details, contact), staff: staffEmail(details, contact) };
 }
 
 /**
@@ -59,56 +313,6 @@ function wrap(body: string): string {
  */
 export async function notifyBookingRequest(details: BookingRequestDetails): Promise<void> {
   const { contact } = await getSiteContent();
-  const staffInbox = contact.alertEmail ?? contact.email;
-
-  const guestName = oneLine(`${details.guest.firstName} ${details.guest.lastName}`);
-  const stay = `${formatDate(details.checkInDate)} to ${formatDate(details.checkOutDate)} (${nights(details.checkInDate, details.checkOutDate)} nights)`;
-  const rooms = details.roomTypeNames.join(", ");
-  const adminUrl = `${SITE_URL}/admin/bookings/${encodeURIComponent(details.reservationId)}`;
-
-  const staffRows = rows([
-    ["Reference", details.reference],
-    ["Guest", guestName],
-    ["Email", details.guest.email],
-    ["Phone", details.guest.phone ?? "Not given"],
-    ["Stay", stay],
-    ["Rooms", rooms],
-    ...(details.guests ? ([["Guests", String(details.guests)]] as [string, string][]) : []),
-  ]);
-
-  const staffEmail = sendEmail({
-    to: staffInbox,
-    replyTo: details.guest.email,
-    subject: oneLine(`New booking request ${details.reference}: ${guestName}, ${formatDate(details.checkInDate)}`),
-    html: wrap(
-      `<h2 style="margin:0 0 12px;font-family:Georgia,serif;font-weight:normal">New booking request</h2>
-       <p style="margin:0 0 16px">The room is held as a <strong>draft</strong>. Confirm or cancel it with the guest.</p>
-       <table style="border-collapse:collapse;margin-bottom:20px">${staffRows.html}</table>
-       <p style="margin:0"><a href="${escapeHtml(adminUrl)}" style="color:#047857">Open in the admin panel</a></p>
-       <p style="margin:16px 0 0;color:#78716c;font-size:12px">Reply to this email to write to the guest.</p>`,
-    ),
-    text: `New booking request (held as a draft until you confirm it)\n\n${staffRows.text}\n\nOpen: ${adminUrl}\n\nReply to this email to write to the guest.`,
-  });
-
-  const guestRows = rows([
-    ["Reference", details.reference],
-    ["Stay", stay],
-    ["Rooms", rooms],
-  ]);
-
-  const guestEmail = sendEmail({
-    to: details.guest.email,
-    replyTo: contact.email,
-    subject: `We have your booking request (${details.reference})`,
-    html: wrap(
-      `<h2 style="margin:0 0 12px;font-family:Georgia,serif;font-weight:normal">Thank you, ${escapeHtml(oneLine(details.guest.firstName))}</h2>
-       <p style="margin:0 0 16px">We have your request and are holding the room while we check the details. <strong>It is not confirmed yet</strong> &mdash; we will be in touch to confirm it with you.</p>
-       <table style="border-collapse:collapse;margin-bottom:20px">${guestRows.html}</table>
-       <p style="margin:0">Questions? Reply to this email or call ${escapeHtml(contact.phoneDisplay)}.</p>
-       <p style="margin:16px 0 0;color:#78716c;font-size:12px">${escapeHtml(SITE.name)}, ${escapeHtml(contact.street)}, ${escapeHtml(contact.locality)}</p>`,
-    ),
-    text: `Thank you, ${oneLine(details.guest.firstName)}.\n\nWe have your request and are holding the room while we check the details. It is not confirmed yet; we will be in touch to confirm it with you.\n\n${guestRows.text}\n\nQuestions? Reply to this email or call ${contact.phoneDisplay}.\n\n${SITE.name}, ${contact.street}, ${contact.locality}`,
-  });
-
-  await Promise.all([staffEmail, guestEmail]);
+  const { guest, staff } = renderBookingEmails(details, contact);
+  await Promise.all([sendEmail(staff), sendEmail(guest)]);
 }

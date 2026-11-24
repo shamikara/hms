@@ -1,8 +1,7 @@
 "use client";
 
 import { useRef, ReactNode } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
+import { gsap, useGSAP } from "@/lib/motion/gsap";
 import { timelinePresets } from "@/lib/motion/timelinePresets";
 import { DISTANCE, DURATION, EASE } from "@/lib/motion/motionTokens";
 

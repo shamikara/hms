@@ -133,6 +133,12 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         shortcut: "G F",
       },
       {
+        title: "Reports",
+        href: "/admin/reports",
+        icon: FileText,
+        shortcut: "G E",
+      },
+      {
         title: "Staff & Access",
         href: "/admin/staff",
         icon: ShieldCheck,

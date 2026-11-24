@@ -22,6 +22,8 @@ export type AdminPermission =
   | "reservations:view"
   /** Change reservation state: confirm, check in, check out, cancel. */
   | "reservations:manage"
+  /** Permanently remove test or mistaken bookings that never went ahead. */
+  | "reservations:delete"
   /** Read guest CRM records (names, contact details, stay history). */
   | "guests:view"
   /** See revenue, invoices and payment figures. */
@@ -43,6 +45,7 @@ const ALL: AdminPermission[] = [
   "admin:access",
   "reservations:view",
   "reservations:manage",
+  "reservations:delete",
   "guests:view",
   "finance:view",
   "billing:manage",

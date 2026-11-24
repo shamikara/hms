@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import { useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
+import { gsap, useGSAP } from "@/lib/motion/gsap";
 import { DISTANCE, DURATION, EASE } from "@/lib/motion/motionTokens";
 
 const galleryImages = [

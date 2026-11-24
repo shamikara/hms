@@ -9,6 +9,7 @@ import { BookingService, BookingError, isRoomOverlapError } from "@/features/boo
 import { GuestSchema, ReservationSchema } from "@/features/bookings/validations/booking.schema";
 import { toBookingReference } from "@/features/bookings/lib/reference";
 import { FolioError, postRoomCharges } from "@/features/billing/services/folio.service";
+import { BookingDeletionError, BookingDeletionService } from "@/features/bookings/services/booking-deletion.service";
 
 /**
  * What the front desk sees for one reservation.
@@ -472,5 +473,33 @@ export async function getDeskReservation(
   } catch (error: any) {
     console.error("getDeskReservation failed:", error?.message);
     return { success: false, error: "Could not load the reservation." };
+  }
+}
+
+/**
+ * Permanently removes a test or mistaken booking. Managers only; the rules
+ * for what may be deleted live in BookingDeletionService.
+ */
+export async function deleteReservation(reservationId: string): Promise<{ success: boolean; error?: string }> {
+  const guard = await requireAdminPermission("reservations:delete");
+  if (!guard.ok) return guard.failure;
+
+  const parsed = z.string().cuid().safeParse(reservationId);
+  if (!parsed.success) return { success: false, error: "That booking was not found." };
+
+  try {
+    const propertyId = await resolveDefaultPropertyId();
+    if (!propertyId) return { success: false, error: NO_PROPERTY };
+
+    await BookingDeletionService.delete(parsed.data, propertyId, guard.actor.userId);
+    revalidatePath("/admin/bookings");
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin/guests");
+    revalidatePath("/book");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof BookingDeletionError) return { success: false, error: error.message };
+    console.error("deleteReservation failed:", error instanceof Error ? error.message : error);
+    return { success: false, error: "Could not delete the booking. Please try again." };
   }
 }

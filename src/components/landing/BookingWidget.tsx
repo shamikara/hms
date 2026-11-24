@@ -31,49 +31,39 @@ export function BookingWidget() {
   bookQuery.set("guests", guests);
   const bookHref = bookQuery.toString() ? `/book?${bookQuery}` : "/book";
 
+  const field =
+    "w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-3 text-sm text-stone-900 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20";
+  const labelCls = "block text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-1.5 text-left";
+
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 sm:p-5 rounded-2xl md:rounded-full shadow-2xl max-w-4xl w-full mx-auto flex flex-col md:flex-row items-center gap-4 mt-6 sm:mt-12 opacity-0"
+      className="mx-auto mt-8 sm:mt-10 w-full max-w-4xl rounded-2xl bg-white p-4 sm:p-5 text-left shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)] opacity-0"
     >
-      <div className="flex-1 flex flex-col md:flex-row gap-4 w-full px-2 sm:px-4">
-        <div className="flex flex-col flex-1">
-          <label className="text-[10px] uppercase tracking-widest text-emerald-300 font-medium ml-1">Check In</label>
-          <input 
-            type="date" 
-            value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
-            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1.5 w-full text-sm placeholder:text-white/50"
-          />
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-[1fr_1fr_0.8fr_auto] md:items-end">
+        <div>
+          <label htmlFor="home-check-in" className={labelCls}>Check in</label>
+          <input id="home-check-in" type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className={field} />
         </div>
-        <div className="flex flex-col flex-1">
-          <label className="text-[10px] uppercase tracking-widest text-emerald-300 font-medium ml-1">Check Out</label>
-          <input 
-            type="date" 
-            value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
-            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1.5 w-full text-sm placeholder:text-white/50"
-          />
+        <div>
+          <label htmlFor="home-check-out" className={labelCls}>Check out</label>
+          <input id="home-check-out" type="date" value={checkOut} min={checkIn || undefined} onChange={(e) => setCheckOut(e.target.value)} className={field} />
         </div>
-        <div className="flex flex-col flex-1">
-          <label className="text-[10px] uppercase tracking-widest text-emerald-300 font-medium ml-1">Guests</label>
-          <select 
-            value={guests}
-            onChange={(e) => setGuests(e.target.value)}
-            className="bg-transparent text-white border-b border-white/30 focus:border-emerald-400 focus:outline-none py-1.5 w-full text-sm appearance-none cursor-pointer"
-          >
-            <option value="1" className="bg-stone-900">1 Adult</option>
-            <option value="2" className="bg-stone-900">2 Adults</option>
-            <option value="3" className="bg-stone-900">3 Adults</option>
-            <option value="4" className="bg-stone-900">4 Adults</option>
+        <div>
+          <label htmlFor="home-guests" className={labelCls}>Guests</label>
+          <select id="home-guests" value={guests} onChange={(e) => setGuests(e.target.value)} className={`${field} cursor-pointer`}>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>{n} {n === 1 ? "adult" : "adults"}</option>
+            ))}
           </select>
         </div>
+        <Link
+          href={bookHref}
+          className="inline-flex h-[46px] items-center justify-center rounded-xl bg-emerald-800 px-7 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+        >
+          Check availability
+        </Link>
       </div>
-      <Link href={bookHref} className="w-full md:w-auto">
-        <button className="bg-emerald-700 hover:bg-emerald-600 text-white px-8 py-3 rounded-full text-sm font-medium tracking-wide transition-all w-full md:w-auto shadow-lg shrink-0">
-          Check Availability
-        </button>
-      </Link>
     </div>
   );
 }

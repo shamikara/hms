@@ -70,7 +70,7 @@ const nextConfig: NextConfig = {
   // Announcing the framework and its version tells an attacker which
   // advisories to try. It buys nothing in return.
   poweredByHeader: false,
-  serverExternalPackages: ["@prisma/adapter-pg", "pg", "@prisma/client"],
+  serverExternalPackages: ["@prisma/adapter-pg", "pg", "@prisma/client", "@react-pdf/renderer"],
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -44,3 +44,6 @@ next-env.d.ts
 
 /src/generated/prisma
 incoming-photos/
+
+# Preview screenshots, not part of the site
+Claude outputs/
