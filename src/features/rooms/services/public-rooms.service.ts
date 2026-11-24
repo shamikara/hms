@@ -13,6 +13,8 @@ export interface PublicRoomType {
   /** Nightly rate, or null for rate on request. */
   basePrice: number | null;
   imageUrl: string;
+  /** Cover first, then the extra gallery photos. Always at least one. */
+  photos: string[];
   features: string[];
   /** Rooms of this type that can be sold now (not under maintenance). */
   sellableRooms: number;
@@ -48,6 +50,7 @@ export async function loadPublicRooms(): Promise<PublicRooms> {
       capacity: true,
       basePrice: true,
       imageUrl: true,
+      gallery: true,
       features: true,
       _count: {
         select: {
@@ -73,6 +76,9 @@ export async function loadPublicRooms(): Promise<PublicRooms> {
       capacity: t.capacity,
       basePrice: t.basePrice === null ? null : Number(t.basePrice),
       imageUrl: isRoomPhoto(t.imageUrl) ? t.imageUrl : ROOM_PHOTO_FALLBACK,
+      photos: [
+        ...new Set([isRoomPhoto(t.imageUrl) ? t.imageUrl : ROOM_PHOTO_FALLBACK, ...t.gallery.filter((src) => isRoomPhoto(src))]),
+      ],
       features: t.features,
       sellableRooms: t._count.rooms,
     }));
@@ -84,7 +90,7 @@ export async function loadPublicRooms(): Promise<PublicRooms> {
   };
 }
 
-const cachedPublicRooms = unstable_cache(loadPublicRooms, ["public-rooms-v1"], {
+const cachedPublicRooms = unstable_cache(loadPublicRooms, ["public-rooms-v2"], {
   tags: [PUBLIC_ROOMS_TAG],
   revalidate: 3600,
 });

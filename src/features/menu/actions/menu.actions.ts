@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { NO_PROPERTY, requireAdminPermission, resolveDefaultPropertyId } from "@/features/admin/lib/requireAdminSession";
 import { MENU_TAG, MenuService, colomboToday, shiftDay, type DishRow, type MenuDay } from "../services/menu.service";
 import { DaySchema, DishSchema, SetMenuSchema } from "../validations/menu.schema";
+import { MediaService } from "@/features/media/services/media.service";
 
 type Result<T = undefined> = { success: boolean; data?: T; error?: string };
 
@@ -68,6 +69,9 @@ export async function createDish(input: unknown): Promise<Result<DishRow>> {
   if (!guard.ok) return guard.failure;
   const parsed = DishSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
+  if (parsed.data.imageUrl && !MediaService.isAllowedPhoto(parsed.data.imageUrl)) {
+    return { success: false, error: "Pick the photo from the library." };
+  }
   try {
     const propertyId = await resolveDefaultPropertyId();
     if (!propertyId) return { success: false, error: NO_PROPERTY };
@@ -85,6 +89,9 @@ export async function updateDish(id: string, input: unknown): Promise<Result> {
   if (!guard.ok) return guard.failure;
   const parsed = DishSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
+  if (parsed.data.imageUrl && !MediaService.isAllowedPhoto(parsed.data.imageUrl)) {
+    return { success: false, error: "Pick the photo from the library." };
+  }
   if (!z.string().min(1).max(64).safeParse(id).success) return { success: false, error: "That dish was not found." };
   try {
     const propertyId = await resolveDefaultPropertyId();

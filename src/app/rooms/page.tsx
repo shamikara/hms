@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Users, Sparkles, Check, ArrowRight } from "lucide-react";
+import { RoomGallery } from "@/components/landing/RoomGallery";
 import { getPublicRooms } from "@/features/rooms/services/public-rooms.service";
 
 export const metadata: Metadata = {
@@ -85,14 +85,8 @@ export default async function RoomsPage() {
               <div className="bg-stone-900/40 rounded-3xl border border-stone-800 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center p-6 sm:p-8 hover:border-stone-700 transition-all shadow-2xl">
                 {/* Image */}
                 <div className={`lg:col-span-6 relative h-[350px] sm:h-[420px] rounded-2xl overflow-hidden ${index % 2 === 1 ? 'lg:order-2' : ''}`}>
-                  <Image
-                    src={room.imageUrl}
-                    alt={room.name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    className="object-cover hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute top-4 left-4 bg-stone-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs font-mono text-emerald-400">
+                  <RoomGallery photos={room.photos} name={room.name}>
+                  <div className="pointer-events-none absolute top-4 left-4 bg-stone-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs font-mono text-emerald-400">
                     {room.basePrice === null ? (
                       "Rates on request"
                     ) : (
@@ -102,6 +96,7 @@ export default async function RoomsPage() {
                       </>
                     )}
                   </div>
+                  </RoomGallery>
                 </div>
 
                 {/* Content */}

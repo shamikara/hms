@@ -1,9 +1,9 @@
-import { MEDIA_BUCKET } from "./media-url";
+import { MEDIA_BUCKET, supabaseUrl } from "./media-url";
 
 /**
  * Supabase Storage over plain REST, so there is no SDK to install.
  *
- * Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (server only). The
+ * Needs SUPABASE_URL and SUPABASE_SECRET_KEY (server only). The
  * bucket ("media" unless NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET says otherwise)
  * must exist and be public, so the website can show the files.
  */
@@ -11,16 +11,16 @@ import { MEDIA_BUCKET } from "./media-url";
 export class StorageError extends Error {}
 
 function config() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const url = supabaseUrl();
   const key = process.env.SUPABASE_SECRET_KEY?.trim();
   if (!url || !key) {
-    throw new StorageError("Photo uploads are not set up yet (NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY are missing).");
+    throw new StorageError("Photo uploads are not set up yet (SUPABASE_URL and SUPABASE_SECRET_KEY are missing).");
   }
   return { url, key };
 }
 
 export function isStorageConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.SUPABASE_SECRET_KEY?.trim());
+  return Boolean(supabaseUrl() && process.env.SUPABASE_SECRET_KEY?.trim());
 }
 
 function headers(key: string): Record<string, string> {

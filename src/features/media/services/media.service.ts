@@ -4,10 +4,12 @@ import { isUploadedMediaUrl } from "../lib/media-url";
 import {
   BUILTIN_PHOTOS,
   DEFAULT_FOOD_PHOTOS,
+  DEFAULT_GALLERY_PHOTOS,
   DEFAULT_HERO_SLIDES,
   HERO_TRANSITIONS,
   isBuiltinPhoto,
   type FoodPhotoSetting,
+  type GalleryPhotoSetting,
   type HeroSlideSetting,
   type SitePhoto,
 } from "../lib/builtin";
@@ -15,6 +17,7 @@ import {
 export const MEDIA_CONTENT_TAG = "media-content";
 export const HERO_KEY = "media.heroSlides";
 export const FOOD_KEY = "media.foodGallery";
+export const GALLERY_KEY = "media.homeGallery";
 
 export interface MediaRow extends SitePhoto {
   id: string;
@@ -84,23 +87,47 @@ function cleanFood(raw: unknown, known: Map<string, SitePhoto>): FoodPhotoSettin
     });
 }
 
+function cleanGallery(raw: unknown, known: Map<string, SitePhoto>): GalleryPhotoSetting[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out = raw
+    .filter((s): s is GalleryPhotoSetting => !!s && typeof s === "object" && known.has((s as GalleryPhotoSetting).src))
+    .map((s) => {
+      const k = known.get(s.src)!;
+      return { src: s.src, alt: typeof s.alt === "string" && s.alt ? s.alt : k.alt, wide: s.wide === true, width: k.width, height: k.height };
+    });
+  return out.length ? out : null;
+}
+
 export interface MediaContent {
   heroSlides: HeroSlideSetting[];
   foodPhotos: FoodPhotoSetting[];
+  galleryPhotos: GalleryPhotoSetting[];
 }
+
+const DEFAULT_CONTENT: MediaContent = {
+  heroSlides: DEFAULT_HERO_SLIDES,
+  foodPhotos: DEFAULT_FOOD_PHOTOS,
+  galleryPhotos: DEFAULT_GALLERY_PHOTOS,
+};
 
 export async function loadMediaContent(): Promise<MediaContent> {
   const propertyId = await defaultPropertyId();
-  if (!propertyId) return { heroSlides: DEFAULT_HERO_SLIDES, foodPhotos: DEFAULT_FOOD_PHOTOS };
-  const [known, hero, food] = await Promise.all([knownPhotos(propertyId), readSetting(propertyId, HERO_KEY), readSetting(propertyId, FOOD_KEY)]);
+  if (!propertyId) return DEFAULT_CONTENT;
+  const [known, hero, food, gallery] = await Promise.all([
+    knownPhotos(propertyId),
+    readSetting(propertyId, HERO_KEY),
+    readSetting(propertyId, FOOD_KEY),
+    readSetting(propertyId, GALLERY_KEY),
+  ]);
   return {
     heroSlides: cleanHero(hero, known) ?? DEFAULT_HERO_SLIDES,
+    galleryPhotos: cleanGallery(gallery, known) ?? DEFAULT_GALLERY_PHOTOS,
     // An empty saved list is a choice (no photo wall); only "never saved" falls back.
     foodPhotos: food === null ? DEFAULT_FOOD_PHOTOS : (cleanFood(food, known) ?? DEFAULT_FOOD_PHOTOS),
   };
 }
 
-const cachedMediaContent = unstable_cache(loadMediaContent, ["media-content-v1"], { tags: [MEDIA_CONTENT_TAG], revalidate: 3600 });
+const cachedMediaContent = unstable_cache(loadMediaContent, ["media-content-v2"], { tags: [MEDIA_CONTENT_TAG], revalidate: 3600 });
 
 /** For public pages. Cached; never throws (falls back to the built-in photos). */
 export async function getMediaContent(): Promise<MediaContent> {
@@ -108,7 +135,7 @@ export async function getMediaContent(): Promise<MediaContent> {
     return await cachedMediaContent();
   } catch (error) {
     console.error("getMediaContent failed:", error instanceof Error ? error.message : error);
-    return { heroSlides: DEFAULT_HERO_SLIDES, foodPhotos: DEFAULT_FOOD_PHOTOS };
+    return DEFAULT_CONTENT;
   }
 }
 
@@ -118,16 +145,23 @@ export const MediaService = {
   readSetting,
 
   async list(propertyId: string): Promise<MediaRow[]> {
-    const [rows, content, roomTypes] = await Promise.all([
+    const [rows, content, roomTypes, drivers, dishes] = await Promise.all([
       prisma.mediaAsset.findMany({ where: { propertyId }, orderBy: { createdAt: "desc" } }),
       loadMediaContent(),
-      prisma.roomType.findMany({ where: { propertyId, deletedAt: null }, select: { name: true, imageUrl: true } }),
+      prisma.roomType.findMany({ where: { propertyId, deletedAt: null }, select: { name: true, imageUrl: true, gallery: true } }),
+      prisma.safariDriver
+        .findMany({ where: { imageUrl: { not: null } }, select: { imageUrl: true, employee: { select: { firstName: true } } } })
+        .catch(() => []),
+      prisma.dish.findMany({ where: { propertyId, imageUrl: { not: null } }, select: { name: true, imageUrl: true } }).catch(() => []),
     ]);
     return rows.map((r) => {
       const usedIn: string[] = [];
       if (content.heroSlides.some((s) => s.src === r.url)) usedIn.push("Homepage slideshow");
       if (content.foodPhotos.some((s) => s.src === r.url)) usedIn.push("Food page");
-      for (const t of roomTypes) if (t.imageUrl === r.url) usedIn.push(`Room: ${t.name}`);
+      if (content.galleryPhotos.some((s) => s.src === r.url)) usedIn.push("Around the house");
+      for (const d of drivers) if (d.imageUrl === r.url) usedIn.push(`Driver: ${d.employee.firstName}`);
+      for (const d of dishes) if (d.imageUrl === r.url) usedIn.push(`Dish: ${d.name}`);
+      for (const t of roomTypes) if (t.imageUrl === r.url || t.gallery.includes(r.url)) usedIn.push(`Room: ${t.name}`);
       return {
         id: r.id,
         path: r.path,
@@ -162,6 +196,13 @@ export const MediaService = {
     const bad = photos.find((s) => !known.has(s.src));
     if (bad) throw new Error("One of the photos is no longer in the library.");
     await writeSetting(propertyId, FOOD_KEY, photos);
+  },
+
+  async saveGallery(propertyId: string, photos: { src: string; alt: string; wide: boolean }[]) {
+    const known = await knownPhotos(propertyId);
+    const bad = photos.find((s) => !known.has(s.src));
+    if (bad) throw new Error("One of the photos is no longer in the library.");
+    await writeSetting(propertyId, GALLERY_KEY, photos);
   },
 
   /** Photo src a room type may use: built-in room photos, or any upload. */

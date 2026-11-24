@@ -54,6 +54,7 @@ export interface InventoryRoomType {
   /** Null means no rate is set, which reads as rate-on-request, not free. */
   basePrice: number | null;
   imageUrl: string | null;
+  gallery: string[];
   features: string[];
   roomCount: number;
 }
@@ -151,6 +152,7 @@ export async function getInventory(propertyId?: string): Promise<Result<Inventor
           capacity: rt.capacity,
           basePrice: rt.basePrice === null ? null : Number(rt.basePrice),
           imageUrl: rt.imageUrl,
+          gallery: rt.gallery,
           features: rt.features,
           roomCount: rt._count.rooms,
         })),
@@ -195,6 +197,7 @@ export async function createRoomType(input: unknown): Promise<Result<{ id: strin
         capacity: parsed.data.capacity,
         basePrice: parsed.data.basePrice ?? null,
         imageUrl: parsed.data.imageUrl,
+        gallery: parsed.data.gallery,
         features: parsed.data.features,
       },
       select: { id: true },
@@ -223,6 +226,7 @@ export async function updateRoomType(id: string, input: unknown): Promise<Result
         capacity: parsed.data.capacity,
         basePrice: parsed.data.basePrice ?? null,
         imageUrl: parsed.data.imageUrl,
+        gallery: parsed.data.gallery,
         features: parsed.data.features,
       },
     });

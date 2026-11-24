@@ -14,6 +14,7 @@ export interface DishRow {
   price: number | null;
   vegetarian: boolean;
   spicy: boolean;
+  imageUrl: string | null;
 }
 
 export interface MenuDay {
@@ -28,6 +29,7 @@ export interface PublicMenuDish {
   vegetarian: boolean;
   spicy: boolean;
   soldOut: boolean;
+  imageUrl: string | null;
 }
 export interface PublicMenu {
   date: string;
@@ -61,6 +63,7 @@ function toDishRow(d: {
   price: Prisma.Decimal | null;
   vegetarian: boolean;
   spicy: boolean;
+  imageUrl: string | null;
 }): DishRow {
   return {
     id: d.id,
@@ -70,6 +73,7 @@ function toDishRow(d: {
     price: d.price === null ? null : Number(d.price),
     vegetarian: d.vegetarian,
     spicy: d.spicy,
+    imageUrl: d.imageUrl,
   };
 }
 
@@ -109,6 +113,7 @@ export const MenuService = {
         price: values.price,
         vegetarian: values.vegetarian,
         spicy: values.spicy,
+        imageUrl: values.imageUrl,
         sortOrder: (last._max.sortOrder ?? 0) + 10,
       },
     });
@@ -126,6 +131,7 @@ export const MenuService = {
         price: values.price,
         vegetarian: values.vegetarian,
         spicy: values.spicy,
+        imageUrl: values.imageUrl,
       },
     });
     return result.count === 1;
@@ -193,13 +199,14 @@ export const MenuService = {
           vegetarian: r.dish.vegetarian,
           spicy: r.dish.spicy,
           soldOut: r.soldOut,
+          imageUrl: r.dish.imageUrl,
         })),
     })).filter((m) => m.dishes.length > 0);
     return { date: day, currency: property.baseCurrency || "LKR", meals };
   },
 };
 
-const cachedPublicMenu = unstable_cache((day: string) => MenuService.loadPublicMenu(day), ["daily-menu-v1"], {
+const cachedPublicMenu = unstable_cache((day: string) => MenuService.loadPublicMenu(day), ["daily-menu-v2"], {
   tags: [MENU_TAG],
   revalidate: 600,
 });

@@ -115,6 +115,8 @@ model RoomType {
   imageUrl String?
   /// Short highlights listed on the public rooms page ("Two Queen Beds").
   features String[] @default([])
+  /// Extra photos shown as a gallery on the Rooms page (after imageUrl).
+  gallery     String[]  @default([])
 
   rooms Room[] @relation("RoomTypeClassification")
 
@@ -1220,6 +1222,8 @@ model Dish {
   vegetarian  Boolean    @default(false)
   spicy       Boolean    @default(false)
   sortOrder   Int        @default(0)
+  /// Optional photo: a built-in site photo or an upload from Admin > Photos.
+  imageUrl    String?
 
   menuDays DailyMenuItem[] @relation("DishMenuDays")
 

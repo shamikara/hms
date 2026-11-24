@@ -10,7 +10,20 @@ export const dynamic = "force-dynamic";
 
 /** The browser shrinks photos before sending; this is a backstop. */
 const MAX_BYTES = 4 * 1024 * 1024;
-const MAX_EDGE = 2000;
+/**
+ * The storage bucket refuses files over 500 KB, so each photo is encoded at
+ * the best of these settings that fits under the target. Most photos fit at
+ * the first step; detailed ones step down a little in size or quality.
+ */
+const TARGET_BYTES = 480 * 1024;
+const ENCODE_STEPS = [
+  { edge: 2000, quality: 80 },
+  { edge: 2000, quality: 72 },
+  { edge: 1800, quality: 70 },
+  { edge: 1600, quality: 68 },
+  { edge: 1400, quality: 65 },
+  { edge: 1200, quality: 62 },
+];
 
 /**
  * Upload one photo to the media library.
@@ -40,15 +53,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Only JPEG, PNG, WebP or HEIC photos can be uploaded." }, { status: 415 });
   }
 
-  let output: { data: Buffer; info: sharp.OutputInfo };
+  let output: { data: Buffer; info: sharp.OutputInfo } | null = null;
   try {
-    output = await sharp(Buffer.from(await file.arrayBuffer()), { failOn: "error" })
-      .rotate()
-      .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toBuffer({ resolveWithObject: true });
+    // One read of the upload; each step works on a copy of that pipeline.
+    const upright = sharp(Buffer.from(await file.arrayBuffer()), { failOn: "error" }).rotate();
+    for (const step of ENCODE_STEPS) {
+      output = await upright
+        .clone()
+        .resize({ width: step.edge, height: step.edge, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: step.quality })
+        .toBuffer({ resolveWithObject: true });
+      if (output.info.size <= TARGET_BYTES) break;
+    }
   } catch {
     return NextResponse.json({ error: "That file is not a photo we can read." }, { status: 415 });
+  }
+  if (!output || output.info.size > TARGET_BYTES) {
+    return NextResponse.json({ error: "That photo has too much detail to fit in 500 KB. Try a smaller or simpler one." }, { status: 413 });
   }
 
   const now = new Date();

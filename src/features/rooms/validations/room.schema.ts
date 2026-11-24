@@ -44,6 +44,19 @@ export const RoomTypeSchema = z.object({
       }
       return value;
     }),
+  /** Extra photos for the Rooms page gallery, in order. */
+  gallery: z
+    .array(z.string())
+    .max(12, "Up to 12 gallery photos")
+    .optional()
+    .transform((list, ctx) => {
+      const out = [...new Set(list ?? [])];
+      if (out.some((src) => !isRoomPhoto(src))) {
+        ctx.addIssue({ code: "custom", message: "Choose gallery photos from the library" });
+        return z.NEVER;
+      }
+      return out;
+    }),
   /** Accepts a list, or text with one highlight per line. */
   features: z
     .union([z.array(z.string()), z.string()])

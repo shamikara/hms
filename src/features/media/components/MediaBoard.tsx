@@ -16,11 +16,12 @@ import {
   Upload,
   UtensilsCrossed,
   X,
+  Trees,
 } from "lucide-react";
 import type { MediaBoardData } from "../actions/media.actions";
-import { deleteMedia, saveFoodPhotos, saveHeroSlides, updateMediaAlt } from "../actions/media.actions";
+import { deleteMedia, saveFoodPhotos, saveGalleryPhotos, saveHeroSlides, updateMediaAlt } from "../actions/media.actions";
+import { PhotoPicker, Thumb, uploadPhoto } from "./PhotoPicker";
 import { HERO_TRANSITIONS, type HeroTransitionName } from "../lib/builtin";
-import type { PhotoChoice } from "../services/media.service";
 
 const card = "rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900";
 const input =
@@ -39,56 +40,7 @@ const TRANSITION_LABEL: Record<HeroTransitionName, string> = {
   zoom: "Zoom in",
 };
 
-type Tab = "hero" | "food" | "library";
-
-/** Shrinks a photo in the browser before upload: phone photos are 3–10 MB. */
-async function shrink(file: File): Promise<Blob> {
-  try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
-    const w = Math.round(bitmap.width * scale);
-    const h = Math.round(bitmap.height * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, w, h);
-    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.9));
-    return blob ?? file;
-  } catch {
-    // The browser cannot decode it (HEIC on Windows, say): send it as it is.
-    return file;
-  }
-}
-
-function Thumb({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
-  // eslint-disable-next-line @next/next/no-img-element -- admin thumbnails; next/image adds nothing here
-  return <img src={src} alt={alt} loading="lazy" className={`object-cover bg-stone-100 dark:bg-stone-800 ${className}`} />;
-}
-
-function Picker({ choices, onPick, onClose }: { choices: PhotoChoice[]; onPick: (c: PhotoChoice) => void; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Choose a photo">
-      <div className={`${card} w-full max-w-4xl max-h-[85vh] flex flex-col`}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-stone-200 dark:border-stone-800">
-          <h3 className="font-serif text-lg text-stone-900 dark:text-white">Choose a photo</h3>
-          <button className="p-1.5 text-stone-500 hover:text-stone-900" onClick={onClose} aria-label="Close">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {choices.map((c) => (
-            <button key={c.src} onClick={() => onPick(c)} className="group text-left rounded-xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:ring-2 hover:ring-emerald-600">
-              <Thumb src={c.src} alt={c.alt} className="w-full h-28" />
-              <div className="px-2 py-1.5 text-[11px] text-stone-500 truncate">
-                {c.uploaded ? "Uploaded" : "Built-in"} · {c.alt || "No description"}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+type Tab = "hero" | "gallery" | "food" | "library";
 
 function RowShell({
   src,
@@ -141,7 +93,7 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
   const [tab, setTab] = useState<Tab>("hero");
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [picker, setPicker] = useState<null | "hero" | "food">(null);
+  const [picker, setPicker] = useState<null | "hero" | "food" | "gallery">(null);
   const [uploads, setUploads] = useState<{ name: string; state: "pending" | "done" | "error"; message?: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -150,13 +102,19 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
     () => JSON.stringify((data?.content.foodPhotos ?? []).map(({ src, alt, caption }) => ({ src, alt, caption }))),
     [data],
   );
+  const savedGallery = useMemo(
+    () => JSON.stringify((data?.content.galleryPhotos ?? []).map(({ src, alt, wide }) => ({ src, alt, wide }))),
+    [data],
+  );
+  const [gallery, setGallery] = useState(() => (data?.content.galleryPhotos ?? []).map(({ src, alt, wide }) => ({ src, alt, wide })));
   const [hero, setHero] = useState(() => data?.content.heroSlides ?? []);
   const [food, setFood] = useState(() => (data?.content.foodPhotos ?? []).map(({ src, alt, caption }) => ({ src, alt, caption })));
-  const [seen, setSeen] = useState({ savedHero, savedFood });
-  if (seen.savedHero !== savedHero || seen.savedFood !== savedFood) {
-    setSeen({ savedHero, savedFood });
+  const [seen, setSeen] = useState({ savedHero, savedFood, savedGallery });
+  if (seen.savedHero !== savedHero || seen.savedFood !== savedFood || seen.savedGallery !== savedGallery) {
+    setSeen({ savedHero, savedFood, savedGallery });
     setHero(JSON.parse(savedHero));
     setFood(JSON.parse(savedFood));
+    setGallery(JSON.parse(savedGallery));
   }
 
   useEffect(() => {
@@ -175,6 +133,7 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
 
   const heroDirty = JSON.stringify(hero) !== savedHero;
   const foodDirty = JSON.stringify(food) !== savedFood;
+  const galleryDirty = JSON.stringify(gallery) !== savedGallery;
 
   const run = (action: () => Promise<{ success: boolean; error?: string }>, message: string) => {
     setError(null);
@@ -196,12 +155,7 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
     for (let i = 0; i < list.length; i++) {
       const f = list[i];
       try {
-        const body = new FormData();
-        body.append("file", await shrink(f), f.name.replace(/\.[^.]+$/, "") + ".jpg");
-        body.append("alt", "");
-        const res = await fetch("/api/admin/media", { method: "POST", body });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error ?? `Upload failed (${res.status}).`);
+        await uploadPhoto(f);
         ok++;
         setUploads((u) => u.map((x, j) => (j === i ? { ...x, state: "done" } : x)));
       } catch (e) {
@@ -219,6 +173,7 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; dirty?: boolean }[] = [
     { id: "hero", label: "Homepage slideshow", icon: Images, dirty: heroDirty },
+    { id: "gallery", label: "Around the house", icon: Trees, dirty: galleryDirty },
     { id: "food", label: "Food page", icon: UtensilsCrossed, dirty: foodDirty },
     { id: "library", label: `Library (${data.library.length})`, icon: ImagePlus },
   ];
@@ -231,8 +186,8 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
             <Images className="w-6 h-6 text-emerald-600" /> Photos
           </h1>
           <p className="text-sm text-stone-500 mt-1 max-w-2xl">
-            Upload photos, then choose what the homepage slideshow and the Food page show. Room photos are chosen under
-            Room Inventory. Please only use photos of the real property, and no guests&apos; faces without their consent.
+            Upload photos, then choose what the homepage slideshow, the &ldquo;Around the house&rdquo; strip and the Food page
+            show. Room, driver and dish photos are chosen on their own pages (Room Inventory, Fleet, Menu) with the same picker. Please only use photos of the real property, and no guests&apos; faces without their consent.
           </p>
         </div>
         <div className="flex gap-2">
@@ -254,7 +209,7 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
         <div className="flex gap-2 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-4 py-3 text-sm">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <span>
-            Uploading is not switched on yet: add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY in Vercel and create a
+            Uploading is not switched on yet: add SUPABASE_URL and SUPABASE_SECRET_KEY in Vercel and create a
             public &ldquo;media&rdquo; bucket in Supabase Storage. You can still rearrange the built-in photos below.
           </span>
         </div>
@@ -351,6 +306,52 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
         </section>
       )}
 
+      {tab === "gallery" && (
+        <section className={`${card} p-5`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-stone-500">
+              The endless strip of photos on the homepage (&ldquo;Around the house&rdquo;). Tick &ldquo;Wide&rdquo; for landscape
+              photos so they get a wider card.
+            </p>
+            <div className="flex gap-2">
+              <button className={small} disabled={gallery.length >= 20} onClick={() => setPicker("gallery")}>
+                <Plus className="w-3.5 h-3.5" /> Add photo
+              </button>
+              <button
+                className={primary}
+                disabled={!galleryDirty || isPending || gallery.length < 3}
+                onClick={() => run(() => saveGalleryPhotos(gallery), "Photo strip saved. The homepage shows it now.")}
+              >
+                <Save className="w-4 h-4" /> {galleryDirty ? "Save photo strip" : "Saved"}
+              </button>
+            </div>
+          </div>
+          {gallery.length < 3 && <p className="mt-3 text-sm text-amber-700">Add at least 3 photos so the strip can loop.</p>}
+          <ul className="divide-y divide-stone-100 dark:divide-stone-800 mt-3">
+            {gallery.map((s, i) => (
+              <RowShell
+                key={`${s.src}-${i}`}
+                src={s.src}
+                alt={s.alt}
+                index={i}
+                count={gallery.length}
+                onMove={(d) => setGallery(move(gallery, i, d))}
+                onRemove={() => setGallery(gallery.filter((_, j) => j !== i))}
+              >
+                <label className="text-xs text-stone-500">
+                  Description (for screen readers)
+                  <input className={input} value={s.alt} maxLength={200} onChange={(e) => setGallery(gallery.map((x, j) => (j === i ? { ...x, alt: e.target.value } : x)))} />
+                </label>
+                <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300 sm:pt-5">
+                  <input type="checkbox" className="accent-emerald-700" checked={s.wide} onChange={(e) => setGallery(gallery.map((x, j) => (j === i ? { ...x, wide: e.target.checked } : x)))} />
+                  Wide card
+                </label>
+              </RowShell>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {tab === "food" && (
         <section className={`${card} p-5`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -405,13 +406,15 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
       )}
 
       {picker && (
-        <Picker
+        <PhotoPicker
           choices={data.choices}
           onClose={() => setPicker(null)}
           onPick={(c) => {
             if (picker === "hero") setHero([...hero, { src: c.src, alt: c.alt, transition: HERO_TRANSITIONS[hero.length % HERO_TRANSITIONS.length] }]);
+            else if (picker === "gallery") setGallery([...gallery, { src: c.src, alt: c.alt, wide: c.width > c.height * 1.2 }]);
             else setFood([...food, { src: c.src, alt: c.alt, caption: "" }]);
             setPicker(null);
+            if (c.uploaded && !data.choices.some((x) => x.src === c.src)) router.refresh();
           }}
         />
       )}

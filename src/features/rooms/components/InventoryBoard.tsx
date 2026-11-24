@@ -13,6 +13,8 @@ import {
   X,
   AlertTriangle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { Inventory, InventoryRoom, InventoryRoomType } from "@/features/rooms/actions/inventory.actions";
 import {
@@ -26,7 +28,7 @@ import {
   updateRoom,
   updateRoomType,
 } from "@/features/rooms/actions/inventory.actions";
-import { ROOM_PHOTOS } from "@/features/rooms/lib/photos";
+import { PhotoField, PhotoPicker, Thumb } from "@/features/media/components/PhotoPicker";
 
 type Action = () => Promise<{ success: boolean; error?: string }>;
 
@@ -52,14 +54,12 @@ export function InventoryBoard({
   inventory,
   loadError,
   canManage,
-  uploadedPhotos = [],
 }: {
   inventory: Inventory | null;
   loadError?: string;
   /** False for housekeeping-only roles, who may still mark rooms made up. */
   canManage: boolean;
   /** Photos uploaded in Admin > Photos, offered alongside the built-in ones. */
-  uploadedPhotos?: { src: string; alt: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -171,7 +171,6 @@ export function InventoryBoard({
             key={editingType?.id ?? "new"}
             initial={editingType}
             currency={inventory.currencyCode}
-            uploadedPhotos={uploadedPhotos}
             busy={isPending}
             onCancel={() => {
               setShowTypeForm(false);
@@ -447,14 +446,12 @@ export function InventoryBoard({
 function RoomTypeForm({
   initial,
   currency,
-  uploadedPhotos,
   busy,
   onSubmit,
   onCancel,
 }: {
   initial: InventoryRoomType | null;
   currency: string;
-  uploadedPhotos: { src: string; alt: string }[];
   busy: boolean;
   onSubmit: (values: Record<string, unknown>) => void;
   onCancel: () => void;
@@ -467,12 +464,21 @@ function RoomTypeForm({
     imageUrl: initial?.imageUrl ?? "",
     features: (initial?.features ?? []).join("\n"),
   });
+  const [gallery, setGallery] = useState<string[]>(initial?.gallery ?? []);
+  const [picking, setPicking] = useState(false);
+  const moveGallery = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= gallery.length) return;
+    const next = [...gallery];
+    [next[i], next[j]] = [next[j], next[i]];
+    setGallery(next);
+  };
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(values);
+        onSubmit({ ...values, gallery });
       }}
       className="px-6 py-5 bg-stone-50 dark:bg-stone-950/50 border-b border-stone-200 dark:border-stone-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end"
     >
@@ -507,27 +513,8 @@ function RoomTypeForm({
         />
       </div>
       <div className="sm:col-span-2 lg:col-span-1">
-        <label htmlFor="type-photo" className={label}>Website photo</label>
-        <select
-          id="type-photo"
-          className={input}
-          value={values.imageUrl}
-          onChange={(e) => setValues({ ...values, imageUrl: e.target.value })}
-        >
-          <option value="">Generic room photo</option>
-          {uploadedPhotos.length > 0 && (
-            <optgroup label="Uploaded in Admin › Photos">
-              {uploadedPhotos.map((photo, i) => (
-                <option key={photo.src} value={photo.src}>{photo.alt || `Uploaded photo ${i + 1}`}</option>
-              ))}
-            </optgroup>
-          )}
-          <optgroup label="Built-in">
-            {ROOM_PHOTOS.map((photo) => (
-              <option key={photo.src} value={photo.src}>{photo.label}</option>
-            ))}
-          </optgroup>
-        </select>
+        <span className={label}>Main photo</span>
+        <PhotoField value={values.imageUrl} onChange={(src) => setValues({ ...values, imageUrl: src })} emptyLabel="Generic room photo" />
       </div>
       <div className="sm:col-span-2">
         <label htmlFor="type-description" className={label}>Description (shown on the website)</label>
@@ -550,18 +537,51 @@ function RoomTypeForm({
           placeholder={"One Queen Bed\nAir Conditioning\nFree Wi-Fi"}
         />
       </div>
-      <div className="sm:col-span-1">
-        {values.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- small admin preview; next/image adds nothing here
-          <img
-            src={values.imageUrl}
-            alt="Selected website photo"
-            className="w-full h-[96px] object-cover rounded-xl border border-stone-200 dark:border-stone-800"
-          />
+      <div className="sm:col-span-2 lg:col-span-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className={label}>Gallery: more photos of this room ({gallery.length}/12)</span>
+          <button
+            type="button"
+            disabled={gallery.length >= 12}
+            onClick={() => setPicking(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-200 hover:border-emerald-600 hover:text-emerald-600 disabled:opacity-40"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add photo
+          </button>
+        </div>
+        {gallery.length === 0 ? (
+          <p className="mt-2 text-xs text-stone-500">
+            No extra photos yet. Add the bathroom, the view, the beds… Guests can swipe through them on the Rooms page.
+          </p>
         ) : (
-          <div className="w-full h-[96px] rounded-xl border border-dashed border-stone-300 dark:border-stone-700 flex items-center justify-center text-xs text-stone-500">
-            No photo chosen
-          </div>
+          <ul className="mt-2 flex gap-3 overflow-x-auto pb-2">
+            {gallery.map((src, i) => (
+              <li key={`${src}-${i}`} className="shrink-0 w-32">
+                <Thumb src={src} alt="" className="w-32 h-20 rounded-lg border border-stone-200 dark:border-stone-800" />
+                <div className="mt-1 flex items-center justify-between text-stone-500">
+                  <button type="button" aria-label="Move left" disabled={i === 0} onClick={() => moveGallery(i, -1)} className="p-1 hover:text-emerald-600 disabled:opacity-30">
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button type="button" aria-label="Remove photo" onClick={() => setGallery(gallery.filter((_, j) => j !== i))} className="p-1 hover:text-red-600">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <button type="button" aria-label="Move right" disabled={i === gallery.length - 1} onClick={() => moveGallery(i, 1)} className="p-1 hover:text-emerald-600 disabled:opacity-30">
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {picking && (
+          <PhotoPicker
+            title="Add a photo to this room's gallery"
+            onClose={() => setPicking(false)}
+            onPick={(c) => {
+              if (!gallery.includes(c.src)) setGallery([...gallery, c.src]);
+              setPicking(false);
+            }}
+          />
         )}
       </div>
       <div className="flex gap-2 sm:col-span-2 lg:col-span-4 justify-end">

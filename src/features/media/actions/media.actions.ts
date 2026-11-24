@@ -3,10 +3,10 @@
 import { z } from "zod";
 import { revalidatePath, updateTag } from "next/cache";
 import prisma from "@/core/db/prisma";
-import { NO_PROPERTY, requireAdminPermission, resolveDefaultPropertyId } from "@/features/admin/lib/requireAdminSession";
+import { NO_PROPERTY, getAdminActor, requireAdminPermission, resolveDefaultPropertyId } from "@/features/admin/lib/requireAdminSession";
 import { deleteObject, isStorageConfigured } from "../lib/storage";
 import { MEDIA_CONTENT_TAG, MediaService, loadMediaContent, type MediaContent, type MediaRow, type PhotoChoice } from "../services/media.service";
-import { FoodPhotosSchema, HeroSlidesSchema, MediaAltSchema } from "../validations/media.schema";
+import { FoodPhotosSchema, GalleryPhotosSchema, HeroSlidesSchema, MediaAltSchema } from "../validations/media.schema";
 
 type Result<T = undefined> = { success: boolean; data?: T; error?: string };
 const firstIssue = (e: z.ZodError) => e.issues?.[0]?.message ?? "Please check the details and try again.";
@@ -74,6 +74,37 @@ export async function saveFoodPhotos(input: unknown): Promise<Result> {
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "That did not save." };
+  }
+}
+
+export async function saveGalleryPhotos(input: unknown): Promise<Result> {
+  const c = await ctx();
+  if (!c.ok) return c.failure;
+  const parsed = GalleryPhotosSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
+  try {
+    await MediaService.saveGallery(c.propertyId, parsed.data);
+    refreshPublic();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "That did not save." };
+  }
+}
+
+/**
+ * Every photo a picker can offer (uploads, then built-in). Any staff member
+ * who can open the admin may see the list; uploading still needs media access.
+ */
+export async function listPhotoChoices(): Promise<Result<PhotoChoice[]>> {
+  const actor = await getAdminActor();
+  if (!actor || !actor.permissions.includes("admin:access")) return { success: false, error: "Please sign in again." };
+  const propertyId = await resolveDefaultPropertyId();
+  if (!propertyId) return { success: false, error: NO_PROPERTY };
+  try {
+    return { success: true, data: await MediaService.choices(propertyId) };
+  } catch (error) {
+    console.error("listPhotoChoices failed:", error instanceof Error ? error.message : error);
+    return { success: false, error: "Photos could not be loaded." };
   }
 }
 

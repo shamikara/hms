@@ -26,6 +26,15 @@ export interface FoodPhotoSetting {
   height: number;
 }
 
+export interface GalleryPhotoSetting {
+  src: string;
+  alt: string;
+  /** Shown as a wide card in the homepage strip. */
+  wide: boolean;
+  width: number;
+  height: number;
+}
+
 export const BUILTIN_PHOTOS: SitePhoto[] = [
   { src: "/hero/hero-pool-pergola.webp", width: 1600, height: 1000, alt: "The pool and thatched pergola under a blue sky" },
   { src: "/hero/hero-garden-path.webp", width: 1280, height: 800, alt: "The garden path leading down to the pool" },
@@ -42,6 +51,45 @@ export const BUILTIN_PHOTOS: SitePhoto[] = [
   { src: "/food/food-curries-basket.webp", width: 900, height: 1200, alt: "A woven basket of rice and curries in clay bowls" },
   { src: "/food/food-hero-breakfast-pool.webp", width: 1600, height: 1200, alt: "Breakfast served at a table beside the pool" },
   { src: "/food/food-tea-garden.webp", width: 1200, height: 900, alt: "Tea served at a table overlooking the garden and pool" },
+  { src: "/pool-garden-day.webp", width: 1280, height: 707, alt: "The pool in the garden by day" },
+  { src: "/wildlife-peacock.webp", width: 854, height: 1280, alt: "A peacock displaying" },
+  { src: "/safari-elephant-calf-grass.webp", width: 960, height: 1280, alt: "An elephant and calf in the park" },
+  { src: "/garden-night-steps.webp", width: 960, height: 1280, alt: "The garden and steps lit at night" },
+  { src: "/room-pink-double.webp", width: 1024, height: 768, alt: "A double room with a pink bedspread" },
+  { src: "/safari-breakfast-park.webp", width: 720, height: 1280, alt: "Breakfast laid out during a safari" },
+  { src: "/pool-from-above.webp", width: 848, height: 1280, alt: "The pool seen from above" },
+  { src: "/wildlife-green-pigeon.webp", width: 1018, height: 1018, alt: "A green pigeon in a tree" },
+  { src: "/drivers/manjula.webp", width: 400, height: 400, alt: "Manjula, safari driver, beside his jeep" },
+  { src: "/room-deluxe-double.webp", width: 2000, height: 1335, alt: "Deluxe double room with a queen bed" },
+  { src: "/room-quadruple.webp", width: 1800, height: 1350, alt: "Quadruple room with two beds" },
+  { src: "/room-twin-yellow.webp", width: 1280, height: 852, alt: "Twin room with yellow bedding" },
+  { src: "/room-twin-purple.webp", width: 1280, height: 852, alt: "Twin room with purple bedding" },
+  { src: "/room-detail.webp", width: 1600, height: 1068, alt: "Detail of a guest room" },
+  { src: "/room-pink-double-desk.webp", width: 1280, height: 754, alt: "Double room with a desk and pink bedspread" },
+  { src: "/room-purple-twin.webp", width: 1280, height: 720, alt: "Twin beds with purple covers" },
+  { src: "/room-welcome-desk.webp", width: 1280, height: 720, alt: "Welcome desk with bottled water" },
+  { src: "/pool-day.webp", width: 1024, height: 768, alt: "The pool by day" },
+  { src: "/pool-loungers.webp", width: 1800, height: 1202, alt: "Loungers beside the pool" },
+  { src: "/property-verandah-day.webp", width: 1800, height: 1202, alt: "The verandah by day" },
+  { src: "/property-garden.webp", width: 1280, height: 960, alt: "The garden" },
+];
+
+const builtin = (src: string) => BUILTIN_PHOTOS.find((p) => p.src === src)!;
+const galleryItem = (src: string, wide = false): GalleryPhotoSetting => {
+  const p = builtin(src);
+  return { src, alt: p.alt, wide, width: p.width, height: p.height };
+};
+
+/** The homepage "Around the house" strip until an admin changes it. */
+export const DEFAULT_GALLERY_PHOTOS: GalleryPhotoSetting[] = [
+  galleryItem("/pool-garden-day.webp", true),
+  galleryItem("/wildlife-peacock.webp"),
+  galleryItem("/safari-elephant-calf-grass.webp"),
+  galleryItem("/garden-night-steps.webp"),
+  galleryItem("/room-pink-double.webp", true),
+  galleryItem("/safari-breakfast-park.webp"),
+  galleryItem("/pool-from-above.webp"),
+  galleryItem("/wildlife-green-pigeon.webp"),
 ];
 
 export const DEFAULT_HERO_SLIDES: HeroSlideSetting[] = [

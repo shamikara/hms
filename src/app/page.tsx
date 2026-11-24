@@ -60,7 +60,7 @@ export default async function Home() {
         {rooms && rooms.roomTypes.length > 0 && <RoomsGrid rooms={rooms} />}
         <SafariFeature />
         <FoodAndEvenings />
-        <PhotoStrip />
+        <PhotoStrip photos={media.galleryPhotos} />
         <RatingsBand ratings={ratings} aggregate={aggregate} />
         <LocationSection contact={contact} />
         <ClosingCta contact={contact} />

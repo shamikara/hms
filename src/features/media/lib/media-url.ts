@@ -1,11 +1,17 @@
 /**
  * Recognises URLs of photos uploaded to this site's own Supabase bucket.
- * Safe to use in the browser (it only reads NEXT_PUBLIC_ values).
+ * Server-side: reads SUPABASE_URL (NEXT_PUBLIC_SUPABASE_URL also accepted).
  */
 export const MEDIA_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() || "media";
 
+/** The project URL, e.g. https://abc.supabase.co, or null when not set. */
+export function supabaseUrl(): string | null {
+  const raw = process.env.SUPABASE_URL?.trim() || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  return raw ? raw.replace(/\/+$/, "") : null;
+}
+
 export function mediaPublicPrefix(): string | null {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const base = supabaseUrl();
   return base ? `${base}/storage/v1/object/public/${MEDIA_BUCKET}/` : null;
 }
 

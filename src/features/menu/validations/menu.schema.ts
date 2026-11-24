@@ -27,6 +27,13 @@ export const DishSchema = z.object({
     .transform((v) => (v === "" || v === undefined ? null : v)),
   vegetarian: z.boolean().default(false),
   spicy: z.boolean().default(false),
+  /** A photo from the library; blank for none. Checked against the library on save. */
+  imageUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .transform((v) => (v ? v : null)),
 });
 export type DishValues = z.infer<typeof DishSchema>;
 

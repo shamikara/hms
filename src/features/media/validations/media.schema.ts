@@ -19,3 +19,8 @@ export const FoodPhotosSchema = z
   .max(16, "Up to 16 photos on the Food page.");
 
 export const MediaAltSchema = z.object({ id: z.string().min(1).max(64), alt });
+
+export const GalleryPhotosSchema = z
+  .array(z.object({ src: z.string().min(1).max(500), alt, wide: z.boolean() }))
+  .min(3, "Keep at least 3 photos so the strip can loop.")
+  .max(20, "Up to 20 photos in the strip.");

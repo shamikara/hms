@@ -1,5 +1,6 @@
 "use client";
 
+import { PhotoField, Thumb } from "@/features/media/components/PhotoPicker";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -42,8 +43,8 @@ function longDate(day: string) {
   );
 }
 
-type Draft = { name: string; description: string; price: string; vegetarian: boolean; spicy: boolean; meal: MealPeriod };
-const emptyDraft = (meal: MealPeriod): Draft => ({ name: "", description: "", price: "", vegetarian: false, spicy: false, meal });
+type Draft = { name: string; description: string; price: string; vegetarian: boolean; spicy: boolean; meal: MealPeriod; imageUrl: string };
+const emptyDraft = (meal: MealPeriod): Draft => ({ name: "", description: "", price: "", vegetarian: false, spicy: false, meal, imageUrl: "" });
 const toDraft = (d: DishRow): Draft => ({
   name: d.name,
   description: d.description ?? "",
@@ -51,6 +52,7 @@ const toDraft = (d: DishRow): Draft => ({
   vegetarian: d.vegetarian,
   spicy: d.spicy,
   meal: d.meal,
+  imageUrl: d.imageUrl ?? "",
 });
 
 function DishForm({
@@ -112,6 +114,7 @@ function DishForm({
           Spicy
         </label>
       </div>
+      <PhotoField value={draft.imageUrl} onChange={(src) => onChange({ ...draft, imageUrl: src })} emptyLabel="Optional: shows on the Food page" />
       <div className="flex gap-2">
         <button type="submit" disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50">
           <Save className="w-3.5 h-3.5" /> {submitLabel}
@@ -333,6 +336,7 @@ export function MenuBoard({ data, loadError }: { data: MenuBoardData | null; loa
                         onChange={() => toggle(dish.id)}
                         aria-label={`${dish.name} on the menu`}
                       />
+                      {dish.imageUrl && <Thumb src={dish.imageUrl} alt="" className="h-10 w-10 rounded-md shrink-0" />}
                       <button type="button" onClick={() => toggle(dish.id)} className="flex-1 text-left">
                         <span className={`text-sm font-medium ${checked ? "text-stone-900 dark:text-stone-50" : "text-stone-500"} ${soldOut ? "line-through" : ""}`}>
                           {dish.name}

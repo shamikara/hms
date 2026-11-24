@@ -1,5 +1,6 @@
 "use client";
 
+import { PhotoField } from "@/features/media/components/PhotoPicker";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -439,11 +440,11 @@ export function DriverManager({ drivers, candidates, canManage }: DriverManagerP
                   <EnumOptions values={Object.values(DriverEmploymentStatus)} />
                 </Select>
               </Field>
-              <Field label="Photo" hint="A https:// link, or a photo in the site like /drivers/manjula.webp">
-                <TextInput
+              <Field label="Photo" hint="Shown on the public drivers page">
+                <PhotoField
                   value={form.imageUrl}
-                  onChange={(e) => update("imageUrl", e.target.value)}
-                  placeholder="/drivers/name.webp"
+                  onChange={(src) => update("imageUrl", src)}
+                  shape="round"
                 />
               </Field>
               <Field label="Languages" hint="Separate with commas">
