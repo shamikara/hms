@@ -69,6 +69,8 @@ type FormState = {
   isAvailable: boolean;
   imageUrl: string;
   notes: string;
+  bio: string;
+  languages: string;
 };
 
 const emptyForm: FormState = {
@@ -80,6 +82,8 @@ const emptyForm: FormState = {
   isAvailable: true,
   imageUrl: "",
   notes: "",
+  bio: "",
+  languages: "English, Sinhala",
 };
 
 function toForm(driver: DriverRow): FormState {
@@ -92,6 +96,8 @@ function toForm(driver: DriverRow): FormState {
     isAvailable: driver.isAvailable,
     imageUrl: driver.imageUrl ?? "",
     notes: driver.notes ?? "",
+    bio: driver.bio ?? "",
+    languages: driver.languages.join(", "),
   };
 }
 
@@ -151,6 +157,7 @@ export function DriverManager({ drivers, candidates, canManage }: DriverManagerP
       isAvailable: form.isAvailable,
       notes: form.notes,
       imageUrl: form.imageUrl.trim() === "" ? undefined : form.imageUrl.trim(),
+      languages: form.languages.split(/[,/]/).map((l) => l.trim()).filter(Boolean),
     };
 
     const result = editing
@@ -158,8 +165,9 @@ export function DriverManager({ drivers, candidates, canManage }: DriverManagerP
           id: editing.id,
           ...payload,
           imageUrl: form.imageUrl.trim() === "" ? null : form.imageUrl.trim(),
+          bio: form.bio,
         })
-      : await createDriverAction({ employeeId: form.employeeId, ...payload });
+      : await createDriverAction({ employeeId: form.employeeId, ...payload, bio: form.bio });
 
     setPending(false);
     if (!result.success) {
@@ -431,12 +439,18 @@ export function DriverManager({ drivers, candidates, canManage }: DriverManagerP
                   <EnumOptions values={Object.values(DriverEmploymentStatus)} />
                 </Select>
               </Field>
-              <Field label="Profile image URL">
+              <Field label="Photo" hint="A https:// link, or a photo in the site like /drivers/manjula.webp">
                 <TextInput
-                  type="url"
                   value={form.imageUrl}
                   onChange={(e) => update("imageUrl", e.target.value)}
-                  placeholder="https://…"
+                  placeholder="/drivers/name.webp"
+                />
+              </Field>
+              <Field label="Languages" hint="Separate with commas">
+                <TextInput
+                  value={form.languages}
+                  onChange={(e) => update("languages", e.target.value)}
+                  placeholder="English, Sinhala"
                 />
               </Field>
               <Field label="Roster availability">
@@ -452,7 +466,16 @@ export function DriverManager({ drivers, candidates, canManage }: DriverManagerP
               </Field>
             </div>
 
-            <Field label="Notes">
+            <Field label="About this driver (shown to guests)" hint="Two or three friendly sentences">
+              <TextArea
+                value={form.bio}
+                maxLength={800}
+                onChange={(e) => update("bio", e.target.value)}
+                placeholder="How long they have driven in Udawalawe, what guests like about them…"
+              />
+            </Field>
+
+            <Field label="Notes (staff only)">
               <TextArea
                 value={form.notes}
                 onChange={(e) => update("notes", e.target.value)}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { Star, Compass, ShieldCheck, Clock, MessageSquare, UserRound } from "lucide-react";
+import { Star, Compass, ShieldCheck, Clock, Languages, MessageSquare, UserRound } from "lucide-react";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
@@ -112,9 +112,17 @@ function DriverCard({ driver }: { driver: PublicDriverRow }) {
               <Clock className="h-3.5 w-3.5" />
               {driver.isAvailable ? "Available" : "Not currently taking drives"}
             </span>
+            {driver.languages.length > 0 && (
+              <span className="flex items-center gap-1">
+                <Languages className="h-3.5 w-3.5 text-emerald-400" />
+                {driver.languages.join(" · ")}
+              </span>
+            )}
           </p>
         </div>
       </div>
+
+      {driver.bio && <p className="mt-4 text-sm leading-relaxed text-stone-300">{driver.bio}</p>}
 
       {/* Category breakdown, only once there is enough evidence to mean anything. */}
       {wellEvidenced && (

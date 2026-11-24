@@ -28,6 +28,17 @@ const optionalId = (label: string) =>
     .or(z.literal("").transform(() => undefined));
 
 /** Trims and converts an empty string to undefined, so blank form fields clear. */
+/** A full https URL, or a photo shipped with the site such as /drivers/manjula.webp. */
+const imageRef = z
+  .string()
+  .trim()
+  .refine((v) => /^https:\/\//.test(v) || /^\/[A-Za-z0-9._\-/]+\.(webp|jpe?g|png|avif)$/.test(v), "Use a https:// link or a site path like /drivers/name.webp");
+
+const languageList = z
+  .array(z.string().trim().min(2).max(30))
+  .max(8)
+  .transform((list) => [...new Set(list.filter(Boolean))]);
+
 const optionalText = (max = 2000) =>
   z
     .string()
@@ -163,8 +174,10 @@ export const DriverCreateSchema = z.object({
     .default(DriverEmploymentStatus.ACTIVE),
   isAvailable: z.boolean().default(true),
   isActive: z.boolean().default(true),
-  imageUrl: z.string().url("Profile image must be a valid URL").optional(),
+  imageUrl: imageRef.optional(),
   notes: optionalText(),
+  bio: optionalText(800),
+  languages: languageList.default([]),
 });
 
 export const DriverUpdateSchema = z
@@ -181,8 +194,16 @@ export const DriverUpdateSchema = z
     employmentStatus: z.nativeEnum(DriverEmploymentStatus).optional(),
     isAvailable: z.boolean().optional(),
     isActive: z.boolean().optional(),
-    imageUrl: z.string().url().nullable().optional(),
+    imageUrl: imageRef.nullable().optional(),
     notes: optionalText(),
+    /** Empty clears it. */
+    bio: z
+      .string()
+      .max(800)
+      .transform((v) => (v.trim() === "" ? null : v.trim()))
+      .nullable()
+      .optional(),
+    languages: languageList.optional(),
   })
   .strict();
 

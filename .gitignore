@@ -58,3 +58,6 @@ _to-delete/
 
 # Raw phone videos; the web copies live in public/tour
 /public/video/
+
+# Original upload; the site ships the .webp version
+public/drivers/manjula.jpeg

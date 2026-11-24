@@ -56,6 +56,8 @@ export const DriverService = {
             isActive: input.isActive,
             imageUrl: input.imageUrl ?? null,
             notes: input.notes ?? null,
+            bio: input.bio ?? null,
+            languages: input.languages ?? [],
           },
           tx
         );
@@ -137,6 +139,8 @@ export const DriverService = {
             ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
             ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
             ...(input.notes !== undefined ? { notes: input.notes } : {}),
+            ...(input.bio !== undefined ? { bio: input.bio } : {}),
+            ...(input.languages !== undefined ? { languages: input.languages } : {}),
           },
           tx
         );

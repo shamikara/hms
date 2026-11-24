@@ -700,6 +700,10 @@ model SafariDriver {
   /// Nullable: no blob storage is configured, this holds an external URL if set.
   imageUrl              String?
   notes                 String?
+  /// Short public introduction shown on /safari/drivers.
+  bio                   String?
+  /// Languages the driver speaks with guests, e.g. ["English", "Sinhala"].
+  languages             String[]               @default([])
 
   // --- Denormalised rating aggregates (recomputed inside the review transaction).
   ratingCount              Int       @default(0)
