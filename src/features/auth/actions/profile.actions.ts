@@ -3,7 +3,7 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import prisma from "@/core/db/prisma";
-import { verifySession } from "@/core/lib/session";
+import { createSession, verifySession } from "@/core/lib/session";
 import { RESET_VERIFY_RULE, consumeRateLimit, describeWait } from "@/core/security/rateLimit";
 import { getAdminActor } from "@/features/admin/lib/requireAdminSession";
 import { STAFF_ROLES } from "@/features/staff/validations/staff.schema";
@@ -81,7 +81,10 @@ export async function changeMyPasswordAction(input: unknown): Promise<Result> {
     if (!ok) return { success: false, error: "Your current password is not right." };
 
     const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
-    await prisma.user.update({ where: { id: session.userId }, data: { passwordHash } });
+    // Bumping the version signs out every other device (a stolen cookie
+    // included); this device gets a fresh cookie so it stays signed in.
+    await prisma.user.update({ where: { id: session.userId }, data: { passwordHash, sessionVersion: { increment: 1 } } });
+    await createSession({ userId: session.userId, role: session.role, roles: session.roles });
     return { success: true };
   } catch (error) {
     console.error("changeMyPasswordAction failed:", error instanceof Error ? error.message : error);

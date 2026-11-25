@@ -216,7 +216,7 @@ export const StaffService = {
       }
       const now = new Date();
       await tx.employee.update({ where: { id: row.id }, data: { deletedAt: now } });
-      await tx.user.update({ where: { id: row.user.id }, data: { deletedAt: now, isActive: false } });
+      await tx.user.update({ where: { id: row.user.id }, data: { deletedAt: now, isActive: false, sessionVersion: { increment: 1 } } });
     });
   },
 };

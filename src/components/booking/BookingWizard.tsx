@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { checkAvailability, createPublicBooking, startPaidBooking, RoomAvailability } from "@/features/bookings/actions/booking.actions";
 import type { PublicPaymentOptions } from "@/features/payments/services/payment-settings.service";
@@ -420,9 +421,9 @@ export function BookingWizard({
                 Your reference: <span className="font-mono text-stone-900 dark:text-stone-100">{reference}</span>
               </p>
             )}
-            <button onClick={() => window.location.href = "/"} className="bg-emerald-700 hover:bg-emerald-600 text-white px-8 py-3 rounded-full font-medium transition-colors">
+            <Link href="/" className="inline-block bg-emerald-700 hover:bg-emerald-600 text-white px-8 py-3 rounded-full font-medium transition-colors">
               Return Home
-            </button>
+            </Link>
           </div>
         )}
       </div>

@@ -26,5 +26,11 @@ export interface SessionPayload {
    * sort first.
    */
   roles?: string[];
+  /**
+   * The user's sessionVersion when this cookie was issued. A password change
+   * bumps the stored number, which retires every older cookie. Missing on
+   * cookies issued before the column existed; those count as version 0.
+   */
+  sv?: number;
   expiresAt: Date;
 }

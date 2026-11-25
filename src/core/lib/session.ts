@@ -1,5 +1,7 @@
-import { jwtVerify, SignJWT } from "jose";
+import { jwtVerify, SignJWT, type JWTPayload } from "jose";
+import { cache } from "react";
 import { cookies } from "next/headers";
+import prisma from "@/core/db/prisma";
 import { SessionPayload } from "@/features/auth/types";
 
 /**
@@ -23,7 +25,7 @@ function sessionKey(): Uint8Array {
 }
 
 export async function encrypt(payload: SessionPayload) {
-  return new SignJWT(payload as any)
+  return new SignJWT(payload as unknown as JWTPayload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("1d")
@@ -44,9 +46,11 @@ export async function decrypt(session: string | undefined = "") {
   }
 }
 
-export async function createSession(payload: Omit<SessionPayload, "expiresAt">) {
+export async function createSession(payload: Omit<SessionPayload, "expiresAt" | "sv">) {
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const session = await encrypt({ ...payload, expiresAt });
+  // Stamp the cookie with the user's current session version (see below).
+  const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { sessionVersion: true } });
+  const session = await encrypt({ ...payload, sv: user?.sessionVersion ?? 0, expiresAt });
   const cookieStore = await cookies();
 
   cookieStore.set("session", session, {
@@ -58,12 +62,29 @@ export async function createSession(payload: Omit<SessionPayload, "expiresAt">) 
   });
 }
 
+/**
+ * Is this signed cookie still honoured? A valid signature is not enough: the
+ * account must still be active and not removed, and its session version must
+ * match the one in the cookie, so changing a password signs out every other
+ * device at once. Read once per request (React cache), not per call.
+ */
+const stillValid = cache(async (userId: string, sv: number): Promise<boolean> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isActive: true, deletedAt: true, sessionVersion: true },
+  });
+  return Boolean(user && user.isActive && !user.deletedAt && user.sessionVersion === sv);
+});
+
 export async function verifySession() {
   const cookieStore = await cookies();
   const cookie = cookieStore.get("session")?.value;
   const session = await decrypt(cookie);
 
   if (!session?.userId) {
+    return null;
+  }
+  if (!(await stillValid(session.userId, session.sv ?? 0))) {
     return null;
   }
 

@@ -95,7 +95,9 @@ export function BreadcrumbJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // Same escaping as above: page names are hard-coded today, but a "<" in
+      // one must never be able to close the script tag.
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
     />
   );
 }

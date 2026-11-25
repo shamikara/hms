@@ -122,10 +122,16 @@ export const StaffRepository = {
   },
 
   async setPassword(userId: string, passwordHash: string, db: Db = prisma) {
-    await db.user.update({ where: { id: userId }, data: { passwordHash } });
+    // A password set by a manager also signs the person out everywhere.
+    await db.user.update({ where: { id: userId }, data: { passwordHash, sessionVersion: { increment: 1 } } });
   },
 
   async setActive(userId: string, active: boolean, db: Db = prisma) {
-    await db.user.update({ where: { id: userId }, data: { isActive: active } });
+    // Switching off also retires their sessions at once (not "on next click"
+    // of a check that might be skipped somewhere).
+    await db.user.update({
+      where: { id: userId },
+      data: { isActive: active, ...(active ? {} : { sessionVersion: { increment: 1 } }) },
+    });
   },
 };

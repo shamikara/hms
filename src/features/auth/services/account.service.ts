@@ -289,7 +289,8 @@ export const AccountService = {
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     await prisma.$transaction(async (tx) => {
       await tx.authToken.update({ where: { id: row.id }, data: { usedAt: new Date() } });
-      await tx.user.update({ where: { id: user.id }, data: { passwordHash } });
+      // New password: every existing session is retired.
+      await tx.user.update({ where: { id: user.id }, data: { passwordHash, sessionVersion: { increment: 1 } } });
       await markVerifiedAndLink(tx, user.id, email);
     });
   },
