@@ -4,6 +4,8 @@ import * as React from "react";
 import { Sidebar } from "@/components/navigation/Sidebar";
 import { TopHeader } from "@/components/navigation/TopHeader";
 import { CommandPalette } from "@/components/navigation/CommandPalette";
+import { ConfirmHost } from "@/components/ui/confirm-dialog";
+import { ToastHost } from "@/components/ui/toast";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -66,6 +68,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
       />
+      <ConfirmHost />
+      <ToastHost />
     </div>
   );
 }

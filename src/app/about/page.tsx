@@ -28,11 +28,11 @@ function listOf(items: string[]): string {
 
 export const metadata: Metadata = {
   title: "About the Resort",
-  description: "A small guesthouse beside Udawalawe National Park, and the people who run it.",
+  description: "Lily Safari Resort is a small family-run guesthouse beside Udawalawe National Park, Sri Lanka, with a pool, a garden, home-cooked food and safari jeeps.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About the Resort",
-    description: "A small guesthouse beside Udawalawe National Park, and the people who run it.",
+    description: "Lily Safari Resort is a small family-run guesthouse beside Udawalawe National Park, Sri Lanka, with a pool, a garden, home-cooked food and safari jeeps.",
     url: "/about",
   },
 };

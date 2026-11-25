@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { showToast } from "@/components/ui/toast";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, KeyRound, Pencil, Plus, Power, UserCog, X } from "lucide-react";
+import { AlertTriangle, KeyRound, Pencil, Plus, Power, Trash2, UserCog, X } from "lucide-react";
 import type { StaffMember } from "@/features/staff/services/staff.service";
 import { STAFF_ROLES } from "@/features/staff/validations/staff.schema";
 import {
   createStaff,
+  removeStaff,
   resetStaffPassword,
   setStaffActive,
   updateStaff,
@@ -46,22 +48,16 @@ export function StaffBoard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
   const run = (action: Action, message: string, onDone?: () => void) => {
     setError(null);
     startTransition(async () => {
       const result = await action();
       if (result.success) {
-        setToast(message);
+        showToast(message);
         onDone?.();
         router.refresh();
       } else {
@@ -74,12 +70,6 @@ export function StaffBoard({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-emerald-900 border border-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
@@ -230,6 +220,36 @@ export function StaffBoard({
                         >
                           <Power className="w-4 h-4" />
                         </button>
+                        {!m.active && !m.isSelf && (
+                          confirmRemove === m.employeeId ? (
+                            <span className="flex items-center gap-1.5 pl-1 text-xs">
+                              Remove for good?
+                              <button
+                                className="px-2 py-1 rounded-md bg-red-600 text-white disabled:opacity-50"
+                                disabled={isPending}
+                                onClick={() => {
+                                  setConfirmRemove(null);
+                                  run(() => removeStaff({ employeeId: m.employeeId }), `${m.firstName} ${m.lastName} removed from the staff list.`);
+                                }}
+                              >
+                                Remove
+                              </button>
+                              <button className="px-2 py-1 rounded-md border border-stone-300 dark:border-stone-700" onClick={() => setConfirmRemove(null)}>
+                                Keep
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              className={`${iconButton} hover:text-red-600`}
+                              disabled={lockedSuperAdmin(m) || isPending}
+                              onClick={() => setConfirmRemove(m.employeeId)}
+                              aria-label={`Remove ${m.firstName} ${m.lastName} from the staff list`}
+                              title="Remove from the staff list"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )
+                        )}
                       </div>
                     </td>
                   </tr>

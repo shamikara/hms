@@ -1,5 +1,6 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -262,6 +263,7 @@ export function TripBoard({
     }
 
     setAssignOpen(false);
+    showToast("Trip saved.");
     router.refresh();
   }
 
@@ -319,6 +321,7 @@ export function TripBoard({
 
     setLifecycleMode(null);
     setLifecycleTrip(null);
+    showToast("Trip updated.");
     router.refresh();
   }
 
@@ -342,6 +345,7 @@ export function TripBoard({
     }
     setScheduleId("");
     setScheduleDriverId("");
+    showToast("Trip updated.");
     router.refresh();
   }
 

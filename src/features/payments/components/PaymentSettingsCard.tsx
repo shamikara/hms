@@ -1,5 +1,6 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, CreditCard, XCircle } from "lucide-react";
@@ -50,8 +51,10 @@ export function PaymentSettingsCard({ settings, loadError }: { settings: Payment
           setMessage(null);
           start(async () => {
             const r = await updatePaymentSettings({ enabled, advancePercent, freeCancelDays });
-            setMessage(r.success ? { ok: true, text: enabled ? "Saved. Guests can now pay online." : "Saved. Online payment is off." } : { ok: false, text: r.error ?? "That did not save." });
-            if (r.success) router.refresh();
+            if (r.success) {
+              showToast(enabled ? "Saved. Guests can now pay online." : "Saved. Online payment is off.");
+              router.refresh();
+            } else setMessage({ ok: false, text: r.error ?? "That did not save." });
           });
         }}
       >

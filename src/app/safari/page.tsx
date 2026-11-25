@@ -9,11 +9,11 @@ import { Compass, Sun, Moon, Clock, ArrowRight, Users } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Udawalawe Safari Drives",
-  description: "Morning and afternoon safari jeeps into Udawalawe National Park, arranged by the house.",
+  description: "Morning and afternoon safari jeep drives into Udawalawe National Park to see wild elephants, buffalo and birds, arranged by the house with local drivers.",
   alternates: { canonical: "/safari" },
   openGraph: {
     title: "Udawalawe Safari Drives",
-    description: "Morning and afternoon safari jeeps into Udawalawe National Park, arranged by the house.",
+    description: "Morning and afternoon safari jeep drives into Udawalawe National Park to see wild elephants, buffalo and birds, arranged by the house with local drivers.",
     url: "/safari",
   },
 };

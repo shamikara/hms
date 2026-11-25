@@ -188,4 +188,35 @@ export const StaffService = {
       { isolationLevel: "Serializable" },
     );
   },
+
+  /**
+   * Takes someone off the staff list for good (sample accounts, people who
+   * have left). Their sign-in must be switched off first. Nothing is erased:
+   * the records are marked removed, so past trips, reviews and logs that
+   * mention them still make sense.
+   */
+  async remove(propertyId: string, actor: StaffActor, employeeId: string) {
+    await prisma.$transaction(async (tx) => {
+      const row = await load(employeeId, propertyId, tx);
+      assertMayTouchSuperAdmin(actor, rolesAt(row, propertyId).includes(SUPER_ADMIN));
+      if (row.user.id === actor.userId) throw new StaffError("You cannot remove yourself.");
+      if (row.user.isActive) throw new StaffError("Switch off their sign-in first, then remove them.");
+
+      const driver = await tx.safariDriver.findUnique({ where: { employeeId: row.id }, select: { id: true } });
+      if (driver) {
+        const upcoming = await tx.safariTrip.findFirst({
+          where: { driverId: driver.id, status: { in: ["SCHEDULED", "CONFIRMED", "IN_PROGRESS"] } },
+          select: { id: true },
+        });
+        if (upcoming) throw new StaffError("They still have safari trips booked. Move those to another driver first.");
+        await tx.safariDriver.update({
+          where: { id: driver.id },
+          data: { deletedAt: new Date(), isActive: false, isAvailable: false },
+        });
+      }
+      const now = new Date();
+      await tx.employee.update({ where: { id: row.id }, data: { deletedAt: now } });
+      await tx.user.update({ where: { id: row.user.id }, data: { deletedAt: now, isActive: false } });
+    });
+  },
 };

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { showToast } from "@/components/ui/toast";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -91,7 +92,6 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [tab, setTab] = useState<Tab>("hero");
-  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<null | "hero" | "food" | "gallery">(null);
   const [uploads, setUploads] = useState<{ name: string; state: "pending" | "done" | "error"; message?: string }[]>([]);
@@ -117,12 +117,6 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
     setGallery(JSON.parse(savedGallery));
   }
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   if (!data) {
     return (
       <div className="p-6 rounded-xl border border-red-300 bg-red-50 text-red-700 text-sm flex items-center gap-2">
@@ -140,7 +134,7 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
     startTransition(async () => {
       const r = await action();
       if (r.success) {
-        setToast(message);
+        showToast(message);
         router.refresh();
       } else setError(r.error ?? "That did not work.");
     });
@@ -165,7 +159,7 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
     }
     if (fileRef.current) fileRef.current.value = "";
     if (ok) {
-      setToast(`${ok} photo${ok === 1 ? "" : "s"} uploaded. Add a short description to each in the Library tab.`);
+      showToast(`${ok} photo${ok === 1 ? "" : "s"} uploaded. Add a short description to each in the Library tab.`);
       setTab("library");
       router.refresh();
     }
@@ -229,11 +223,6 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
         </ul>
       )}
 
-      {toast && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-sm text-emerald-800 dark:text-emerald-300">
-          <CheckCircle2 className="w-4 h-4" /> {toast}
-        </div>
-      )}
       {error && (
         <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 px-4 py-2.5 text-sm text-red-700 dark:text-red-300">
           <AlertTriangle className="w-4 h-4" /> {error}

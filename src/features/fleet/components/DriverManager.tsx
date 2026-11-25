@@ -1,5 +1,7 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
+import { confirmAction, showNotice } from "@/components/ui/confirm-dialog";
 import { PhotoField } from "@/features/media/components/PhotoPicker";
 import * as React from "react";
 import Link from "next/link";
@@ -176,19 +178,31 @@ export function DriverManager({ drivers, candidates, canManage }: DriverManagerP
       return;
     }
     setDialogOpen(false);
+    showToast(editing ? "Driver saved." : "Driver registered.");
     router.refresh();
   }
 
   async function handleArchive(driver: DriverRow, archive: boolean) {
     const name = `${driver.employee.firstName} ${driver.employee.lastName}`;
-    if (!window.confirm(`${archive ? "Archive" : "Restore"} ${name}?`)) return;
+    const ok = await confirmAction(
+      archive
+        ? {
+            title: `Archive ${name}?`,
+            message: "They come off the public Drivers page and can't be given new trips. Past trips and reviews stay on record, and you can restore them later with \"Show archived\".",
+            confirmLabel: "Archive driver",
+            tone: "warning",
+          }
+        : { title: `Restore ${name}?`, message: "They show on the Drivers page again.", confirmLabel: "Restore", tone: "warning" },
+    );
+    if (!ok) return;
     setPending(true);
     const result = await archiveDriverAction({ id: driver.id, archive });
     setPending(false);
     if (!result.success) {
-      window.alert(result.error ?? "Could not update the driver.");
+      await showNotice({ title: "That didn't work", message: result.error ?? "Could not update the driver." });
       return;
     }
+    showToast(archive ? `${name} archived.` : `${name} restored.`);
     router.refresh();
   }
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { showToast } from "@/components/ui/toast";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, Mail, Percent, Plus, Star, Trash2 } from "lucide-react";
+import { AlertTriangle, Mail, Percent, Plus, Star, Trash2 } from "lucide-react";
 import type { SiteSettings } from "@/features/site/services/site.service";
 import {
   saveContactSettings,
@@ -36,7 +37,6 @@ export function SettingsBoard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [contact, setContact] = useState(() => ({
@@ -59,18 +59,12 @@ export function SettingsBoard({
   );
   const [tax, setTax] = useState(settings?.taxPercent === null || !settings ? "" : String(settings.taxPercent));
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   const run = (action: Action, message: string) => {
     setError(null);
     startTransition(async () => {
       const result = await action();
       if (result.success) {
-        setToast(message);
+        showToast(message);
         router.refresh();
       } else {
         setError(result.error ?? "That did not save.");
@@ -102,12 +96,6 @@ export function SettingsBoard({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out max-w-4xl">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-emerald-900 border border-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       <div>
         <h1 className="text-3xl font-serif text-stone-900 dark:text-white tracking-tight">Site Settings</h1>

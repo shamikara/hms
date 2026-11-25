@@ -1,5 +1,7 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
+import { confirmAction, showNotice } from "@/components/ui/confirm-dialog";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -146,24 +148,26 @@ export function DocumentManager({
       return;
     }
     setDialogOpen(false);
+    showToast("Document saved.");
     router.refresh();
   }
 
   async function handleArchive(document: DocumentRow) {
-    if (
-      !window.confirm(
-        `Archive ${humaniseEnum(document.type)} ${document.documentNumber}? It stays on record for auditing.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: `Archive ${humaniseEnum(document.type)} ${document.documentNumber}?`,
+      message: "It stops counting for expiry alerts but stays on record for auditing.",
+      confirmLabel: "Archive document",
+      tone: "warning",
+    });
+    if (!ok) return;
     setPending(true);
     const result = await archiveVehicleDocumentAction({ id: document.id });
     setPending(false);
     if (!result.success) {
-      window.alert(result.error ?? "Could not archive the document.");
+      await showNotice({ title: "That didn't work", message: result.error ?? "Could not archive the document." });
       return;
     }
+    showToast("Document archived.");
     router.refresh();
   }
 

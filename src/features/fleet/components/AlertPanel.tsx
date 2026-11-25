@@ -1,5 +1,7 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
+import { showNotice } from "@/components/ui/confirm-dialog";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
@@ -41,9 +43,10 @@ export function AlertPanel({ propertyId, alerts, canManage }: AlertPanelProps) {
     const result = await updateFleetAlertAction({ id: alert.id, resolve });
     setPending(false);
     if (!result.success) {
-      window.alert(result.error ?? "Could not update the alert.");
+      void showNotice({ title: "That didn't work", message: result.error ?? "Could not update the alert." });
       return;
     }
+    showToast(resolve ? "Alert resolved." : "Alert reopened.");
     router.refresh();
   }
 
@@ -52,9 +55,10 @@ export function AlertPanel({ propertyId, alerts, canManage }: AlertPanelProps) {
     const result = await refreshFleetAlertsAction(propertyId);
     setPending(false);
     if (!result.success) {
-      window.alert(result.error ?? "Could not refresh alerts.");
+      void showNotice({ title: "That didn't work", message: result.error ?? "Could not refresh alerts." });
       return;
     }
+    showToast("Alerts refreshed.");
     router.refresh();
   }
 

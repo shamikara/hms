@@ -1,5 +1,7 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
+import { confirmAction, showNotice } from "@/components/ui/confirm-dialog";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -216,6 +218,7 @@ export function VehicleManager({ propertyId, vehicles, canManage }: VehicleManag
     }
 
     setDialogOpen(false);
+    showToast(editing ? "Vehicle saved." : "Vehicle added.");
     router.refresh();
   }
 
@@ -224,22 +227,32 @@ export function VehicleManager({ propertyId, vehicles, canManage }: VehicleManag
     const result = await changeVehicleStatusAction({ id: vehicle.id, status });
     setPending(false);
     if (!result.success) {
-      window.alert(result.error ?? "Could not change the status.");
+      await showNotice({ title: "That didn't work", message: result.error ?? "Could not change the status." });
       return;
     }
+    showToast("Status updated.");
     router.refresh();
   }
 
   async function handleArchive(vehicle: VehicleRow, archive: boolean) {
     const label = archive ? "Archive" : "Restore";
-    if (!window.confirm(`${label} ${vehicle.plateNumber}?`)) return;
+    const ok = await confirmAction({
+      title: `${label} ${vehicle.plateNumber}?`,
+      message: archive
+        ? "It can't be used for new trips. Its trip, fuel and maintenance history stays on record, and you can restore it later."
+        : "It can be used for trips again.",
+      confirmLabel: archive ? "Archive vehicle" : "Restore",
+      tone: "warning",
+    });
+    if (!ok) return;
     setPending(true);
     const result = await archiveVehicleAction({ id: vehicle.id, archive });
     setPending(false);
     if (!result.success) {
-      window.alert(result.error ?? `Could not ${label.toLowerCase()} the vehicle.`);
+      await showNotice({ title: "That didn't work", message: result.error ?? `Could not ${label.toLowerCase()} the vehicle.` });
       return;
     }
+    showToast(archive ? `${vehicle.plateNumber} archived.` : `${vehicle.plateNumber} restored.`);
     router.refresh();
   }
 

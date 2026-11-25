@@ -10,6 +10,7 @@ import {
 import { StaffError, StaffService, type StaffMember } from "../services/staff.service";
 import {
   CreateStaffSchema,
+  RemoveStaffSchema,
   ResetPasswordSchema,
   SetActiveSchema,
   UpdateStaffSchema,
@@ -102,5 +103,22 @@ export async function setStaffActive(input: unknown): Promise<Result> {
     return { success: true };
   } catch (error) {
     return fail("setStaffActive", error);
+  }
+}
+
+/** Removes a switched-off staff member from the list (kept on record). */
+export async function removeStaff(input: unknown): Promise<Result> {
+  const ctx = await context();
+  if (!ctx.ok) return ctx.failure;
+  const parsed = RemoveStaffSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
+  try {
+    await StaffService.remove(ctx.propertyId, ctx.actor, parsed.data.employeeId);
+    revalidatePath("/admin/staff");
+    revalidatePath("/admin/safari/fleet/drivers");
+    revalidatePath("/safari/drivers");
+    return { success: true };
+  } catch (error) {
+    return fail("removeStaff", error);
   }
 }

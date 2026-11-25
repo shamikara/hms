@@ -55,6 +55,10 @@ export const ResetPasswordSchema = z.object({
   password,
 });
 
+export const RemoveStaffSchema = z.object({
+  employeeId: z.string().cuid(),
+});
+
 export const SetActiveSchema = z.object({
   employeeId: z.string().cuid(),
   active: z.boolean(),

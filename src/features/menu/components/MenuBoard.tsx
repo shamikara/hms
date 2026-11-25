@@ -1,11 +1,12 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 import { PhotoField, Thumb } from "@/features/media/components/PhotoPicker";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
-  CheckCircle2,
   ChefHat,
   ChevronLeft,
   ChevronRight,
@@ -130,7 +131,6 @@ function DishForm({
 export function MenuBoard({ data, loadError }: { data: MenuBoardData | null; loadError?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Keyed on the saved menu's content, not the data object: editing or adding
@@ -154,12 +154,6 @@ export function MenuBoard({ data, loadError }: { data: MenuBoardData | null; loa
   const [editing, setEditing] = useState<{ id: string; draft: Draft } | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   const dirty = useMemo(() => {
     if (picked.size !== initial.size) return true;
     for (const [id, soldOut] of picked) if (initial.get(id) !== soldOut) return true;
@@ -177,8 +171,18 @@ export function MenuBoard({ data, loadError }: { data: MenuBoardData | null; loa
   const { dishes, day, previous, today, currency } = data;
   const isToday = day.date === today;
   const isPast = day.date < today;
-  const go = (d: string) => {
-    if (dirty && !window.confirm("You have unsaved changes to this day. Leave without saving?")) return;
+  const go = async (d: string) => {
+    if (
+      dirty &&
+      !(await confirmAction({
+        title: "Leave without saving?",
+        message: "You ticked or unticked dishes for this day but haven't saved. Those changes will be lost.",
+        confirmLabel: "Leave without saving",
+        cancelLabel: "Stay",
+        tone: "warning",
+      }))
+    )
+      return;
     router.push(d === today ? "/admin/menu" : `/admin/menu?date=${d}`);
   };
 
@@ -187,7 +191,7 @@ export function MenuBoard({ data, loadError }: { data: MenuBoardData | null; loa
     startTransition(async () => {
       const result = await action();
       if (result.success) {
-        setToast(message);
+        showToast(message);
         after?.();
         router.refresh();
       } else setError(result.error ?? "That did not work.");
@@ -280,11 +284,6 @@ export function MenuBoard({ data, loadError }: { data: MenuBoardData | null; loa
         </button>
       </div>
 
-      {toast && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-sm text-emerald-800 dark:text-emerald-300">
-          <CheckCircle2 className="w-4 h-4" /> {toast}
-        </div>
-      )}
       {error && (
         <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 px-4 py-2.5 text-sm text-red-700 dark:text-red-300">
           <AlertTriangle className="w-4 h-4" /> {error}

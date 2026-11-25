@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   },
   description: SITE.description,
   applicationName: SITE.name,
+  // Google Search Console: set GOOGLE_SITE_VERIFICATION in Vercel to the code
+  // from the "HTML tag" method (only the content="…" value).
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION.trim() } }
+    : {}),
   keywords: [
     "Udawalawe hotel",
     "Udawalawe National Park accommodation",

@@ -1,5 +1,7 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +9,6 @@ import {
   UserCheck,
   LogOut,
   Plus,
-  CheckCircle2,
   Search,
   X,
   ShieldCheck,
@@ -61,17 +62,10 @@ export function BookingsBoard({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | DeskStatus>("ALL");
-  const [toast, setToast] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   /** The row whose delete is waiting for a second click, if any. */
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   /**
    * Runs a server action, then pulls the page's data again.
@@ -85,7 +79,7 @@ export function BookingsBoard({
     startTransition(async () => {
       const result = await action();
       if (result.success) {
-        setToast(successMessage);
+        showToast(successMessage);
         router.refresh();
       } else {
         setActionError(result.error ?? "That did not work. Please try again.");
@@ -108,12 +102,6 @@ export function BookingsBoard({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-emerald-900 border border-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
@@ -296,7 +284,15 @@ export function BookingsBoard({
 
                         {(res.status === "PENDING" || res.status === "CONFIRMED") && (
                           <button
-                            onClick={() => run(() => cancelReservation(res.id), `Cancelled ${res.guestName}.`)}
+                            onClick={async () => {
+                              const ok = await confirmAction({
+                                title: `Cancel ${res.guestName}'s booking?`,
+                                message: "The room is released for other guests, and the guest is emailed that the booking is cancelled. If they paid online, refund them from the booking first.",
+                                confirmLabel: "Cancel booking",
+                                cancelLabel: "Keep booking",
+                              });
+                              if (ok) run(() => cancelReservation(res.id), `Cancelled ${res.guestName}.`);
+                            }}
                             disabled={isPending}
                             className="px-3 py-1.5 border border-stone-200 dark:border-stone-800 hover:border-red-500/50 hover:text-red-500 disabled:opacity-50 text-stone-500 rounded-lg text-xs font-mono uppercase tracking-wider transition-colors"
                           >
@@ -357,7 +353,7 @@ export function BookingsBoard({
           onClose={() => setIsWalkInOpen(false)}
           onDone={(message) => {
             setIsWalkInOpen(false);
-            setToast(message);
+            showToast(message);
             router.refresh();
           }}
         />

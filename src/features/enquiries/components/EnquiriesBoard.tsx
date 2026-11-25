@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { showToast } from "@/components/ui/toast";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, Inbox, Mail, MessageCircle, Phone, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, Inbox, Mail, MessageCircle, Phone, Search, Trash2 } from "lucide-react";
 import type { EnquiryRow } from "@/features/enquiries/services/enquiry.service";
 import { deleteEnquiry, setEnquiryStatus } from "@/features/enquiries/actions/enquiry.actions";
 
@@ -42,24 +43,17 @@ export function EnquiriesBoard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("OPEN");
   const [query, setQuery] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const run = (action: () => Promise<{ success: boolean; error?: string }>, message: string) => {
     setError(null);
     startTransition(async () => {
       const result = await action();
       if (result.success) {
-        setToast(message);
+        showToast(message);
         router.refresh();
       } else setError(result.error ?? "That did not work.");
     });
@@ -86,12 +80,6 @@ export function EnquiriesBoard({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-emerald-900 border border-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       <div>
         <h1 className="text-3xl font-serif text-stone-900 dark:text-white tracking-tight">Enquiries</h1>

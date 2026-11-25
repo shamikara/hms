@@ -1,5 +1,6 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -124,6 +125,7 @@ export function FuelManager({
       return;
     }
     setDialogOpen(false);
+    showToast("Fuel entry saved.");
     router.refresh();
   }
 

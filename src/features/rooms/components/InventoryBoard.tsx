@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { showToast } from "@/components/ui/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   BedDouble,
@@ -12,7 +14,6 @@ import {
   Trash2,
   X,
   AlertTriangle,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -63,7 +64,6 @@ export function InventoryBoard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [editingType, setEditingType] = useState<InventoryRoomType | null>(null);
@@ -72,18 +72,12 @@ export function InventoryBoard({
   const [showRoomForm, setShowRoomForm] = useState(false);
   const [showPlaces, setShowPlaces] = useState(false);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   const run = (action: Action, message: string, onDone?: () => void) => {
     setError(null);
     startTransition(async () => {
       const result = await action();
       if (result.success) {
-        setToast(message);
+        showToast(message);
         onDone?.();
         router.refresh();
       } else {
@@ -111,12 +105,6 @@ export function InventoryBoard({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-emerald-900 border border-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
@@ -225,7 +213,14 @@ export function InventoryBoard({
                         Edit
                       </button>
                       <button
-                        onClick={() => run(() => archiveRoomType(type.id), `Archived ${type.name}.`)}
+                        onClick={async () => {
+                          const ok = await confirmAction({
+                            title: `Archive ${type.name}?`,
+                            message: "It disappears from the website and can no longer be booked. Existing bookings keep their rooms.",
+                            confirmLabel: "Archive room type",
+                          });
+                          if (ok) run(() => archiveRoomType(type.id), `Archived ${type.name}.`);
+                        }}
                         disabled={isPending}
                         className="p-1.5 border border-stone-200 dark:border-stone-800 hover:border-rose-600 text-stone-500 hover:text-rose-500 rounded-lg transition-colors disabled:opacity-50"
                         aria-label={`Archive ${type.name}`}
@@ -420,7 +415,14 @@ export function InventoryBoard({
                             Edit
                           </button>
                           <button
-                            onClick={() => run(() => archiveRoom(room.id), `Archived room ${room.roomNumber}.`)}
+                            onClick={async () => {
+                              const ok = await confirmAction({
+                                title: `Archive room ${room.roomNumber}?`,
+                                message: "It can no longer be booked and comes out of availability. Past and current bookings for it are kept.",
+                                confirmLabel: "Archive room",
+                              });
+                              if (ok) run(() => archiveRoom(room.id), `Archived room ${room.roomNumber}.`);
+                            }}
                             disabled={isPending}
                             className="p-1.5 border border-stone-200 dark:border-stone-800 hover:border-rose-600 text-stone-500 hover:text-rose-500 rounded-lg transition-colors disabled:opacity-50"
                             aria-label={`Archive room ${room.roomNumber}`}

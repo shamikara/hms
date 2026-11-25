@@ -1,5 +1,6 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CreditCard, RefreshCw, RotateCcw } from "lucide-react";
@@ -112,7 +113,6 @@ function RefundForm({ row, onDone }: { row: OnlinePaymentRow; onDone: (msg: stri
 export function OnlinePaymentsPanel({ rows, canManage }: { rows: OnlinePaymentRow[]; canManage: boolean }) {
   const router = useRouter();
   const [isPending, start] = useTransition();
-  const [toast, setToast] = useState<string | null>(null);
   if (rows.length === 0) return null;
 
   return (
@@ -122,7 +122,6 @@ export function OnlinePaymentsPanel({ rows, canManage }: { rows: OnlinePaymentRo
         <h2 className="font-serif text-lg text-stone-900 dark:text-white">Online payments</h2>
         <span className="text-xs text-stone-500">via Payments.lk</span>
       </header>
-      {toast && <div className="text-sm rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 px-3 py-2">{toast}</div>}
 
       {rows.map((row) => {
         const s = STATUS[row.status] ?? { label: row.status, cls: "" };
@@ -141,7 +140,8 @@ export function OnlinePaymentsPanel({ rows, canManage }: { rows: OnlinePaymentRo
                   onClick={() =>
                     start(async () => {
                       const r = await recheckOnlinePayment(row.id);
-                      setToast(r.success ? `Checked with Payments.lk: ${r.data?.state}.` : r.error ?? "Check failed.");
+                      if (r.success) showToast(`Checked with Payments.lk: ${r.data?.state}.`);
+                      else showToast(r.error ?? "Check failed.", "error");
                       router.refresh();
                     })
                   }
@@ -176,7 +176,7 @@ export function OnlinePaymentsPanel({ rows, canManage }: { rows: OnlinePaymentRo
                 ))}
               </ul>
             )}
-            {canManage && row.status === "SUCCEEDED" && row.refundableCents > 0 && <RefundForm row={row} onDone={setToast} />}
+            {canManage && row.status === "SUCCEEDED" && row.refundableCents > 0 && <RefundForm row={row} onDone={(m) => showToast(m)} />}
           </div>
         );
       })}

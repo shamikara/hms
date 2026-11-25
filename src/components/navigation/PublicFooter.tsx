@@ -96,12 +96,12 @@ export async function PublicFooter() {
         <p className="text-stone-400">
           Built with <span className="text-stone-300 font-semibold">Platform OS</span> by{" "}
           <a
-            href="https://spandhalabs.lk"
+            href="https://pulsecraftlabs.com"
             target="_blank"
             rel="noopener noreferrer"
             className="text-stone-300 hover:text-emerald-400 font-semibold transition-colors underline underline-offset-4"
           >
-            Spandha Labs
+            PulseCraft Labs
           </a>
         </p>
       </div>

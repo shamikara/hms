@@ -9,11 +9,11 @@ import { publicPaymentOptions } from "@/features/payments/services/payment-setti
 
 export const metadata: Metadata = {
   title: "Book Your Stay",
-  description: "Check availability and request a room at Lily Safari Resort, Udawalawe.",
+  description: "Check room availability and book direct at Lily Safari Resort, Udawalawe: air-conditioned rooms, a pool, breakfast and safari jeeps, minutes from the national park.",
   alternates: { canonical: "/book" },
   openGraph: {
     title: "Book Your Stay",
-    description: "Check availability and request a room at Lily Safari Resort, Udawalawe.",
+    description: "Check room availability and book direct at Lily Safari Resort, Udawalawe: air-conditioned rooms, a pool, breakfast and safari jeeps, minutes from the national park.",
     url: "/book",
   },
 };

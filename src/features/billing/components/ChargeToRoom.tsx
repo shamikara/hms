@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { showToast } from "@/components/ui/toast";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, UtensilsCrossed } from "lucide-react";
+import { AlertTriangle, UtensilsCrossed } from "lucide-react";
 import type { InHouseGuest } from "@/features/billing/actions/finance.actions";
 import { addChargeAction } from "@/features/billing/actions/folio.actions";
 
@@ -23,18 +24,11 @@ export function ChargeToRoom({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [form, setForm] = useState({
     reservationId: guests[0]?.reservationId ?? "",
     description: "",
     amount: "",
   });
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const selected = guests.find((g) => g.reservationId === form.reservationId) ?? guests[0];
 
@@ -51,7 +45,7 @@ export function ChargeToRoom({
       });
 
       if (result.success) {
-        setToast(`Charged to ${selected.guestName}.`);
+        showToast(`Charged to ${selected.guestName}.`);
         setForm({ ...form, description: "", amount: "" });
         router.refresh();
       } else {
@@ -62,12 +56,6 @@ export function ChargeToRoom({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-emerald-900 border border-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       <div>
         <h1 className="text-3xl font-serif text-stone-900 dark:text-white tracking-tight">

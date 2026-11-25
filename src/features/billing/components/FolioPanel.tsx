@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { showToast } from "@/components/ui/toast";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LineItemCategory, PaymentMethod } from "@prisma/client";
-import { AlertTriangle, CheckCircle2, Plus, Receipt, Wallet } from "lucide-react";
+import { AlertTriangle, Plus, Receipt, Wallet } from "lucide-react";
 import type { Folio } from "@/features/billing/services/folio.service";
 import {
   addChargeAction,
@@ -42,7 +43,6 @@ export function FolioPanel({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
   const [charge, setCharge] = useState({
     category: "F_AND_B" as LineItemCategory,
@@ -55,18 +55,12 @@ export function FolioPanel({
     reference: "",
   });
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   const run = (action: () => Promise<{ success: boolean; error?: string }>, message: string, after?: () => void) => {
     setError(null);
     startTransition(async () => {
       const result = await action();
       if (result.success) {
-        setToast(message);
+        showToast(message);
         after?.();
         router.refresh();
       } else {
@@ -85,12 +79,6 @@ export function FolioPanel({
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-emerald-900 border border-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       {error && (
         <div className="bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl p-4 text-sm flex items-start gap-3">

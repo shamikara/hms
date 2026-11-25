@@ -15,8 +15,9 @@ import { MIN_REVIEWS_FOR_INSIGHT, formatRating } from "@/features/fleet/lib/rati
 
 export const metadata: Metadata = {
   title: "Our Safari Drivers",
-  description:
-    "Meet the drivers who take our guests into Udawalawe National Park, with ratings left by guests who have actually travelled with them.",
+  description: "Meet the safari jeep drivers who take our guests into Udawalawe National Park to see wild elephants, with ratings left only by guests who travelled with them.",
+  alternates: { canonical: "/safari/drivers" },
+  openGraph: { title: "Our Safari Drivers", description: "Meet the safari jeep drivers who take our guests into Udawalawe National Park to see wild elephants, with ratings left only by guests who travelled with them.", url: "/safari/drivers" },
 };
 
 export const dynamic = "force-dynamic";

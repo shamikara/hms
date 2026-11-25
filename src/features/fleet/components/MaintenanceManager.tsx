@@ -1,5 +1,7 @@
 "use client";
 
+import { showToast } from "@/components/ui/toast";
+import { showNotice } from "@/components/ui/confirm-dialog";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -149,6 +151,7 @@ export function MaintenanceManager({
       return;
     }
     setDialogOpen(false);
+    showToast("Maintenance job saved.");
     router.refresh();
   }
 
@@ -157,9 +160,10 @@ export function MaintenanceManager({
     const result = await updateMaintenanceAction({ id: record.id, status: next });
     setPending(false);
     if (!result.success) {
-      window.alert(result.error ?? "Could not update the job status.");
+      void showNotice({ title: "That didn't work", message: result.error ?? "Could not update the job status." });
       return;
     }
+    showToast("Job status updated.");
     router.refresh();
   }
 
