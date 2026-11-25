@@ -1,7 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+/** After this long without a mouse move, key or touch, the night pool comes alive. */
+const IDLE_MS = 15_000;
 
 /**
  * A "dynamic wallpaper" for the sign-in page, in the spirit of macOS: the
@@ -80,6 +83,9 @@ function greeting(minute: number): string {
 
 export function AuthPhoto() {
   const [minute, setMinute] = useState<number | null>(null);
+  const [idle, setIdle] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const update = () => setMinute(colomboMinute());
@@ -88,8 +94,42 @@ export function AuthPhoto() {
     return () => window.clearInterval(t);
   }, []);
 
+  // Idle watch: any sign of the guest resets the timer and stops the video.
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+    if (reduce || saveData) return;
+    let timer = window.setTimeout(() => setIdle(true), IDLE_MS);
+    const wake = () => {
+      setIdle(false);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setIdle(true), IDLE_MS);
+    };
+    const events = ["pointermove", "pointerdown", "keydown", "touchstart", "scroll", "focusin"] as const;
+    events.forEach((e) => window.addEventListener(e, wake, { passive: true }));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, wake));
+    };
+  }, []);
+
   // Before the clock is read (first paint), show the plain day scene.
   const look = minute === null ? lookAt(12 * 60) : lookAt(minute);
+  // Only once it is properly dark at the resort, and only while idle.
+  const playVideo = idle && look.night > 0.95;
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (playVideo) {
+      if (!v.src) v.src = "/tour/pool-night-loop.mp4";
+      v.play().catch(() => {});
+    } else {
+      // Let the fade-out finish before pausing.
+      const t = window.setTimeout(() => v.pause(), 1600);
+      return () => window.clearTimeout(t);
+    }
+  }, [playVideo]);
   const fade = "transition-opacity duration-[2500ms] ease-in-out";
 
   return (
@@ -114,6 +154,20 @@ export function AuthPhoto() {
         sizes="(max-width: 1024px) 100vw, 50vw"
         className={`object-cover object-[50%_60%] ${fade}`}
         style={{ opacity: look.night }}
+      />
+      {/* The night pool, moving: an animation made from the night photo with
+          Google Flow. Loaded only the first time it is needed. */}
+      <video
+        ref={videoRef}
+        muted
+        loop
+        playsInline
+        preload="none"
+        aria-hidden
+        onPlaying={() => setVideoReady(true)}
+        className={`absolute inset-0 h-full w-full object-cover object-[50%_60%] transition-opacity duration-[1500ms] ease-in-out ${
+          playVideo && videoReady ? "opacity-100" : "opacity-0"
+        }`}
       />
       <div className={`absolute inset-0 bg-black ${fade}`} style={{ opacity: look.dark }} />
       <p
