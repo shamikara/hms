@@ -10,6 +10,7 @@ import { getSiteContent } from "@/features/site/services/site.service";
 import { getTodaysMenu } from "@/features/menu/services/menu.service";
 import { TodaysMenu } from "@/features/menu/components/TodaysMenu";
 import { getMediaContent } from "@/features/media/services/media.service";
+import { FoodGallery } from "@/features/media/components/FoodGallery";
 
 // Today's menu changes daily and on every save; re-check at least every 10 min.
 export const revalidate = 600;
@@ -113,27 +114,7 @@ export default async function DiningPage() {
               today&apos;s menu below.
             </p>
           </div>
-          <div className="columns-2 md:columns-3 gap-4 [column-fill:_balance]">
-            {kitchenPhotos.map((photo, i) => (
-              <ScrollReveal key={photo.src} direction="up" delay={0.05 * (i % 3)}>
-                <figure className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-stone-800 bg-stone-900">
-                  <Image
-                    src={photo.src}
-                    alt={photo.alt}
-                    width={photo.width}
-                    height={photo.height}
-                    sizes="(max-width: 768px) 50vw, 33vw"
-                    className="w-full h-auto transition-transform duration-700 group-hover:scale-105"
-                  />
-                  {photo.caption && (
-                    <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-10 pb-3 text-sm text-white">
-                      {photo.caption}
-                    </figcaption>
-                  )}
-                </figure>
-              </ScrollReveal>
-            ))}
-          </div>
+          <FoodGallery photos={kitchenPhotos} />
         </div>
       </section>
       )}
