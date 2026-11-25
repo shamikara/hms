@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Star } from "lucide-react";
 import { SITE } from "@/lib/seo/site";
+import { getSiteContent } from "@/features/site/services/site.service";
+import { AuthPhoto } from "./AuthPhoto";
 
 /**
  * Frame for the sign-in, sign-up and reset pages: the house on one side, a
  * calm white card on the other. Stacks on phones with the photo as a band.
  */
-export function AuthShell({
+export async function AuthShell({
   title,
   intro,
   children,
@@ -18,21 +21,55 @@ export function AuthShell({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  // Real scores from Admin → Site Settings; the card hides itself if none are set.
+  const { ratings, aggregate } = await getSiteContent();
+
   return (
     <main className="min-h-screen grid lg:grid-cols-2 bg-[#f6f1e8]">
-      <div className="relative h-40 sm:h-64 lg:h-auto">
-        <Image
-          src="/hero/hero-pool-frangipani.webp"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover object-[35%_55%]"
-        />
+      <div className="relative h-52 sm:h-64 lg:h-auto">
+        <AuthPhoto />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f2219]/80 via-[#0f2219]/30 to-transparent" />
         <div className="absolute bottom-6 left-6 right-6 lg:bottom-10 lg:left-10 text-white">
           <p className="font-serif text-2xl lg:text-4xl">{SITE.name}</p>
-          <p className="mt-1 text-sm text-white/80">A small guesthouse beside Udawalawe National Park</p>
+          <p className="mt-1 hidden text-sm text-white/80 sm:block">A small guesthouse beside Udawalawe National Park</p>
+          {aggregate && (
+            <>
+              {/* Phones: one compact line under the name. */}
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-white/90 lg:hidden">
+                <Star className="h-3.5 w-3.5 fill-amber-300 text-amber-300" aria-hidden />
+                {aggregate.value.toFixed(1)} / 5 · {aggregate.count.toLocaleString("en-GB")} guest reviews
+              </p>
+              {/* Larger screens: a glass card with each platform's own score. */}
+              <div className="mt-6 hidden max-w-md rounded-2xl border border-white/15 bg-black/30 p-5 backdrop-blur-md lg:block">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-4xl leading-none">{aggregate.value.toFixed(1)}</span>
+                  <div>
+                    <div className="flex gap-0.5" aria-label={`${aggregate.value.toFixed(1)} out of 5`}>
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star
+                          key={i}
+                          aria-hidden
+                          className={`h-4 w-4 ${i <= Math.round(aggregate.value) ? "fill-amber-300 text-amber-300" : "fill-white/20 text-white/20"}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-1 text-xs text-white/75">from {aggregate.count.toLocaleString("en-GB")} guest reviews</p>
+                  </div>
+                </div>
+                <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-white/85">
+                  {ratings.slice(0, 4).map((r) => (
+                    <li key={r.platform} className="flex justify-between gap-2">
+                      <span className="truncate">{r.platform}</span>
+                      <span className="font-mono text-white">
+                        {r.score}
+                        <span className="text-white/50">/{r.outOf}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -52,22 +89,4 @@ export function AuthShell({
   );
 }
 
-export const authInput =
-  "w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:opacity-60";
-export const authLabel = "mb-1.5 block text-sm font-medium text-stone-700";
-export const authButton =
-  "w-full rounded-xl bg-emerald-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60";
-
-export function Notice({ tone, children }: { tone: "error" | "success" | "info"; children: ReactNode }) {
-  const style =
-    tone === "error"
-      ? "border-red-200 bg-red-50 text-red-700"
-      : tone === "success"
-        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-        : "border-amber-200 bg-amber-50 text-amber-800";
-  return (
-    <div role={tone === "error" ? "alert" : "status"} className={`rounded-xl border px-4 py-3 text-sm ${style}`}>
-      {children}
-    </div>
-  );
-}
+export { Notice, authButton, authInput, authLabel } from "./auth-ui";

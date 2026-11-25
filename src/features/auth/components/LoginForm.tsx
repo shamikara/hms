@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loginAction } from "../actions/auth.actions";
 import { resendVerificationAction } from "../actions/account.actions";
-import { Notice, authButton, authInput, authLabel } from "./AuthShell";
+import { Notice, authButton, authInput, authLabel } from "./auth-ui";
 
 export function LoginForm({ next }: { next?: string }) {
   const router = useRouter();

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { requestPasswordResetAction, resetPasswordAction } from "../actions/account.actions";
-import { Notice, authButton, authInput, authLabel } from "./AuthShell";
+import { Notice, authButton, authInput, authLabel } from "./auth-ui";
 
 /** Two steps on one page: email for a code, then the code and a new password. */
 export function ForgotPasswordForm() {

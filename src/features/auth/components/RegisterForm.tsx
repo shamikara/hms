@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { registerAction } from "../actions/account.actions";
-import { Notice, authButton, authInput, authLabel } from "./AuthShell";
+import { Notice, authButton, authInput, authLabel } from "./auth-ui";
 
 const EMPTY = { firstName: "", lastName: "", email: "", password: "", confirmPassword: "", website: "" };
 
