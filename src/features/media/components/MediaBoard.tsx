@@ -299,23 +299,26 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
         <section className={`${card} p-5`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-stone-500">
-              The endless strip of photos on the homepage (&ldquo;Around the house&rdquo;). Tick &ldquo;Wide&rdquo; for landscape
-              photos so they get a wider card.
+              The homepage &ldquo;Around the house&rdquo; gallery: up to 7 photos as panels that open when a visitor points at
+              or taps them. Each photo&apos;s caption shows on its open panel.
             </p>
             <div className="flex gap-2">
-              <button className={small} disabled={gallery.length >= 20} onClick={() => setPicker("gallery")}>
+              <button className={small} disabled={gallery.length >= 7} onClick={() => setPicker("gallery")}>
                 <Plus className="w-3.5 h-3.5" /> Add photo
               </button>
               <button
                 className={primary}
                 disabled={!galleryDirty || isPending || gallery.length < 3}
-                onClick={() => run(() => saveGalleryPhotos(gallery), "Photo strip saved. The homepage shows it now.")}
+                onClick={() => run(() => saveGalleryPhotos(gallery), "Gallery saved. The homepage shows it now.")}
               >
-                <Save className="w-4 h-4" /> {galleryDirty ? "Save photo strip" : "Saved"}
+                <Save className="w-4 h-4" /> {galleryDirty ? "Save gallery" : "Saved"}
               </button>
             </div>
           </div>
-          {gallery.length < 3 && <p className="mt-3 text-sm text-amber-700">Add at least 3 photos so the strip can loop.</p>}
+          {gallery.length < 3 && <p className="mt-3 text-sm text-amber-700">Add at least 3 photos.</p>}
+          {gallery.length > 7 && (
+            <p className="mt-3 text-sm text-amber-700">Only the first 7 show on the homepage. Remove or reorder the rest.</p>
+          )}
           <ul className="divide-y divide-stone-100 dark:divide-stone-800 mt-3">
             {gallery.map((s, i) => (
               <RowShell
@@ -328,12 +331,8 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
                 onRemove={() => setGallery(gallery.filter((_, j) => j !== i))}
               >
                 <label className="text-xs text-stone-500">
-                  Description (for screen readers)
+                  Caption (shown on the photo, keep it short)
                   <input className={input} value={s.alt} maxLength={200} onChange={(e) => setGallery(gallery.map((x, j) => (j === i ? { ...x, alt: e.target.value } : x)))} />
-                </label>
-                <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300 sm:pt-5">
-                  <input type="checkbox" className="accent-emerald-700" checked={s.wide} onChange={(e) => setGallery(gallery.map((x, j) => (j === i ? { ...x, wide: e.target.checked } : x)))} />
-                  Wide card
                 </label>
               </RowShell>
             ))}

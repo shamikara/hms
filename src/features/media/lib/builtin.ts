@@ -89,7 +89,6 @@ export const DEFAULT_GALLERY_PHOTOS: GalleryPhotoSetting[] = [
   galleryItem("/room-pink-double.webp", true),
   galleryItem("/safari-breakfast-park.webp"),
   galleryItem("/pool-from-above.webp"),
-  galleryItem("/wildlife-green-pigeon.webp"),
 ];
 
 export const DEFAULT_HERO_SLIDES: HeroSlideSetting[] = [
