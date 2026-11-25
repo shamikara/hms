@@ -3,10 +3,12 @@
 import prisma from "@/core/db/prisma";
 import { getAdminActor, resolveDefaultPropertyId } from "@/features/admin/lib/requireAdminSession";
 import { toBookingReference } from "@/features/bookings/lib/reference";
+import { after } from "next/server";
+import { findConflicts, syncStaleConnections } from "@/features/channels/services/channel-sync.service";
 
 export interface StaffAlert {
   id: string;
-  kind: "booking" | "enquiry";
+  kind: "booking" | "enquiry" | "conflict";
   title: string;
   description: string;
   href: string;
@@ -34,6 +36,10 @@ export async function loadStaffAlertsAction(): Promise<Result> {
   try {
     const propertyId = await resolveDefaultPropertyId();
     if (!propertyId) return { success: true, data: { alerts: [], bookings: 0, enquiries: 0 } };
+
+    // While anyone has the admin open, Booking.com / Agoda calendars are kept
+    // within ~15 minutes (this runs every minute; stale links only).
+    after(() => syncStaleConnections({ budgetMs: 20_000 }));
 
     const since = new Date(Date.now() - 60 * DAY);
     const [requests, enquiries] = await Promise.all([
@@ -85,6 +91,21 @@ export async function loadStaffAlertsAction(): Promise<Result> {
         createdAt: e.createdAt.toISOString(),
       })),
     ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    // Possible double bookings with Booking.com / Agoda go first.
+    if (canBookings) {
+      const conflicts = await findConflicts(propertyId).catch(() => []);
+      alerts.unshift(
+        ...conflicts.map((c) => ({
+          id: `conflict:${c.reservationId}:${c.source}:${c.start.toISOString().slice(0, 10)}`,
+          kind: "conflict" as const,
+          title: `Possible double booking · Room ${c.roomNumber}`,
+          description: `${c.source} and ${c.guestName} both have ${shortDate(c.start)} → ${shortDate(c.end)}`,
+          href: "/admin/channels",
+          createdAt: new Date().toISOString(),
+        })),
+      );
+    }
 
     return { success: true, data: { alerts, bookings: requests.length, enquiries: enquiries.length } };
   } catch (error) {

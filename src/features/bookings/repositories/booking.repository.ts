@@ -71,9 +71,23 @@ export const BookingRepository = {
       },
     });
 
-    const conflictingRoomIds = new Set(conflictingAssignments.map(a => a.roomId));
+    // 3. Nights sold or closed on Booking.com / Agoda (channel sync). Read in
+    //    the same transaction, so a booking cannot slip past a fresh block.
+    const externalBlocks = await db.externalBlock.findMany({
+      where: {
+        roomId: { in: allRooms.map(r => r.id) },
+        startDate: { lt: checkOutDate },
+        endDate: { gt: checkInDate },
+      },
+      select: { roomId: true },
+    });
 
-    // 3. Filter out unavailable rooms
+    const conflictingRoomIds = new Set([
+      ...conflictingAssignments.map(a => a.roomId),
+      ...externalBlocks.map(b => b.roomId),
+    ]);
+
+    // 4. Filter out unavailable rooms
     return allRooms.filter(room => !conflictingRoomIds.has(room.id));
   },
 

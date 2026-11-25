@@ -22,6 +22,8 @@ async function ctx() {
 function refreshPublic() {
   updateTag(MEDIA_CONTENT_TAG);
   revalidatePath("/");
+  revalidatePath("/de");
+  revalidatePath("/fr");
   revalidatePath("/dining");
   revalidatePath("/admin/media");
 }

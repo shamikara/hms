@@ -1,4 +1,5 @@
 import prisma from "@/core/db/prisma";
+import { safariLabel } from "@/features/bookings/lib/safari";
 import { SITE, SITE_URL } from "@/lib/seo/site";
 import { getSiteContent } from "@/features/site/services/site.service";
 import type { ContactValues } from "@/features/site/validations/site.schema";
@@ -22,6 +23,7 @@ export interface PaidBookingDetails {
   card: string | null;
   freeCancelUntil: Date | null;
   attentionNote: string | null;
+  safari?: { label: string; driverName: string | null } | null;
 }
 
 function money(cents: number, currency: string) {
@@ -129,6 +131,9 @@ function staffEmail(d: PaidBookingDetails, contact: ContactValues) {
   const rows: [string, string][] = [
     ["Reference", d.reference],
     ["Rooms", d.roomTypeNames.join(", ")],
+    ...(d.safari
+      ? ([["Safari", `${d.safari.label}${d.safari.driverName ? ` · asked for ${d.safari.driverName}` : " · any driver"}`]] as [string, string][])
+      : []),
     ["Paid online", `${money(d.paidCents, d.currency)} · ${d.kind === "FULL" ? "full payment" : "advance"}${d.card ? ` · ${d.card}` : ""}`],
     ...(balance !== null ? ([["Balance at check-in", money(balance, d.currency)]] as [string, string][]) : []),
     ["Email", d.guest.email],
@@ -185,6 +190,7 @@ export async function loadPaidDetails(onlinePaymentId: string): Promise<PaidBook
       reservation: {
         include: {
           guest: true,
+          requestedDriver: { select: { employee: { select: { firstName: true, lastName: true } } } },
           stays: { include: { roomAssignments: { include: { room: { include: { roomType: { select: { name: true } } } } } } } },
         },
       },
@@ -206,6 +212,14 @@ export async function loadPaidDetails(onlinePaymentId: string): Promise<PaidBook
     card: attempt.cardBrand && attempt.cardLast4 ? `${attempt.cardBrand} •••• ${attempt.cardLast4}` : null,
     freeCancelUntil: attempt.freeCancelUntil,
     attentionNote: attempt.attentionNote,
+    safari: safariLabel(r.safariRequest)
+      ? {
+          label: safariLabel(r.safariRequest)!,
+          driverName: r.requestedDriver
+            ? `${r.requestedDriver.employee.firstName} ${r.requestedDriver.employee.lastName}`.trim()
+            : null,
+        }
+      : null,
   };
 }
 
@@ -238,6 +252,7 @@ export async function notifyRequestFromAttempt(onlinePaymentId: string): Promise
       checkOutDate: details.checkOutDate,
       roomTypeNames: details.roomTypeNames,
       guests: null,
+      safari: details.safari ?? null,
       guest: details.guest,
     });
   } catch (error) {

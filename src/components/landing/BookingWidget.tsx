@@ -5,8 +5,9 @@ import Link from "next/link";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { DISTANCE, DURATION, EASE } from "@/lib/motion/motionTokens";
+import { HOME, type HomeDict } from "@/lib/i18n/home";
 
-export function BookingWidget() {
+export function BookingWidget({ t = HOME.en.widget }: { t?: HomeDict["widget"] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -42,18 +43,18 @@ export function BookingWidget() {
     >
       <div className="grid gap-3 sm:gap-4 md:grid-cols-[1fr_1fr_0.8fr_auto] md:items-end">
         <div>
-          <label htmlFor="home-check-in" className={labelCls}>Check in</label>
+          <label htmlFor="home-check-in" className={labelCls}>{t.checkIn}</label>
           <input id="home-check-in" type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className={field} />
         </div>
         <div>
-          <label htmlFor="home-check-out" className={labelCls}>Check out</label>
+          <label htmlFor="home-check-out" className={labelCls}>{t.checkOut}</label>
           <input id="home-check-out" type="date" value={checkOut} min={checkIn || undefined} onChange={(e) => setCheckOut(e.target.value)} className={field} />
         </div>
         <div>
-          <label htmlFor="home-guests" className={labelCls}>Guests</label>
+          <label htmlFor="home-guests" className={labelCls}>{t.guests}</label>
           <select id="home-guests" value={guests} onChange={(e) => setGuests(e.target.value)} className={`${field} cursor-pointer`}>
             {[1, 2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>{n} {n === 1 ? "adult" : "adults"}</option>
+              <option key={n} value={n}>{n} {n === 1 ? t.adult : t.adults}</option>
             ))}
           </select>
         </div>
@@ -61,7 +62,7 @@ export function BookingWidget() {
           href={bookHref}
           className="inline-flex h-[46px] items-center justify-center rounded-xl bg-emerald-800 px-7 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
         >
-          Check availability
+          {t.cta}
         </Link>
       </div>
     </div>

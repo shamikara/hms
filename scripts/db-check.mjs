@@ -2,7 +2,7 @@
 // and optionally applies the hand-run migrations that are missing.
 //
 //   node scripts/db-check.mjs            read-only report
-//   node scripts/db-check.mjs --apply    also run missing migrations 03-16
+//   node scripts/db-check.mjs --apply    also run missing migrations 03-18
 //
 // Uses the `pg` package and `.env` already in the repo; no psql or Supabase
 // dashboard needed. Never prints the password.
@@ -45,6 +45,8 @@ const MIGRATIONS = [
   { file: "14_driver_profile.sql", checks: [["column", "SafariDriver", "bio"], ["column", "SafariDriver", "languages"]] },
   { file: "15_photo_fields.sql", checks: [["column", "Dish", "imageUrl"], ["column", "RoomType", "gallery"]] },
   { file: "16_session_version.sql", checks: [["column", "User", "sessionVersion"]] },
+  { file: "17_channel_sync.sql", checks: [["table", "CalendarConnection"], ["table", "ExternalBlock"]] },
+  { file: "18_safari_request_and_reviews.sql", checks: [["column", "Reservation", "safariRequest"], ["column", "Reservation", "reviewRequestSentAt"]] },
 ];
 
 // Same connection settings as src/core/db/prisma.ts, so if the site connects

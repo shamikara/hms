@@ -5,12 +5,24 @@ import { SiteRepository } from "../repositories/site.repository";
 import {
   ContactSchema,
   RatingsSchema,
+  ReviewLinksSchema,
+  type ReviewLinks,
   type ContactValues,
   type RatingValues,
 } from "../validations/site.schema";
 
 export const CONTACT_KEY = "site.contact";
 export const RATINGS_KEY = "site.ratings";
+export const REVIEW_LINKS_KEY = "site.reviewLinks";
+
+const NO_REVIEW_LINKS: ReviewLinks = { enabled: true };
+
+/** Review links for the after-stay email; uncached, read once per checkout. */
+export async function loadReviewLinks(propertyId: string): Promise<ReviewLinks> {
+  const settings = await SiteRepository.readSettings(propertyId, [REVIEW_LINKS_KEY]);
+  const parsed = ReviewLinksSchema.safeParse(settings.get(REVIEW_LINKS_KEY));
+  return parsed.success ? parsed.data : NO_REVIEW_LINKS;
+}
 
 /** Cache tag for everything the public pages read from settings. */
 export const SITE_CONTENT_TAG = "site-content";
@@ -119,6 +131,7 @@ export interface SiteSettings {
   ratings: RatingValues[];
   /** Null when not configured. */
   taxPercent: number | null;
+  reviewLinks: ReviewLinks;
 }
 
 export const SiteSettingsService = {
@@ -128,7 +141,9 @@ export const SiteSettingsService = {
       CONTACT_KEY,
       RATINGS_KEY,
       TAX_SETTING_KEY,
+      REVIEW_LINKS_KEY,
     ]);
+    const reviewLinks = ReviewLinksSchema.safeParse(settings.get(REVIEW_LINKS_KEY));
     const contact = ContactSchema.safeParse(settings.get(CONTACT_KEY));
     const ratings = RatingsSchema.safeParse(settings.get(RATINGS_KEY));
     const rawTax = settings.get(TAX_SETTING_KEY);
@@ -139,6 +154,7 @@ export const SiteSettingsService = {
       contact: contact.success ? contact.data : DEFAULT_CONTACT,
       ratings: ratings.success ? ratings.data : DEFAULT_RATINGS,
       taxPercent: Number.isFinite(tax) && tax >= 0 ? tax : null,
+      reviewLinks: reviewLinks.success ? reviewLinks.data : NO_REVIEW_LINKS,
     };
   },
 
@@ -150,6 +166,12 @@ export const SiteSettingsService = {
 
   async saveRatings(propertyId: string, ratings: RatingValues[]) {
     await SiteRepository.writeSetting(propertyId, RATINGS_KEY, ratings);
+  },
+
+  async saveReviewLinks(propertyId: string, links: ReviewLinks) {
+    // Drop blanks so the stored JSON only holds real links.
+    const clean = Object.fromEntries(Object.entries(links).filter(([, v]) => v !== undefined));
+    await SiteRepository.writeSetting(propertyId, REVIEW_LINKS_KEY, clean);
   },
 
   async saveTax(propertyId: string, taxPercent: number | null) {

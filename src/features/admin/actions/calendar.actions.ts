@@ -29,6 +29,8 @@ export interface CalendarNight {
   /** Marks the first night, so the screen can label the block once. */
   isArrival: boolean;
   checkedIn: boolean;
+  /** Set when the night was sold/closed on an outside site (channel sync). */
+  external?: string;
 }
 
 export interface CalendarRow {
@@ -79,7 +81,7 @@ export async function getOccupancyGrid(
 
     const dayList = Array.from({ length: span }, (_, i) => toIso(new Date(start.getTime() + i * MS_PER_DAY)));
 
-    const [rooms, assignments] = await Promise.all([
+    const [rooms, assignments, externalBlocks] = await Promise.all([
       prisma.room.findMany({
         where: { deletedAt: null, floor: { building: { propertyId: propId } } },
         select: {
@@ -116,6 +118,10 @@ export async function getOccupancyGrid(
             },
           },
         },
+      }),
+      prisma.externalBlock.findMany({
+        where: { room: { deletedAt: null, floor: { building: { propertyId: propId } } }, startDate: { lt: end }, endDate: { gt: start } },
+        select: { roomId: true, startDate: true, endDate: true, connection: { select: { name: true } } },
       }),
     ]);
 
@@ -155,6 +161,30 @@ export async function getOccupancyGrid(
           guestName,
           isArrival: key === firstNight,
           checkedIn: assignment.stay.status === "CHECKED_IN",
+        };
+      }
+    }
+
+    // Nights sold on Booking.com / Agoda. A booking here wins the cell; a clash
+    // between the two is reported on the channel sync screen.
+    for (const block of externalBlocks) {
+      const row = byRoom.get(block.roomId);
+      if (!row) continue;
+      const first = toIso(block.startDate);
+      for (
+        let cursor = new Date(Math.max(block.startDate.getTime(), start.getTime()));
+        cursor < block.endDate && cursor < end;
+        cursor = new Date(cursor.getTime() + MS_PER_DAY)
+      ) {
+        const key = toIso(cursor);
+        if (row.nights[key]) continue;
+        row.nights[key] = {
+          reservationId: "",
+          reference: "",
+          guestName: block.connection.name,
+          isArrival: key === first,
+          checkedIn: false,
+          external: block.connection.name,
         };
       }
     }

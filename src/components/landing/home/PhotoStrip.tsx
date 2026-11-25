@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { SectionHeading } from "./SectionHeading";
 import { DEFAULT_GALLERY_PHOTOS } from "@/features/media/lib/builtin";
+import { HOME, type HomeDict } from "@/lib/i18n/home";
 
 export interface StripPhoto {
   src: string;
@@ -13,7 +14,13 @@ export interface StripPhoto {
  * twice so the loop has no visible seam; hovering (or tabbing in) pauses it.
  * With reduced motion it becomes a still row you can scroll by hand.
  */
-export function PhotoStrip({ photos = DEFAULT_GALLERY_PHOTOS }: { photos?: StripPhoto[] }) {
+export function PhotoStrip({
+  photos = DEFAULT_GALLERY_PHOTOS,
+  t = HOME.en.photos,
+}: {
+  photos?: StripPhoto[];
+  t?: HomeDict["photos"];
+}) {
   const row = (copy: boolean) => (
     <div className={`flex shrink-0 ${copy ? "marquee-copy" : ""}`} aria-hidden={copy || undefined}>
       {photos.map((p, i) => (
@@ -33,10 +40,10 @@ export function PhotoStrip({ photos = DEFAULT_GALLERY_PHOTOS }: { photos?: Strip
     <section className="bg-stone-950 py-20 sm:py-24">
       <div className="px-5 sm:px-8 lg:px-16 mb-10">
         <div className="max-w-7xl mx-auto">
-          <SectionHeading eyebrow="Around the house" title="The garden, the park, the birds" />
+          <SectionHeading eyebrow={t.eyebrow} title={t.title} />
         </div>
       </div>
-      <div className="marquee marquee-fade overflow-hidden scrollbar-none" aria-label="Photographs of the guesthouse and the park" role="region">
+      <div className="marquee marquee-fade overflow-hidden scrollbar-none" aria-label={t.label} role="region">
         <div className="marquee-track flex w-max">
           {row(false)}
           {row(true)}

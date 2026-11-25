@@ -162,6 +162,9 @@ model Room {
   housekeeping HousekeepingStatus @default(CLEAN)
 
   assignments RoomAssignment[] @relation("RoomStays")
+  /// Booking.com / Agoda calendar links for this room (migration 17).
+  calendarConnections CalendarConnection[] @relation("RoomCalendarConnections")
+  externalBlocks      ExternalBlock[]      @relation("RoomExternalBlocks")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -323,6 +326,14 @@ model Reservation {
   stays    Stay[]    @relation("ReservationStays")
   invoices Invoice[] @relation("ReservationInvoices")
   onlinePayments OnlinePayment[] @relation("ReservationOnlinePayments")
+
+  /// Safari the guest asked for when booking: MORNING, AFTERNOON or FULL_DAY.
+  safariRequest     String?
+  /// Driver the guest asked for (from /safari/drivers), if any.
+  requestedDriverId String?
+  requestedDriver   SafariDriver? @relation("DriverRequests", fields: [requestedDriverId], references: [id], onDelete: SetNull)
+  /// When the "How was your stay?" email went out (sent once, after check-out).
+  reviewRequestSentAt DateTime?
 
   version Int @default(1) /// Optimistic locking
 
@@ -723,6 +734,7 @@ model SafariDriver {
   ratingsUpdatedAt         DateTime?
 
   trips   SafariTrip[]   @relation("DriverTrips")
+  requestedBy Reservation[] @relation("DriverRequests")
   reviews SafariReview[] @relation("DriverReviews")
   alerts  FleetAlert[]   @relation("DriverAlerts")
 
@@ -1362,4 +1374,54 @@ model MediaAsset {
   createdAt   DateTime @default(now())
 
   @@index([propertyId, createdAt])
+}
+
+
+// ============================================================================
+// CHANNEL SYNC (Booking.com, Agoda and other iCal calendars) — migration 17
+// ============================================================================
+
+/// One room's link with one outside booking site.
+model CalendarConnection {
+  id     String @id @default(cuid())
+  roomId String
+  room   Room   @relation("RoomCalendarConnections", fields: [roomId], references: [id], onDelete: Cascade)
+
+  /// "Booking.com", "Agoda", …
+  name         String
+  /// The .ics link copied from that site; we read it. Null until pasted.
+  importUrl    String?
+  /// Secret part of the link that site reads from us (/api/calendar/<token>).
+  exportToken  String   @unique
+  lastSyncedAt DateTime?
+  /// "ok" or "error".
+  lastStatus   String?
+  lastError    String?
+
+  blocks ExternalBlock[] @relation("ConnectionBlocks")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId])
+}
+
+/// Nights an outside site has sold or closed for a room, as last read.
+model ExternalBlock {
+  id           String             @id @default(cuid())
+  connectionId String
+  connection   CalendarConnection @relation("ConnectionBlocks", fields: [connectionId], references: [id], onDelete: Cascade)
+  roomId       String
+  room         Room               @relation("RoomExternalBlocks", fields: [roomId], references: [id], onDelete: Cascade)
+
+  /// First night (UTC midnight) and the morning they leave (exclusive).
+  startDate DateTime
+  endDate   DateTime
+  uid       String
+  summary   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([roomId, startDate, endDate])
+  @@index([connectionId])
 }

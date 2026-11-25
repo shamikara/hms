@@ -3,25 +3,19 @@ import Link from "next/link";
 import { ArrowRight, Binoculars, Clock, Truck } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { SectionHeading } from "./SectionHeading";
+import { HOME, type HomeDict } from "@/lib/i18n/home";
 
-const POINTS = [
-  { icon: Truck, text: "Open safari jeeps and drivers arranged by the house" },
-  { icon: Clock, text: "Early-morning drives, when the animals are out" },
-  { icon: Binoculars, text: "Elephant herds, birdlife, and with luck a leopard" },
-];
+const ICONS = [Truck, Clock, Binoculars];
 
 /** The safari, told with the house's own jeeps and the park's elephants. */
-export function SafariFeature() {
+export function SafariFeature({ t = HOME.en.safari }: { t?: HomeDict["safari"] }) {
+  const POINTS = t.points.map((text, i) => ({ icon: ICONS[i] ?? Truck, text }));
   return (
     <section className="relative overflow-hidden bg-[#13291f] py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <ScrollReveal>
-          <SectionHeading eyebrow="Safari" title="Into Udawalawe with drivers who know it" tone="dark">
-            <p>
-              Udawalawe is one of the best places in Sri Lanka to see wild elephants, often in large
-              family herds. We arrange the jeep and the driver, and you are at the gate soon after it
-              opens.
-            </p>
+          <SectionHeading eyebrow={t.eyebrow} title={t.title} tone="dark">
+            <p>{t.intro}</p>
           </SectionHeading>
           <ul className="mt-8 space-y-4">
             {POINTS.map((p) => (
@@ -38,13 +32,19 @@ export function SafariFeature() {
               href="/safari"
               className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-stone-900 hover:bg-emerald-50 transition-colors"
             >
-              Safari drives <ArrowRight className="h-4 w-4" aria-hidden />
+              {t.drives} <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link
               href="/safari/drivers"
               className="inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
             >
-              Meet the drivers
+              {t.drivers}
+            </Link>
+            <Link
+              href="/guide"
+              className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-emerald-200 hover:text-white transition-colors"
+            >
+              {t.guide}
             </Link>
           </div>
         </ScrollReveal>

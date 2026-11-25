@@ -3,43 +3,47 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, X } from "lucide-react";
 import { SectionHeading } from "./SectionHeading";
+import { HOME, type HomeDict } from "@/lib/i18n/home";
 
-const CLIPS = [
-  { src: "/tour/tour-courtyard-pool.mp4", poster: "/tour/tour-courtyard-pool.webp", title: "Courtyard to the pool", note: "From the rooms, under the mango trees" },
-  { src: "/tour/tour-verandah-view.mp4", poster: "/tour/tour-verandah-view.webp", title: "The upstairs verandah", note: "Looking down on the garden and pool" },
-  { src: "/tour/tour-garden-rooms.mp4", poster: "/tour/tour-garden-rooms.webp", title: "The garden path", note: "Past the rooms and out to the pool" },
+const FILES = [
+  { src: "/tour/tour-courtyard-pool.mp4", poster: "/tour/tour-courtyard-pool.webp" },
+  { src: "/tour/tour-verandah-view.mp4", poster: "/tour/tour-verandah-view.webp" },
+  { src: "/tour/tour-garden-rooms.mp4", poster: "/tour/tour-garden-rooms.webp" },
 ];
+
+type Clip = { src: string; poster: string; title: string; note: string };
 
 /**
  * Three short phone clips of the grounds. Each plays muted on a loop only
  * while on screen (and never downloads until it is near), and only when the
  * visitor has not asked for reduced motion. Tapping a card opens it large.
  */
-export function WalkAround() {
+export function WalkAround({ t = HOME.en.walk }: { t?: HomeDict["walk"] }) {
   const [open, setOpen] = useState<number | null>(null);
+  const CLIPS: Clip[] = FILES.map((f, i) => ({ ...f, ...t.clips[i] }));
 
   return (
     <section className="bg-stone-950 py-20 sm:py-24 px-5 sm:px-8 lg:px-16">
       <div className="max-w-7xl mx-auto">
-        <SectionHeading eyebrow="Take a walk around" title="See the place before you arrive">
-          <p className="text-stone-300">Short clips from around the garden, rooms and pool, filmed at the resort.</p>
+        <SectionHeading eyebrow={t.eyebrow} title={t.title}>
+          <p className="text-stone-300">{t.intro}</p>
         </SectionHeading>
 
         <ul className="mt-10 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-none sm:grid sm:grid-cols-3 sm:overflow-visible sm:gap-6">
           {CLIPS.map((clip, i) => (
             <li key={clip.src} className="w-[80vw] shrink-0 snap-start sm:w-auto">
-              <ClipCard clip={clip} onOpen={() => setOpen(i)} />
+              <ClipCard clip={clip} playLabel={t.play} onOpen={() => setOpen(i)} />
             </li>
           ))}
         </ul>
       </div>
 
-      {open !== null && <ClipViewer clip={CLIPS[open]} onClose={() => setOpen(null)} />}
+      {open !== null && <ClipViewer clip={CLIPS[open]} closeLabel={t.close} onClose={() => setOpen(null)} />}
     </section>
   );
 }
 
-function ClipCard({ clip, onOpen }: { clip: (typeof CLIPS)[number]; onOpen: () => void }) {
+function ClipCard({ clip, playLabel, onOpen }: { clip: Clip; playLabel: string; onOpen: () => void }) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -66,7 +70,7 @@ function ClipCard({ clip, onOpen }: { clip: (typeof CLIPS)[number]; onOpen: () =
       type="button"
       onClick={onOpen}
       className="group block w-full text-left focus-visible:outline-none"
-      aria-label={`Play video: ${clip.title}`}
+      aria-label={`${playLabel}: ${clip.title}`}
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-stone-900 ring-1 ring-white/10 group-focus-visible:ring-2 group-focus-visible:ring-emerald-400">
         <video
@@ -93,7 +97,7 @@ function ClipCard({ clip, onOpen }: { clip: (typeof CLIPS)[number]; onOpen: () =
   );
 }
 
-function ClipViewer({ clip, onClose }: { clip: (typeof CLIPS)[number]; onClose: () => void }) {
+function ClipViewer({ clip, closeLabel, onClose }: { clip: Clip; closeLabel: string; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -121,7 +125,7 @@ function ClipViewer({ clip, onClose }: { clip: (typeof CLIPS)[number]; onClose: 
         type="button"
         onClick={onClose}
         className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-        aria-label="Close video"
+        aria-label={closeLabel}
       >
         <X className="h-5 w-5" aria-hidden />
       </button>

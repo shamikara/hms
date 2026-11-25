@@ -6,6 +6,8 @@ import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { PublicFooter } from "@/components/navigation/PublicFooter";
 import { publicPaymentOptions } from "@/features/payments/services/payment-settings.service";
+import { DriverRepository } from "@/features/fleet/repositories/driver.repository";
+import type { BookableDriver } from "@/components/booking/BookingWizard";
 
 export const metadata: Metadata = {
   title: "Book Your Stay",
@@ -40,6 +42,14 @@ export default async function BookPage({
   const propertyResult = await getBookableProperty();
   const property = propertyResult.success ? propertyResult.data : null;
   const payment = property ? await publicPaymentOptions(property.id).catch(() => null) : null;
+  const drivers: BookableDriver[] = property
+    ? (await DriverRepository.listPublic().catch(() => [])).map((d) => ({
+        id: d.id,
+        name: `${d.employee.firstName} ${d.employee.lastName}`.trim(),
+        languages: d.languages ?? [],
+        years: d.safariExperienceYears ?? null,
+      }))
+    : [];
 
   return (
     <div className="min-h-screen bg-stone-950 font-sans text-stone-100 flex flex-col">
@@ -69,6 +79,8 @@ export default async function BookPage({
               initialCheckOut={readDate(params.checkOut)}
               initialGuests={readGuests(params.guests)}
               payment={payment}
+              drivers={drivers}
+              initialDriverId={typeof params.driver === "string" ? params.driver : ""}
             />
           ) : (
             <div className="text-center text-stone-500 py-12 bg-stone-900 rounded-2xl shadow-2xl max-w-4xl mx-auto border border-stone-800">

@@ -42,6 +42,8 @@ function refreshRoomPages() {
   revalidatePath("/rooms");
   revalidatePath("/about");
   revalidatePath("/");
+  revalidatePath("/de");
+  revalidatePath("/fr");
 }
 
 /* ------------------------------------------------------------------ read */

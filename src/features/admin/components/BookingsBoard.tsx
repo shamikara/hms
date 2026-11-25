@@ -212,6 +212,9 @@ export function BookingsBoard({
                           </span>
                         </>
                       )}
+                      {res.safari && (
+                        <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 mt-1">Safari: {res.safari}</p>
+                      )}
                       {res.estimatedTotal !== null && (
                         <p className="text-[11px] text-stone-500 mt-1">
                           Est.{" "}

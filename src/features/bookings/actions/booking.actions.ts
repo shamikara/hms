@@ -1,5 +1,6 @@
 "use server";
 
+import { syncStaleConnections } from "@/features/channels/services/channel-sync.service";
 import { z } from "zod";
 import { after } from "next/server";
 import prisma from "@/core/db/prisma";
@@ -11,6 +12,7 @@ import {
   describeWait,
 } from "@/core/security/rateLimit";
 import { toBookingReference } from "../lib/reference";
+import { SAFARI_OPTIONS, safariLabel } from "../lib/safari";
 import { notifyBookingRequest } from "@/features/notifications/services/booking-notifications";
 import { PAY_CHOICES } from "@/features/payments/validations/payment.schema";
 import { publicPaymentOptions } from "@/features/payments/services/payment-settings.service";
@@ -43,12 +45,21 @@ function firstIssue(error: z.ZodError): string {
   return error.issues?.[0]?.message ?? "Please check the details and try again.";
 }
 
+/** Optional safari the guest added in the booking form. */
+const ExtrasSchema = z
+  .object({
+    safari: z.enum(SAFARI_OPTIONS.map((o) => o.value) as [string, ...string[]]).nullable().optional(),
+    driverId: z.string().min(1).max(64).nullable().optional(),
+  })
+  .optional();
+
 type Placed = {
   reservation: Awaited<ReturnType<typeof BookingService.createReservation>>;
   guest: { id: string; firstName: string; lastName: string; email: string; phone: string | null };
   reference: string;
   roomTypeNames: string[];
   guests: number | null;
+  safari: { label: string; driverName: string | null } | null;
 };
 
 /**
@@ -59,6 +70,7 @@ async function placePublicBooking(
   guestData: GuestFormValues,
   reservationData: Omit<ReservationFormValues, "guestId" | "status">,
   partySize?: number,
+  extras?: unknown,
 ): Promise<{ ok: true; placed: Placed } | { ok: false; error: string }> {
   // The same date rules the availability search applies. Without this a
   // hand-built request could book a stay in the past.
@@ -71,6 +83,18 @@ async function placePublicBooking(
   const parsedGuest = GuestSchema.safeParse(guestData);
   if (!parsedGuest.success) return { ok: false, error: firstIssue(parsedGuest.error) };
 
+  const parsedExtras = ExtrasSchema.safeParse(extras);
+  if (!parsedExtras.success) return { ok: false, error: "Please choose a safari option again." };
+  const safari = parsedExtras.data?.safari ?? null;
+  // A driver only counts if they are a real, active driver on the public list.
+  const driver =
+    safari && parsedExtras.data?.driverId
+      ? await prisma.safariDriver.findFirst({
+          where: { id: parsedExtras.data.driverId, isActive: true, deletedAt: null, employmentStatus: "ACTIVE" },
+          select: { id: true, employee: { select: { firstName: true, lastName: true } } },
+        })
+      : null;
+
   // A booking holds real inventory, so an unthrottled form can empty the
   // property. Checked after validation so malformed spam costs a database
   // round trip only once it looks like a real submission.
@@ -81,6 +105,10 @@ async function placePublicBooking(
       error: `That is a lot of requests from one place. Please wait ${describeWait(limit.retryAfterSeconds)}, or email us and we will book you in by hand.`,
     };
   }
+
+  // Re-read Booking.com / Agoda just before holding a room, in case a room
+  // was sold there since the guest searched.
+  await syncStaleConnections({ maxAgeMs: 5 * 60 * 1000 });
 
   try {
     // One guest profile per email address. Upsert rather than find-then-create:
@@ -114,6 +142,12 @@ async function placePublicBooking(
     });
 
     const reservation = await BookingService.createReservation(parsedReservation);
+    if (safari) {
+      await prisma.reservation.update({
+        where: { id: reservation.id },
+        data: { safariRequest: safari, requestedDriverId: driver?.id ?? null },
+      });
+    }
     return {
       ok: true,
       placed: {
@@ -122,6 +156,12 @@ async function placePublicBooking(
         reference: toBookingReference(reservation.id),
         roomTypeNames: reservation.stays.flatMap((stay) => stay.roomAssignments.map((a) => a.room.roomType.name)),
         guests: Number.isInteger(partySize) && partySize! >= 1 && partySize! <= 20 ? partySize! : null,
+        safari: safari
+          ? {
+              label: safariLabel(safari)!,
+              driverName: driver ? `${driver.employee.firstName} ${driver.employee.lastName}`.trim() : null,
+            }
+          : null,
       },
     };
   } catch (error) {
@@ -137,11 +177,13 @@ export async function createPublicBooking(
   guestData: GuestFormValues,
   reservationData: Omit<ReservationFormValues, "guestId" | "status">,
   /** Party size from the booking form; only used in the alert email. */
-  partySize?: number
+  partySize?: number,
+  /** Optional safari add-on: { safari, driverId }. */
+  extras?: unknown,
 ): Promise<ActionResult<{ reference: string; checkInDate: Date; checkOutDate: Date }>> {
-  const result = await placePublicBooking(guestData, reservationData, partySize);
+  const result = await placePublicBooking(guestData, reservationData, partySize, extras);
   if (!result.ok) return { success: false, error: result.error };
-  const { reservation, guest, reference, roomTypeNames, guests } = result.placed;
+  const { reservation, guest, reference, roomTypeNames, guests, safari } = result.placed;
 
   // Sent after the response, so the guest is not kept waiting on the mail
   // provider, and a send that fails cannot undo a booking already stored.
@@ -153,6 +195,7 @@ export async function createPublicBooking(
       checkOutDate: reservation.checkOutDate,
       roomTypeNames,
       guests,
+      safari,
       guest: { firstName: guest.firstName, lastName: guest.lastName, email: guest.email, phone: guest.phone },
     }),
   );
@@ -177,6 +220,7 @@ export async function startPaidBooking(
   reservationData: Omit<ReservationFormValues, "guestId" | "status">,
   partySize: number | undefined,
   choice: unknown,
+  extras?: unknown,
 ): Promise<ActionResult<{ checkoutUrl: string }>> {
   const payChoice = z.enum(PAY_CHOICES).safeParse(choice);
   if (!payChoice.success) return { success: false, error: "Choose how much to pay now." };
@@ -191,7 +235,7 @@ export async function startPaidBooking(
     return { success: false, error: "Online payment isn't available at the moment. Please send your booking as a request." };
   }
 
-  const result = await placePublicBooking(guestData, reservationData, partySize);
+  const result = await placePublicBooking(guestData, reservationData, partySize, extras);
   if (!result.ok) return { success: false, error: result.error };
   const { reservation, guest } = result.placed;
 
@@ -227,6 +271,9 @@ export async function checkAvailability(
   // Lets go of rooms held by checkouts that were never paid and whose
   // webhook went missing, so they show as free again. In the background.
   after(() => sweepStaleAttempts().catch(() => undefined));
+
+  // Fresh Booking.com / Agoda dates before answering (waits at most ~4s).
+  await syncStaleConnections();
 
   try {
     const availability = await BookingService.getAvailability(

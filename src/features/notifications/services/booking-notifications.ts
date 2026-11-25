@@ -11,6 +11,8 @@ export interface BookingRequestDetails {
   checkOutDate: Date;
   roomTypeNames: string[];
   guests: number | null;
+  /** Safari added in the booking form, if any. */
+  safari?: { label: string; driverName: string | null } | null;
   guest: { firstName: string; lastName: string; email: string; phone: string | null };
 }
 
@@ -107,6 +109,9 @@ function guestEmail(d: BookingRequestDetails, contact: ContactValues) {
           ["Room" + (d.roomTypeNames.length > 1 ? "s" : ""), rooms],
           ...(d.guests ? ([["Guests", `${d.guests} adult${d.guests === 1 ? "" : "s"}`]] as [string, string][]) : []),
           ["Stay", `${n} night${n === 1 ? "" : "s"}`],
+          ...(d.safari
+            ? ([["Safari", `${d.safari.label}${d.safari.driverName ? ` with ${d.safari.driverName}` : ""} (we'll confirm the time)`]] as [string, string][])
+            : []),
         ])}
       </table>
     </td></tr>
@@ -146,6 +151,7 @@ function guestEmail(d: BookingRequestDetails, contact: ContactValues) {
     `Check out: ${formatDate(d.checkOutDate)} (${n} night${n === 1 ? "" : "s"})`,
     `Rooms:     ${rooms}`,
     ...(d.guests ? [`Guests:    ${d.guests}`] : []),
+    ...(d.safari ? [`Safari:    ${d.safari.label}${d.safari.driverName ? ` with ${d.safari.driverName}` : ""}`] : []),
     "",
     `Questions? Reply to this email, call ${contact.phoneDisplay}, or WhatsApp ${wa}`,
     "",
@@ -193,6 +199,9 @@ function staffEmail(d: BookingRequestDetails, contact: ContactValues) {
       ["Reference", d.reference],
       ["Rooms", rooms],
       ...(d.guests ? ([["Guests", String(d.guests)]] as [string, string][]) : []),
+      ...(d.safari
+        ? ([["Safari", `${d.safari.label}${d.safari.driverName ? ` · asked for ${d.safari.driverName}` : " · any driver"}`]] as [string, string][])
+        : []),
       ["Email", d.guest.email],
       ["Phone", d.guest.phone ?? "Not given"],
     ])}
@@ -218,6 +227,7 @@ function staffEmail(d: BookingRequestDetails, contact: ContactValues) {
     `Stay:      ${formatDate(d.checkInDate)} to ${formatDate(d.checkOutDate)} (${n} nights)`,
     `Rooms:     ${rooms}`,
     ...(d.guests ? [`Guests:    ${d.guests}`] : []),
+    ...(d.safari ? [`Safari:    ${d.safari.label}${d.safari.driverName ? ` (asked for ${d.safari.driverName})` : " (any driver)"}`] : []),
     "",
     `Open: ${adminUrl}`,
     "Reply to this email to write to the guest.",

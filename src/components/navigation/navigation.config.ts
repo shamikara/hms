@@ -16,6 +16,7 @@ import {
   Mail,
   ChefHat,
   Image as ImageIcon,
+  CalendarSync,
 } from "lucide-react";
 
 export interface Property {
@@ -91,6 +92,11 @@ export const HMS_NAVIGATION_CONFIG: NavGroup[] = [
         href: "/admin/calendar",
         icon: CalendarCheck,
         shortcut: "G A",
+      },
+      {
+        title: "Booking.com & Agoda",
+        href: "/admin/channels",
+        icon: CalendarSync,
       },
       {
         title: "Room Inventory",

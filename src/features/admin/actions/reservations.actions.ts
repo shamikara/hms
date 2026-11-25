@@ -1,13 +1,16 @@
 "use server";
 
 import prisma from "@/core/db/prisma";
+import { safariLabel } from "@/features/bookings/lib/safari";
 import { requireAdminPermission, resolveDefaultPropertyId, NO_PROPERTY } from "@/features/admin/lib/requireAdminSession";
 import { Reservation, ReservationStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { notifyBookingStatus } from "@/features/notifications/services/booking-status-notifications";
+import { notifyReviewRequest } from "@/features/notifications/services/review-notifications";
 import { z } from "zod";
 import { BookingService, BookingError, isRoomOverlapError } from "@/features/bookings/services/booking.service";
+import { syncStaleConnections } from "@/features/channels/services/channel-sync.service";
 import { GuestSchema, ReservationSchema } from "@/features/bookings/validations/booking.schema";
 import { toBookingReference } from "@/features/bookings/lib/reference";
 import { FolioError, postRoomCharges } from "@/features/billing/services/folio.service";
@@ -45,6 +48,8 @@ export interface DeskReservation {
   paidOnline: number;
   /** A pay-now checkout is open: the guest may be on the card page right now. */
   awaitingPayment: boolean;
+  /** Safari the guest added when booking, e.g. "Morning safari · Manjula Perera". */
+  safari: string | null;
 }
 
 /**
@@ -85,6 +90,7 @@ export async function getDeskReservations(propertyId?: string): Promise<{ succes
         where: { propertyId: propId },
         include: {
           guest: true,
+          requestedDriver: { select: { employee: { select: { firstName: true, lastName: true } } } },
           onlinePayments: {
             where: { status: { in: ["SUCCEEDED", "PENDING"] } },
             select: { status: true, amountCents: true, refundedCents: true },
@@ -148,6 +154,13 @@ export async function getDeskReservations(propertyId?: string): Promise<{ succes
             .filter((p) => p.status === "SUCCEEDED")
             .reduce((sum, p) => sum + p.amountCents - p.refundedCents, 0) / 100,
         awaitingPayment: reservation.status === "DRAFT" && reservation.onlinePayments.some((p) => p.status === "PENDING"),
+        safari: safariLabel(reservation.safariRequest)
+          ? `${safariLabel(reservation.safariRequest)} · ${
+              reservation.requestedDriver
+                ? `${reservation.requestedDriver.employee.firstName} ${reservation.requestedDriver.employee.lastName}`.trim()
+                : "any driver"
+            }`
+          : null,
       };
     });
 
@@ -378,6 +391,9 @@ export async function checkOutReservation(reservationId: string): Promise<{ succ
       }),
     ]);
 
+    // "How was your stay?" goes out once, after the response, never blocking the desk.
+    after(() => notifyReviewRequest(reservationId));
+
     revalidatePath("/admin/bookings");
     revalidatePath(`/admin/bookings/${reservationId}`);
     revalidatePath("/admin/rooms");
@@ -437,6 +453,8 @@ export async function createWalkInReservation(input: {
       },
     });
 
+    // Walk-ins too: pick up anything just sold on Booking.com / Agoda.
+    await syncStaleConnections({ maxAgeMs: 5 * 60 * 1000 });
     const reservation = await BookingService.createReservation(
       ReservationSchema.parse({
         propertyId: propId,

@@ -3,25 +3,22 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { SectionHeading } from "./SectionHeading";
+import { HOME, type HomeDict } from "@/lib/i18n/home";
 
 /** The table and the garden after dark: what a day here ends with. */
-export function FoodAndEvenings() {
+export function FoodAndEvenings({ t = HOME.en.food }: { t?: HomeDict["food"] }) {
   return (
     <section className="bg-stone-900 py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <ScrollReveal className="lg:order-2">
-          <SectionHeading eyebrow="Food & evenings" title="Rice and curry, then the fire">
-            <p>
-              Breakfast on the verandah and dinners of Sri Lankan rice and curry or grills, cooked to
-              order. After dark the pool lights up and
-              there is a fire in the garden.
-            </p>
+          <SectionHeading eyebrow={t.eyebrow} title={t.title}>
+            <p>{t.intro}</p>
           </SectionHeading>
           <Link
             href="/dining"
             className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 hover:text-emerald-300 transition-colors"
           >
-            Food at the house <ArrowRight className="h-4 w-4" aria-hidden />
+            {t.link} <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </ScrollReveal>
 

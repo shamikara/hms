@@ -145,6 +145,20 @@ export default async function CalendarPage({
                         );
                       }
 
+                      if (night.external) {
+                        return (
+                          <td
+                            key={day}
+                            title={`Sold or closed on ${night.external}`}
+                            className="h-11 border-l border-stone-100 dark:border-stone-850 bg-amber-500/70 px-1"
+                          >
+                            {night.isArrival && (
+                              <span className="text-[10px] text-white font-medium whitespace-nowrap">{night.external}</span>
+                            )}
+                          </td>
+                        );
+                      }
+
                       return (
                         <td
                           key={day}
@@ -193,6 +207,7 @@ export default async function CalendarPage({
           <div className="px-4 py-3 border-t border-stone-200 dark:border-stone-800 flex flex-wrap gap-4 text-[10px] font-mono text-stone-500">
             <Legend className="bg-blue-600/60" label="Booked" />
             <Legend className="bg-emerald-600/80" label="In house" />
+            <Legend className="bg-amber-500/70" label="Sold on Booking.com / Agoda" />
             <Legend className="bg-[repeating-linear-gradient(45deg,transparent,transparent_3px,rgba(120,113,108,0.25)_3px,rgba(120,113,108,0.25)_6px)]" label="Not sellable" />
             <span className="flex items-center gap-1.5">
               <span className="text-amber-500">●</span> Needs making up

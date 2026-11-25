@@ -62,6 +62,11 @@ export default async function ReservationDetailPage({
               {reservation.email}
               {reservation.phone ? ` · ${reservation.phone}` : ""}
             </p>
+            {reservation.safari && (
+              <p className="inline-block mt-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                Safari requested: {reservation.safari}
+              </p>
+            )}
           </header>
 
           {onlineResult.success && onlineResult.data && (

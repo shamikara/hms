@@ -8,15 +8,43 @@ import { Menu, X, ChevronRight, Phone, Mail, User, Shield } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { cn } from "@/lib/utils";
 import { useHeaderScroll } from "./useHeaderScroll";
+import { HOME, LOCALES, LOCALE_NAME, LOCALE_PATH, LOCALE_SHORT, type HomeDict, type Locale } from "@/lib/i18n/home";
 
 interface PublicHeaderClientProps {
   variant?: "transparent" | "solid";
   /** Shown in the mobile drawer; read from Site Settings by the server wrapper. */
   phoneDisplay: string;
   email: string;
+  t?: HomeDict["nav"];
+  /** Set on the homepages only: shows the language picker. */
+  locale?: Locale;
 }
 
-export function PublicHeaderClient({ variant = "transparent", phoneDisplay, email }: PublicHeaderClientProps) {
+/** EN · DE · FR, as plain links so each language has its own indexable page. */
+function LanguagePicker({ locale, label, className }: { locale: Locale; label: string; className?: string }) {
+  return (
+    <nav aria-label={label} className={cn("flex items-center rounded-full border border-white/25 p-0.5 backdrop-blur-sm", className)}>
+      {LOCALES.map((l) => (
+        <Link
+          key={l}
+          href={LOCALE_PATH[l]}
+          hrefLang={l}
+          lang={l}
+          title={LOCALE_NAME[l]}
+          aria-current={l === locale ? "true" : undefined}
+          className={cn(
+            "px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wider transition-colors",
+            l === locale ? "bg-white text-stone-900" : "text-stone-200 hover:text-white",
+          )}
+        >
+          {LOCALE_SHORT[l]}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+export function PublicHeaderClient({ variant = "transparent", phoneDisplay, email, t = HOME.en.nav, locale }: PublicHeaderClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -36,11 +64,12 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { href: "/about", label: "About" },
-    { href: "/rooms", label: "Rooms" },
-    { href: "/safari", label: "Safari" },
-    { href: "/dining", label: "Food" },
-    { href: "/contact", label: "Contact" },
+    { href: "/about", label: t.about },
+    { href: "/rooms", label: t.rooms },
+    { href: "/safari", label: t.safari },
+    { href: "/dining", label: t.food },
+    { href: "/guide", label: t.guide },
+    { href: "/contact", label: t.contact },
   ];
 
   return (
@@ -72,7 +101,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
 
         {/* Desktop Navigation Links */}
         <ScrollReveal direction="down" delay={0.2} width="w-auto" className="hidden md:block">
-          <nav className="flex space-x-8 text-sm font-medium tracking-wide drop-shadow-md">
+          <nav className="flex space-x-5 lg:space-x-8 text-sm font-medium tracking-wide drop-shadow-md">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -96,13 +125,18 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
 
         {/* Right Actions (Desktop Portal + Mobile Hamburger) */}
         <div className="flex items-center space-x-2.5 sm:space-x-4">
+          {locale && (
+            <ScrollReveal direction="down" delay={0.25} width="w-auto">
+              <LanguagePicker locale={locale} label={t.language} />
+            </ScrollReveal>
+          )}
           <ScrollReveal direction="down" delay={0.3} width="w-auto">
             <Link
               href="/login"
               className="hidden sm:inline-flex items-center space-x-1.5 px-4 sm:px-5 py-2 border border-white/30 hover:bg-white hover:text-stone-900 rounded-full text-xs sm:text-sm font-medium transition-all backdrop-blur-sm shadow-sm"
             >
               <User className="w-3.5 h-3.5" />
-              <span>Account</span>
+              <span>{t.account}</span>
             </Link>
           </ScrollReveal>
 
@@ -153,7 +187,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
                   pathname === "/" ? "text-emerald-400 font-semibold" : "text-stone-200"
                 )}
               >
-                <span>Home</span>
+                <span>{t.home}</span>
                 <ChevronRight className="w-4 h-4 text-stone-500" />
               </Link>
 
@@ -183,7 +217,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full py-4 text-center bg-emerald-700 hover:bg-emerald-600 rounded-xl font-sans text-sm font-semibold tracking-wider uppercase text-white transition-colors shadow-lg flex items-center justify-center space-x-2"
               >
-                <span>Book Direct & Save</span>
+                <span>{t.bookDirect}</span>
                 <ChevronRight className="w-4 h-4" />
               </Link>
 
@@ -193,7 +227,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
                 className="w-full py-3.5 text-center bg-stone-900 border border-stone-800 hover:bg-stone-850 rounded-xl font-sans text-sm font-medium text-stone-200 transition-colors flex items-center justify-center space-x-2"
               >
                 <User className="w-4 h-4 text-emerald-400" />
-                <span>Sign in or create an account</span>
+                <span>{t.signIn}</span>
               </Link>
 
               {/* Mobile Footer Meta */}
@@ -208,7 +242,7 @@ export function PublicHeaderClient({ variant = "transparent", phoneDisplay, emai
                 </div>
                 <div className="flex items-center space-x-2 text-[11px] text-stone-500 pt-2">
                   <Shield className="w-3 h-3 text-emerald-500" />
-                  <span>A short drive from Udawalawe National Park</span>
+                  <span>{t.nearPark}</span>
                 </div>
               </div>
             </div>

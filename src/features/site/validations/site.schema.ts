@@ -66,5 +66,23 @@ export const TaxSchema = z.object({
     .nullable(),
 });
 
+/** Where the "How was your stay?" email sends guests. Blank = not shown. */
+const reviewUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((v) => v === "" || /^https:\/\/[^\s]+$/i.test(v), "Review links must start with https://")
+  .transform((v) => v || undefined)
+  .optional();
+
+export const ReviewLinksSchema = z.object({
+  enabled: z.boolean().default(true),
+  google: reviewUrl,
+  bookingCom: reviewUrl,
+  tripadvisor: reviewUrl,
+});
+
+export type ReviewLinks = z.infer<typeof ReviewLinksSchema>;
+
 export type ContactValues = z.infer<typeof ContactSchema>;
 export type RatingValues = z.infer<typeof RatingSchema>;

@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { checkAvailability, createPublicBooking, startPaidBooking, RoomAvailability } from "@/features/bookings/actions/booking.actions";
 import type { PublicPaymentOptions } from "@/features/payments/services/payment-settings.service";
+import { SAFARI_OPTIONS, type SafariChoice } from "@/features/bookings/lib/safari";
+
+/** A driver guests can ask for; built on the server from the public driver list. */
+export type BookableDriver = { id: string; name: string; languages: string[]; years: number | null };
 
 type PayChoice = "ADVANCE" | "FULL" | "REQUEST";
 
@@ -14,6 +18,8 @@ export function BookingWizard({
   initialCheckOut = "",
   initialGuests = 2,
   payment = null,
+  drivers = [],
+  initialDriverId = "",
 }: {
   propertyId: string;
   /** The property's baseCurrency, so rates are shown in the money they are set in. */
@@ -23,6 +29,9 @@ export function BookingWizard({
   initialGuests?: number;
   /** Null or payNow=false: requests only, as before. */
   payment?: PublicPaymentOptions | null;
+  drivers?: BookableDriver[];
+  /** From /book?driver=<id> ("Request this driver" on the drivers page). */
+  initialDriverId?: string;
 }) {
   // Rebuilt only when the property's currency changes, not on every render.
   const currency = useMemo(
@@ -51,6 +60,11 @@ export function BookingWizard({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const startDriver = drivers.some((d) => d.id === initialDriverId) ? initialDriverId : "";
+  // Coming from "Request this driver" means they want a safari: start on the morning drive.
+  const [safari, setSafari] = useState<SafariChoice | "">(startDriver ? "MORNING" : "");
+  const [driverId, setDriverId] = useState(startDriver);
+  const extras = safari ? { safari, driverId: driverId || null } : null;
 
   const [payChoice, setPayChoice] = useState<PayChoice>(payment?.payNow ? "ADVANCE" : "REQUEST");
 
@@ -111,6 +125,7 @@ export function BookingWizard({
       { propertyId, roomTypeIds: selectedRoomTypes, checkInDate: new Date(checkInDate), checkOutDate: new Date(checkOutDate) },
       guests,
       effectiveChoice,
+      extras,
     );
     if (result.success && result.data) {
       // Off to the Payments.lk card page; keep the button disabled meanwhile.
@@ -137,7 +152,8 @@ export function BookingWizard({
         checkInDate: new Date(checkInDate),
         checkOutDate: new Date(checkOutDate),
       },
-      guests
+      guests,
+      extras,
     );
 
     setLoading(false);
@@ -179,7 +195,7 @@ export function BookingWizard({
                   type="date" 
                   value={checkInDate}
                   onChange={(e) => setCheckInDate(e.target.value)}
-                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white transition-colors"
                 />
               </div>
               <div>
@@ -188,7 +204,7 @@ export function BookingWizard({
                   type="date" 
                   value={checkOutDate}
                   onChange={(e) => setCheckOutDate(e.target.value)}
-                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white transition-colors"
                 />
               </div>
               <div>
@@ -197,7 +213,7 @@ export function BookingWizard({
                   id="booking-guests"
                   value={guests}
                   onChange={(e) => setGuests(Number(e.target.value))}
-                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                  className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white transition-colors"
                 >
                   {[1, 2, 3, 4, 5, 6].map((n) => (
                     <option key={n} value={n}>{n} {n === 1 ? "Adult" : "Adults"}</option>
@@ -293,7 +309,7 @@ export function BookingWizard({
                     type="text" 
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white transition-colors"
                   />
                 </div>
                 <div>
@@ -302,7 +318,7 @@ export function BookingWizard({
                     type="text" 
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white transition-colors"
                   />
                 </div>
               </div>
@@ -313,7 +329,7 @@ export function BookingWizard({
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white transition-colors"
                   />
                 </div>
                 <div>
@@ -325,11 +341,61 @@ export function BookingWizard({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+94 77 123 4567"
-                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none dark:text-white transition-colors"
+                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white transition-colors"
                   />
                 </div>
               </div>
             </div>
+
+            <fieldset className="mb-8">
+              <legend className="text-sm font-medium text-stone-500 mb-1">Add a safari? <span className="text-stone-400 font-normal">(optional, paid at the resort)</span></legend>
+              <p className="text-xs text-stone-400 mb-3">Udawalawe National Park is a few minutes away. We&apos;ll confirm the time and price with you.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[{ value: "" as const, label: "No safari for now", time: "You can add one later", note: "" }, ...SAFARI_OPTIONS].map((o) => (
+                  <label
+                    key={o.value || "none"}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                      safari === o.value
+                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                        : "border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="safari"
+                      value={o.value}
+                      checked={safari === o.value}
+                      onChange={() => setSafari(o.value)}
+                      className="mt-1 accent-emerald-600"
+                    />
+                    <span>
+                      <span className="block font-medium text-stone-900 dark:text-stone-100">{o.label}</span>
+                      <span className="block text-xs text-stone-500">{o.time}{o.note ? ` · ${o.note}` : ""}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {safari && drivers.length > 0 && (
+                <div className="mt-4">
+                  <label htmlFor="safari-driver" className="block text-sm font-medium text-stone-500 mb-2">Driver</label>
+                  <select
+                    id="safari-driver"
+                    value={driverId}
+                    onChange={(e) => setDriverId(e.target.value)}
+                    className="w-full p-4 rounded-lg bg-stone-100 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 focus:border-emerald-500 focus:outline-none text-stone-900 dark:text-white"
+                  >
+                    <option value="">Any available driver</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                        {d.years ? ` · ${d.years} yrs` : ""}
+                        {d.languages.length ? ` · ${d.languages.join(", ")}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </fieldset>
 
             {canPayNow && payment && (
               <fieldset className="mb-8">

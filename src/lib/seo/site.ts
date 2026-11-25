@@ -73,11 +73,14 @@ export const SITE_ROUTES: {
   changeFrequency: "weekly" | "monthly" | "yearly";
 }[] = [
   { path: "/", lastModified: "2026-10-19", priority: 1.0, changeFrequency: "weekly" },
+  { path: "/de", lastModified: "2026-11-25", priority: 0.8, changeFrequency: "weekly" },
+  { path: "/fr", lastModified: "2026-11-25", priority: 0.8, changeFrequency: "weekly" },
   { path: "/rooms", lastModified: "2026-10-26", priority: 0.9, changeFrequency: "monthly" },
   { path: "/book", lastModified: "2026-10-26", priority: 0.9, changeFrequency: "monthly" },
   { path: "/safari", lastModified: "2026-10-26", priority: 0.8, changeFrequency: "monthly" },
   { path: "/safari/drivers", lastModified: "2026-10-20", priority: 0.7, changeFrequency: "weekly" },
   { path: "/dining", lastModified: "2026-10-26", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/guide", lastModified: "2026-11-25", priority: 0.7, changeFrequency: "monthly" },
   { path: "/about", lastModified: "2026-10-26", priority: 0.6, changeFrequency: "yearly" },
   { path: "/contact", lastModified: "2026-10-26", priority: 0.6, changeFrequency: "yearly" },
 ];

@@ -3,8 +3,9 @@ import { ScrollReveal } from "../ui/ScrollReveal";
 import { SITE } from "@/lib/seo/site";
 import type { ContactValues } from "@/features/site/validations/site.schema";
 import { SectionHeading } from "./home/SectionHeading";
+import { HOME, type HomeDict } from "@/lib/i18n/home";
 
-export function LocationSection({ contact }: { contact: ContactValues }) {
+export function LocationSection({ contact, t = HOME.en.location }: { contact: ContactValues; t?: HomeDict["location"] }) {
   const rows = [
     { icon: MapPin, text: `${contact.street}, ${contact.locality} ${contact.postalCode}, Sri Lanka` },
     { icon: Phone, text: contact.phoneDisplay, href: `tel:${contact.phone}` },
@@ -15,11 +16,8 @@ export function LocationSection({ contact }: { contact: ContactValues }) {
     <section className="bg-stone-950 py-20 sm:py-28 px-5 sm:px-8 lg:px-16">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-10 lg:gap-14 items-stretch">
         <ScrollReveal className="lg:col-span-5">
-          <SectionHeading eyebrow="Location" title="Find us in Udawalawe">
-            <p>
-              A short drive from the national park entrance, so a morning drive means an early start
-              rather than a long one.
-            </p>
+          <SectionHeading eyebrow={t.eyebrow} title={t.title}>
+            <p>{t.intro}</p>
           </SectionHeading>
 
           <ul className="mt-8 space-y-4">
@@ -41,12 +39,10 @@ export function LocationSection({ contact }: { contact: ContactValues }) {
 
           <div className="mt-8 rounded-2xl bg-stone-900 ring-1 ring-white/10 p-6">
             <p className="flex items-center gap-2 font-semibold text-white">
-              <Car className="h-4 w-4 text-emerald-400" aria-hidden /> Getting here
+              <Car className="h-4 w-4 text-emerald-400" aria-hidden /> {t.gettingHere}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-stone-400">
-              Roughly four to five hours by road from Bandaranaike International Airport (CMB),
-              depending on traffic. Ask us and we will tell you the best route, or help you find a
-              driver.
+              {t.gettingHereText}
             </p>
           </div>
         </ScrollReveal>
@@ -54,7 +50,7 @@ export function LocationSection({ contact }: { contact: ContactValues }) {
         <ScrollReveal delay={0.1} className="lg:col-span-7 min-h-[380px] lg:min-h-[520px]">
           <div className="relative h-full min-h-[380px] lg:min-h-[520px] overflow-hidden rounded-3xl ring-1 ring-white/10">
             <iframe
-              title="Map showing the location of Lily Safari Resort"
+              title={t.mapTitle}
               src={`https://maps.google.com/maps?q=${SITE.geo.latitude},${SITE.geo.longitude}&z=14&output=embed`}
               className="absolute inset-0 h-full w-full border-0"
               allowFullScreen

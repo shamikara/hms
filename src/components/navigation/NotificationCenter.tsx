@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bell, CalendarCheck, Mail, Sparkles, Truck } from "lucide-react";
+import { AlertTriangle, Bell, CalendarCheck, Mail, Sparkles, Truck } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -17,7 +17,7 @@ interface NotificationItem {
   description: string;
   time: string;
   unread: boolean;
-  type: "booking" | "enquiry" | "fleet";
+  type: "booking" | "enquiry" | "conflict" | "fleet";
   href?: string;
 }
 
@@ -216,6 +216,8 @@ export function NotificationCenter() {
                     <CalendarCheck className="h-3.5 w-3.5 text-emerald-500" />
                   ) : n.type === "enquiry" ? (
                     <Mail className="h-3.5 w-3.5 text-blue-500" />
+                  ) : n.type === "conflict" ? (
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
                   ) : n.type === "fleet" ? (
                     <Truck className="h-3.5 w-3.5 text-amber-500" />
                   ) : (

@@ -3,11 +3,12 @@
 import { showToast } from "@/components/ui/toast";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Mail, Percent, Plus, Star, Trash2 } from "lucide-react";
+import { AlertTriangle, Mail, MessageSquareHeart, Percent, Plus, Star, Trash2 } from "lucide-react";
 import type { SiteSettings } from "@/features/site/services/site.service";
 import {
   saveContactSettings,
   saveRatingSettings,
+  saveReviewLinks,
   saveTaxSetting,
 } from "@/features/site/actions/site.actions";
 
@@ -57,6 +58,12 @@ export function SettingsBoard({
       count: String(r.count),
     })),
   );
+  const [reviews, setReviews] = useState(() => ({
+    enabled: settings?.reviewLinks.enabled ?? true,
+    google: settings?.reviewLinks.google ?? "",
+    bookingCom: settings?.reviewLinks.bookingCom ?? "",
+    tripadvisor: settings?.reviewLinks.tripadvisor ?? "",
+  }));
   const [tax, setTax] = useState(settings?.taxPercent === null || !settings ? "" : String(settings.taxPercent));
 
   const run = (action: Action, message: string) => {
@@ -239,6 +246,60 @@ export function SettingsBoard({
           <div className="flex justify-end">
             <button type="submit" disabled={isPending} className={saveButton}>
               Save ratings
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* ---------------------------------------------------- review email */}
+      <section className={card}>
+        <header className="px-6 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center gap-2.5">
+          <MessageSquareHeart className="w-4 h-4 text-emerald-500" />
+          <h2 className="font-serif text-lg text-stone-900 dark:text-white">&ldquo;How Was Your Stay?&rdquo; Email</h2>
+        </header>
+        <form
+          className="p-6 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            run(() => saveReviewLinks(reviews), "Review links saved.");
+          }}
+        >
+          <p className="text-xs text-stone-500">
+            When a guest is checked out, they get one thank-you email asking for a review, with a
+            button for each link below. Paste the &ldquo;write a review&rdquo; link from each
+            site. Blank links are left out; with no links at all, no email is sent.
+          </p>
+          <label className="flex items-center gap-2.5 text-sm text-stone-700 dark:text-stone-300">
+            <input
+              type="checkbox"
+              checked={reviews.enabled}
+              onChange={(e) => setReviews((r) => ({ ...r, enabled: e.target.checked }))}
+              className="accent-emerald-600 w-4 h-4"
+            />
+            Send the email when a guest checks out
+          </label>
+          {(
+            [
+              ["google", "Google review link", "https://g.page/r/…/review"],
+              ["bookingCom", "Booking.com link", "https://www.booking.com/hotel/lk/…"],
+              ["tripadvisor", "Tripadvisor link", "https://www.tripadvisor.com/UserReviewEdit-…"],
+            ] as const
+          ).map(([key, text, placeholder]) => (
+            <div key={key}>
+              <label htmlFor={`review-${key}`} className={label}>{text}</label>
+              <input
+                id={`review-${key}`}
+                className={input}
+                inputMode="url"
+                value={reviews[key]}
+                placeholder={placeholder}
+                onChange={(e) => setReviews((r) => ({ ...r, [key]: e.target.value }))}
+              />
+            </div>
+          ))}
+          <div className="flex justify-end">
+            <button type="submit" disabled={isPending} className={saveButton}>
+              Save review links
             </button>
           </div>
         </form>

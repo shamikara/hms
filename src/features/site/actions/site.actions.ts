@@ -8,7 +8,7 @@ import {
   resolveDefaultPropertyId,
 } from "@/features/admin/lib/requireAdminSession";
 import { SITE_CONTENT_TAG, SiteSettingsService, type SiteSettings } from "../services/site.service";
-import { ContactSchema, RatingsSchema, TaxSchema } from "../validations/site.schema";
+import { ContactSchema, RatingsSchema, ReviewLinksSchema, TaxSchema } from "../validations/site.schema";
 
 type Result<T = undefined> = { success: boolean; data?: T; error?: string };
 
@@ -86,5 +86,19 @@ export async function saveTaxSetting(input: unknown): Promise<Result> {
     return { success: true };
   } catch (error) {
     return fail("saveTaxSetting", error);
+  }
+}
+
+export async function saveReviewLinks(input: unknown): Promise<Result> {
+  const ctx = await guardedProperty();
+  if (!ctx.ok) return ctx.failure;
+  const parsed = ReviewLinksSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: firstIssue(parsed.error) };
+  try {
+    await SiteSettingsService.saveReviewLinks(ctx.propertyId, parsed.data);
+    // Only the checkout email reads these; nothing public to refresh.
+    return { success: true };
+  } catch (error) {
+    return fail("saveReviewLinks", error);
   }
 }
