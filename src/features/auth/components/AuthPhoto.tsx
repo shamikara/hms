@@ -81,7 +81,19 @@ function greeting(minute: number): string {
   return "A quiet night in Udawalawe 🌙";
 }
 
-export function AuthPhoto() {
+export function AuthPhoto({
+  sizes = "(max-width: 1024px) 100vw, 50vw",
+  showGreeting = true,
+  idleVideo = true,
+  priority = true,
+}: {
+  sizes?: string;
+  /** "Good evening from Udawalawe" in the corner (English only). */
+  showGreeting?: boolean;
+  /** Play the night-pool loop after 15 s idle at night. */
+  idleVideo?: boolean;
+  priority?: boolean;
+} = {}) {
   const [minute, setMinute] = useState<number | null>(null);
   const [idle, setIdle] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
@@ -98,7 +110,7 @@ export function AuthPhoto() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
-    if (reduce || saveData) return;
+    if (reduce || saveData || !idleVideo) return;
     let timer = window.setTimeout(() => setIdle(true), IDLE_MS);
     const wake = () => {
       setIdle(false);
@@ -111,7 +123,7 @@ export function AuthPhoto() {
       window.clearTimeout(timer);
       events.forEach((e) => window.removeEventListener(e, wake));
     };
-  }, []);
+  }, [idleVideo]);
 
   // Before the clock is read (first paint), show the plain day scene.
   const look = minute === null ? lookAt(12 * 60) : lookAt(minute);
@@ -138,8 +150,8 @@ export function AuthPhoto() {
         src="/hero/hero-pool-pergola.webp"
         alt=""
         fill
-        priority
-        sizes="(max-width: 1024px) 100vw, 50vw"
+        priority={priority}
+        sizes={sizes}
         className="object-cover object-[40%_75%]"
       />
       {/* Colour grades: blended over the photo like a sky changing colour. */}
@@ -151,7 +163,7 @@ export function AuthPhoto() {
         src="/hero/hero-pool-night.webp"
         alt=""
         fill
-        sizes="(max-width: 1024px) 100vw, 50vw"
+        sizes={sizes}
         className={`object-cover object-[50%_60%] ${fade}`}
         style={{ opacity: look.night }}
       />
@@ -170,12 +182,14 @@ export function AuthPhoto() {
         }`}
       />
       <div className={`absolute inset-0 bg-black ${fade}`} style={{ opacity: look.dark }} />
+      {showGreeting && (
       <p
         aria-hidden={minute === null}
         className={`absolute top-5 left-6 lg:top-8 lg:left-10 z-10 text-xs lg:text-sm text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] transition-opacity duration-700 ${minute === null ? "opacity-0" : "opacity-100"}`}
       >
         {minute === null ? " " : greeting(minute)}
       </p>
+      )}
     </>
   );
 }

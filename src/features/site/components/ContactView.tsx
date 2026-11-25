@@ -302,7 +302,7 @@ export function ContactView({ contact }: { contact: ContactValues }) {
           <iframe
             title="Map showing the location of Lily Safari Resort"
             src={`https://maps.google.com/maps?q=${SITE.geo.latitude},${SITE.geo.longitude}&z=15&output=embed`}
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 grayscale contrast-[1.05] transition-[filter] duration-500 hover:grayscale-0 focus:grayscale-0"
             style={{ filter: "grayscale(80%) contrast(120%) opacity(90%)" }}
             allowFullScreen={true}
             loading="lazy"

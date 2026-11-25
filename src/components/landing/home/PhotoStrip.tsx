@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { SectionHeading } from "./SectionHeading";
 import { DEFAULT_GALLERY_PHOTOS } from "@/features/media/lib/builtin";
@@ -13,13 +13,21 @@ export interface StripPhoto {
 }
 
 /** More panels than this get too thin to read; Admin > Photos says so too. */
-export const ACCORDION_MAX = 7;
+export const ACCORDION_MAX = 12;
+
+/** How long each photo stays open when the gallery runs by itself. */
+const STEP_MS = 4500;
 
 /**
  * "Around the house" as an accordion: a row of slim photo panels where the one
  * you hover, focus or tap opens wide and shows its caption. On phones the row
  * becomes a stack that opens by height. The photo inside eases from a slight
- * zoom as its panel opens, which gives the reveal a little depth.
+ * zoom as its panel opens, which gives the reveal a little depth. Closed
+ * panels are greyscale; the open one is in colour.
+ *
+ * It moves to the next photo every few seconds on its own, looping. It holds
+ * still while the pointer is over it or a panel has keyboard focus, while it
+ * is off screen or the tab is hidden, and never runs with reduced motion.
  *
  * Captions are the photo descriptions set in Admin > Photos.
  */
@@ -32,6 +40,26 @@ export function PhotoStrip({
 }) {
   const items = photos.slice(0, ACCORDION_MAX);
   const [active, setActive] = useState(0);
+  const listRef = useRef<HTMLUListElement>(null);
+  const held = useRef(false);
+  const visible = useRef(false);
+  const count = items.length;
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || count < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const observer = new IntersectionObserver(([entry]) => (visible.current = entry.isIntersecting), { threshold: 0.3 });
+    observer.observe(list);
+    const timer = window.setInterval(() => {
+      if (held.current || !visible.current || document.hidden) return;
+      setActive((a) => (a + 1) % count);
+    }, STEP_MS);
+    return () => {
+      observer.disconnect();
+      window.clearInterval(timer);
+    };
+  }, [count]);
 
   if (items.length === 0) return null;
 
@@ -41,8 +69,20 @@ export function PhotoStrip({
         <SectionHeading eyebrow={t.eyebrow} title={t.title} />
 
         <ul
+          ref={listRef}
           aria-label={t.label}
-          className="mt-10 flex flex-col md:flex-row gap-2 sm:gap-3 h-[600px] sm:h-[640px] md:h-[520px]"
+          onPointerEnter={(e) => {
+            if (e.pointerType === "mouse") held.current = true;
+          }}
+          onPointerLeave={(e) => {
+            if (e.pointerType === "mouse") held.current = false;
+          }}
+          onFocus={(e) => {
+            // Keyboard focus only; a tap also focuses, and must not stop the loop.
+            if (e.target.matches(":focus-visible")) held.current = true;
+          }}
+          onBlur={() => (held.current = false)}
+          className="mt-10 flex flex-col md:flex-row gap-1.5 sm:gap-2 md:gap-3 h-[640px] sm:h-[680px] md:h-[520px]"
         >
           {items.map((photo, i) => {
             const open = i === active;
@@ -67,8 +107,8 @@ export function PhotoStrip({
                     alt=""
                     fill
                     sizes="(max-width: 768px) 100vw, 70vw"
-                    className={`object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
-                      open ? "scale-100" : "scale-[1.18]"
+                    className={`object-cover transition-[transform,filter] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                      open ? "scale-100 grayscale-0" : "scale-[1.18] grayscale group-hover:grayscale-[0.4]"
                     }`}
                   />
                   <span

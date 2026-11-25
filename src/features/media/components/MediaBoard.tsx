@@ -299,11 +299,11 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
         <section className={`${card} p-5`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-stone-500">
-              The homepage &ldquo;Around the house&rdquo; gallery: up to 7 photos as panels that open when a visitor points at
-              or taps them. Each photo&apos;s caption shows on its open panel.
+              The homepage &ldquo;Around the house&rdquo; gallery: up to 12 photos as panels. They open one after another on their own,
+              or when a visitor points at or taps one. The open photo shows in colour with its caption; the rest are grey.
             </p>
             <div className="flex gap-2">
-              <button className={small} disabled={gallery.length >= 7} onClick={() => setPicker("gallery")}>
+              <button className={small} disabled={gallery.length >= 12} onClick={() => setPicker("gallery")}>
                 <Plus className="w-3.5 h-3.5" /> Add photo
               </button>
               <button
@@ -316,8 +316,8 @@ export function MediaBoard({ data, loadError }: { data: MediaBoardData | null; l
             </div>
           </div>
           {gallery.length < 3 && <p className="mt-3 text-sm text-amber-700">Add at least 3 photos.</p>}
-          {gallery.length > 7 && (
-            <p className="mt-3 text-sm text-amber-700">Only the first 7 show on the homepage. Remove or reorder the rest.</p>
+          {gallery.length > 12 && (
+            <p className="mt-3 text-sm text-amber-700">Only the first 12 show on the homepage. Remove or reorder the rest.</p>
           )}
           <ul className="divide-y divide-stone-100 dark:divide-stone-800 mt-3">
             {gallery.map((s, i) => (

@@ -11,7 +11,6 @@ import { SafariFeature } from "@/components/landing/home/SafariFeature";
 import { FoodAndEvenings } from "@/components/landing/home/FoodAndEvenings";
 import { WalkAround } from "@/components/landing/home/WalkAround";
 import { PhotoStrip } from "@/components/landing/home/PhotoStrip";
-import { NightExpand } from "@/components/landing/home/NightExpand";
 import { RatingsBand } from "@/components/landing/home/RatingsBand";
 import { ClosingCta } from "@/components/landing/home/ClosingCta";
 import { getSiteContent } from "@/features/site/services/site.service";
@@ -65,7 +64,6 @@ export async function HomePage({ locale }: { locale: Locale }) {
         {rooms && rooms.roomTypes.length > 0 && <RoomsGrid rooms={rooms} t={t.rooms} />}
         <SafariFeature t={t.safari} />
         <FoodAndEvenings t={t.food} />
-        <NightExpand t={t.night} />
         <PhotoStrip photos={media.galleryPhotos} t={t.photos} />
         <RatingsBand ratings={ratings} aggregate={aggregate} t={t.ratings} />
         <LocationSection contact={contact} t={t.location} />

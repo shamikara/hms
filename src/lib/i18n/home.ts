@@ -107,12 +107,6 @@ const en = {
     intro: "Breakfast on the verandah and dinners of Sri Lankan rice and curry or grills, cooked to order. After dark the pool lights up and there is a fire in the garden.",
     link: "Food at the house",
   },
-  night: {
-    label: "The pool at night",
-    eyebrow: "After dark",
-    title: "The garden lights up",
-    text: "When the jeeps are back, the pool glows under the trees and the day slows right down.",
-  },
   photos: {
     eyebrow: "Around the house",
     title: "The garden, the park, the birds",
@@ -248,12 +242,6 @@ const de: HomeDict = {
     intro: "Frühstück auf der Veranda und abends srilankisches Reis und Curry oder Gegrilltes, frisch zubereitet. Nach Einbruch der Dunkelheit leuchtet der Pool und im Garten brennt ein Feuer.",
     link: "Essen im Haus",
   },
-  night: {
-    label: "Der Pool bei Nacht",
-    eyebrow: "Nach Einbruch der Dunkelheit",
-    title: "Der Garten leuchtet",
-    text: "Wenn die Jeeps zurück sind, leuchtet der Pool unter den Bäumen und der Tag kommt zur Ruhe.",
-  },
   photos: {
     eyebrow: "Rund ums Haus",
     title: "Der Garten, der Park, die Vögel",
@@ -386,12 +374,6 @@ const fr: HomeDict = {
     title: "Riz et curry, puis le feu de camp",
     intro: "Petit-déjeuner sur la véranda et dîners de riz et curry sri-lankais ou de grillades, préparés à la demande. À la nuit tombée, la piscine s'illumine et un feu crépite au jardin.",
     link: "La cuisine de la maison",
-  },
-  night: {
-    label: "La piscine de nuit",
-    eyebrow: "À la nuit tombée",
-    title: "Le jardin s'illumine",
-    text: "Quand les jeeps sont rentrées, la piscine brille sous les arbres et la journée ralentit.",
   },
   photos: {
     eyebrow: "Autour de la maison",

@@ -52,7 +52,7 @@ export function LocationSection({ contact, t = HOME.en.location }: { contact: Co
             <iframe
               title={t.mapTitle}
               src={`https://maps.google.com/maps?q=${SITE.geo.latitude},${SITE.geo.longitude}&z=14&output=embed`}
-              className="absolute inset-0 h-full w-full border-0"
+              className="absolute inset-0 h-full w-full border-0 grayscale contrast-[1.05] transition-[filter] duration-500 hover:grayscale-0 focus:grayscale-0"
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
