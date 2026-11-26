@@ -101,6 +101,10 @@ const en = {
     drivers: "Meet the drivers",
     guide: "Local guide & FAQs",
   },
+  dividers: {
+    safari: ["Safari", "Elephants", "Udawalawe"],
+    food: ["Rice & curry", "The pool", "Firelight"],
+  },
   food: {
     eyebrow: "Food & evenings",
     title: "Rice and curry, then the fire",
@@ -236,6 +240,10 @@ const de: HomeDict = {
     drivers: "Unsere Fahrer",
     guide: "Reiseinfos & FAQ (Englisch)",
   },
+  dividers: {
+    safari: ["Safari", "Elefanten", "Udawalawe"],
+    food: ["Reis & Curry", "Der Pool", "Lagerfeuer"],
+  },
   food: {
     eyebrow: "Essen & Abende",
     title: "Reis und Curry, dann das Feuer",
@@ -368,6 +376,10 @@ const fr: HomeDict = {
     drives: "Les safaris",
     drivers: "Nos chauffeurs",
     guide: "Guide pratique & FAQ (anglais)",
+  },
+  dividers: {
+    safari: ["Safari", "Éléphants", "Udawalawe"],
+    food: ["Riz & curry", "La piscine", "Feu de camp"],
   },
   food: {
     eyebrow: "Cuisine & soirées",

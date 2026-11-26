@@ -11,6 +11,7 @@ import { SafariFeature } from "@/components/landing/home/SafariFeature";
 import { FoodAndEvenings } from "@/components/landing/home/FoodAndEvenings";
 import { WalkAround } from "@/components/landing/home/WalkAround";
 import { PhotoStrip } from "@/components/landing/home/PhotoStrip";
+import { ScrollTitles } from "@/components/landing/home/ScrollTitles";
 import { RatingsBand } from "@/components/landing/home/RatingsBand";
 import { ClosingCta } from "@/components/landing/home/ClosingCta";
 import { getSiteContent } from "@/features/site/services/site.service";
@@ -62,7 +63,9 @@ export async function HomePage({ locale }: { locale: Locale }) {
         <Highlights t={t.highlights} />
         <WalkAround t={t.walk} />
         {rooms && rooms.roomTypes.length > 0 && <RoomsGrid rooms={rooms} t={t.rooms} />}
+        <ScrollTitles words={t.dividers.safari} tone="forest" />
         <SafariFeature t={t.safari} />
+        <ScrollTitles words={t.dividers.food} reverse tone="stone" />
         <FoodAndEvenings t={t.food} />
         <PhotoStrip photos={media.galleryPhotos} t={t.photos} />
         <RatingsBand ratings={ratings} aggregate={aggregate} t={t.ratings} />

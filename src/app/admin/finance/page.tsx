@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getFinanceSummary } from "@/features/billing/actions/finance.actions";
+import { getFinanceSummary, getRevenueTrend } from "@/features/billing/actions/finance.actions";
+import { RevenueTrendChart } from "@/features/billing/components/RevenueTrendChart";
 
 export default async function FinancePage() {
-  const result = await getFinanceSummary();
+  const [result, trendResult] = await Promise.all([getFinanceSummary(), getRevenueTrend(12)]);
   const data = result.success ? result.data : undefined;
 
   if (!data) {
@@ -57,6 +58,8 @@ export default async function FinancePage() {
           <span className="text-stone-500">Charged but not paid</span>
         </Card>
       </div>
+
+      {trendResult.success && trendResult.data && <RevenueTrendChart trend={trendResult.data} />}
 
       <section className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm overflow-hidden">
         <header className="px-6 py-4 border-b border-stone-200 dark:border-stone-800">

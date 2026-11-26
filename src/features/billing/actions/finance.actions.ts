@@ -62,6 +62,11 @@ export async function getFinanceSummary(
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const previousMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+    // "Same point last month": as far into last month as we are into this one,
+    // capped at the end of last month (31 March has no 31 February).
+    const samePointLastMonth = new Date(
+      Math.min(previousMonthStart.getTime() + (now.getTime() - monthStart.getTime()), monthStart.getTime()),
+    );
 
     const byProperty = { invoice: { reservation: { propertyId: propId } } };
 
@@ -74,7 +79,7 @@ export async function getFinanceSummary(
         where: {
           ...byProperty,
           status: PaymentStatus.CLEARED,
-          createdAt: { gte: previousMonthStart, lt: monthStart },
+          createdAt: { gte: previousMonthStart, lt: samePointLastMonth },
         },
         select: { amount: true },
       }),
@@ -192,5 +197,80 @@ export async function getInHouseGuests(
   } catch (error) {
     console.error("getInHouseGuests failed:", error instanceof Error ? error.message : error);
     return { success: false, error: "Could not load the in-house list." };
+  }
+}
+
+/* ------------------------------------------------------------ trend */
+
+export type TrendCategory = "ROOM_RATE" | "F_AND_B" | "SAFARI" | "OTHER";
+
+export interface RevenueMonth {
+  /** yyyy-mm, in Sri Lanka time. */
+  key: string;
+  /** Charges posted that month, by category, tax included. */
+  charges: Record<TrendCategory, number>;
+  /** Cleared payments that month, net of refunds. */
+  received: number;
+}
+
+export interface RevenueTrend {
+  currencyCode: string;
+  months: RevenueMonth[];
+}
+
+const COLOMBO_MONTH = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Colombo", year: "numeric", month: "2-digit" });
+const monthKey = (d: Date) => COLOMBO_MONTH.format(d).slice(0, 7);
+
+/**
+ * The last `months` months, oldest first, including the current one. Months
+ * are Sri Lanka calendar months, so a payment at 2am on the 1st lands in the
+ * month the desk would put it in. Refunds are negative payments, so summing
+ * cleared payments gives money actually kept.
+ */
+export async function getRevenueTrend(months = 12): Promise<{ success: boolean; data?: RevenueTrend; error?: string }> {
+  const guard = await requireAdminPermission("finance:view");
+  if (!guard.ok) return guard.failure;
+  try {
+    const propId = await resolveDefaultPropertyId();
+    if (!propId) return { success: false, error: NO_PROPERTY };
+
+    const now = new Date();
+    const keys: string[] = [];
+    for (let i = months - 1; i >= 0; i--) {
+      keys.push(monthKey(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 15))));
+    }
+    // A day of slack either side of the UTC boundary; rows are bucketed by key.
+    const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1) - 86_400_000);
+    const byProperty = { invoice: { reservation: { propertyId: propId } } };
+
+    const [property, lines, payments] = await Promise.all([
+      prisma.property.findUnique({ where: { id: propId }, select: { baseCurrency: true } }),
+      prisma.lineItem.findMany({
+        where: { createdAt: { gte: from }, invoice: { reservation: { propertyId: propId }, status: { not: "VOIDED" } } },
+        select: { category: true, total: true, createdAt: true },
+      }),
+      prisma.payment.findMany({
+        where: { ...byProperty, status: PaymentStatus.CLEARED, createdAt: { gte: from } },
+        select: { amount: true, createdAt: true },
+      }),
+    ]);
+
+    const table = new Map<string, RevenueMonth>(
+      keys.map((key) => [key, { key, received: 0, charges: { ROOM_RATE: 0, F_AND_B: 0, SAFARI: 0, OTHER: 0 } }]),
+    );
+    for (const l of lines) {
+      const m = table.get(monthKey(l.createdAt));
+      if (!m) continue;
+      const cat: TrendCategory = l.category === "ROOM_RATE" || l.category === "F_AND_B" || l.category === "SAFARI" ? l.category : "OTHER";
+      m.charges[cat] += Number(l.total);
+    }
+    for (const p of payments) {
+      const m = table.get(monthKey(p.createdAt));
+      if (m) m.received += Number(p.amount);
+    }
+    return { success: true, data: { currencyCode: property?.baseCurrency ?? "LKR", months: keys.map((k) => table.get(k)!) } };
+  } catch (error) {
+    console.error("getRevenueTrend failed:", error instanceof Error ? error.message : error);
+    return { success: false, error: "The revenue trend could not be loaded." };
   }
 }
