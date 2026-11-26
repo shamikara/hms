@@ -4,10 +4,17 @@
  */
 export const MEDIA_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() || "media";
 
-/** The project URL, e.g. https://abc.supabase.co, or null when not set. */
+/**
+ * The project URL, e.g. https://abc.supabase.co, or null when not set.
+ *
+ * Forgives the usual copy-paste slips: quotes around the value, a missing
+ * https://, or the API path (/rest/v1, /storage/v1) left on the end.
+ */
 export function supabaseUrl(): string | null {
-  const raw = process.env.SUPABASE_URL?.trim() || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  return raw ? raw.replace(/\/+$/, "") : null;
+  let raw = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim().replace(/^["']|["']$/g, "").trim();
+  if (!raw) return null;
+  if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+  return raw.replace(/\/(rest|storage|auth)\/v1.*$/i, "").replace(/\/+$/, "");
 }
 
 export function mediaPublicPrefix(): string | null {
