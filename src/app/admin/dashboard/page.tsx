@@ -1,10 +1,14 @@
 import { getDashboardMetrics, getRecentReservations } from "@/features/admin/actions/dashboard.actions";
 import { format } from "date-fns";
+import { getRevenueTrend } from "@/features/billing/actions/finance.actions";
+import { RevenueTrendChart } from "@/features/billing/components/RevenueTrendChart";
 
 export default async function DashboardPage() {
-  const [metricsResult, recentReservationsResult] = await Promise.all([
+  const [metricsResult, recentReservationsResult, trendResult] = await Promise.all([
     getDashboardMetrics(),
-    getRecentReservations()
+    getRecentReservations(),
+    // Needs finance:view; for roles without it the panel explains instead.
+    getRevenueTrend(12),
   ]);
 
   const metrics = (metricsResult.success && metricsResult.data) ? metricsResult.data : { todayArrivals: 0, pendingReservations: 0, totalGuests: 0 };
@@ -26,10 +30,16 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="h-96 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm p-6 flex flex-col">
-           <h3 className="text-lg font-medium text-stone-800 dark:text-stone-200 mb-4">Revenue Trend</h3>
-           <div className="flex-1 flex items-center justify-center text-stone-400 text-sm bg-stone-50 dark:bg-stone-950/50 rounded-xl border border-dashed border-stone-200 dark:border-stone-800">Chart Coming Soon</div>
-        </div>
+        {trendResult.success && trendResult.data ? (
+          <RevenueTrendChart trend={trendResult.data} compact />
+        ) : (
+          <div className="h-96 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm p-6 flex flex-col">
+            <h3 className="text-lg font-medium text-stone-800 dark:text-stone-200 mb-4">Revenue Trend</h3>
+            <div className="flex-1 flex items-center justify-center text-center px-6 text-stone-400 text-sm bg-stone-50 dark:bg-stone-950/50 rounded-xl border border-dashed border-stone-200 dark:border-stone-800">
+              {trendResult.error ?? "Revenue figures are not available."}
+            </div>
+          </div>
+        )}
         <div className="h-96 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm p-6 overflow-hidden flex flex-col">
            <h3 className="text-lg font-medium text-stone-800 dark:text-stone-200 mb-4">Recent Bookings</h3>
            <div className="flex-1 overflow-y-auto pr-2 space-y-3">

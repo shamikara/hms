@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { RevenueTrend, TrendCategory } from "@/features/billing/actions/finance.actions";
 
 /**
@@ -16,8 +17,6 @@ const SERIES: { key: TrendCategory; label: string; fill: string }[] = [
   { key: "OTHER", label: "Other", fill: "#a8a29e" },
 ];
 
-const W = 900;
-const H = 300;
 const PAD = { top: 16, right: 12, bottom: 34, left: 64 };
 
 function niceMax(value: number): number {
@@ -29,10 +28,10 @@ function niceMax(value: number): number {
   return step * exp;
 }
 
-export function RevenueTrendChart({ trend }: { trend: RevenueTrend }) {
+export function RevenueTrendChart({ trend, compact = false }: { trend: RevenueTrend; compact?: boolean }) {
   const { months, currencyCode } = trend;
   const money = new Intl.NumberFormat("en-LK", { style: "currency", currency: currencyCode, maximumFractionDigits: 0 });
-  const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+  const compactNum = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
   const monthName = (key: string, long = false) =>
     new Intl.DateTimeFormat("en-GB", { month: long ? "long" : "short", year: long ? "numeric" : undefined, timeZone: "UTC" }).format(
       new Date(`${key}-15T00:00:00Z`),
@@ -46,6 +45,9 @@ export function RevenueTrendChart({ trend }: { trend: RevenueTrend }) {
   const low = Math.min(0, ...months.map((m) => m.received));
   const span = top - low;
 
+  // The compact card is narrower: a smaller drawing keeps labels readable.
+  const W = compact ? 560 : 900;
+  const H = compact ? 280 : 300;
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
   const col = plotW / months.length;
@@ -61,12 +63,23 @@ export function RevenueTrendChart({ trend }: { trend: RevenueTrend }) {
     <section className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-sm">
       <header className="px-6 pt-5 pb-3 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-serif text-lg text-stone-900 dark:text-white">Revenue, last 12 months</h2>
+          <h2 className="font-serif text-lg text-stone-900 dark:text-white">
+            {compact ? "Revenue Trend" : "Revenue, last 12 months"}
+          </h2>
           <p className="text-xs text-stone-500 mt-1">
-            Bars: charges posted, by type. Line: money received after refunds. Hover a month for figures.
+            {compact ? (
+              <>
+                Last 12 months.{" "}
+                <Link href="/admin/finance" className="text-emerald-600 hover:text-emerald-500 font-medium">
+                  Full figures &rarr;
+                </Link>
+              </>
+            ) : (
+              "Bars: charges posted, by type. Line: money received after refunds. Hover a month for figures."
+            )}
           </p>
         </div>
-        <dl className="flex gap-6 text-right">
+        <dl className={`flex gap-6 text-right ${compact ? "[&>div:nth-child(n+2)]:hidden" : ""}`}>
           <div>
             <dt className="text-[10px] font-mono uppercase tracking-wider text-stone-500">Received</dt>
             <dd className="font-serif text-xl text-stone-900 dark:text-white">{money.format(totalReceived)}</dd>
@@ -101,12 +114,12 @@ export function RevenueTrendChart({ trend }: { trend: RevenueTrend }) {
         </p>
       ) : (
         <div className="overflow-x-auto px-2 pb-4">
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[640px]" role="img" aria-label={`Revenue for the last 12 months: ${money.format(totalReceived)} received, ${money.format(totalCharged)} charged.`}>
+          <svg viewBox={`0 0 ${W} ${H}`} className={`w-full ${compact ? "min-w-[420px]" : "min-w-[640px]"}`} role="img" aria-label={`Revenue for the last 12 months: ${money.format(totalReceived)} received, ${money.format(totalCharged)} charged.`}>
             {ticks.map((t) => (
               <g key={t}>
                 <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className="stroke-stone-200 dark:stroke-stone-800" strokeWidth={t === 0 ? 1.2 : 1} />
                 <text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" className="fill-stone-500 text-[11px] font-mono">
-                  {compact.format(t)}
+                  {compactNum.format(t)}
                 </text>
               </g>
             ))}
